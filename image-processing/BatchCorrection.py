@@ -34,6 +34,7 @@ clargs = parser.parse_args()
 
 num_X = 2048
 num_Y = 2048
+GE_buffer = 8192
 
 lo = int(clargs.lo[0])
 hi = int(clargs.hi[0])
@@ -61,20 +62,41 @@ badPixels = numpy.array(num_X*num_Y,numpy.float32)
 
 #Read in bad pixel data
 # USER MUST DEFINE PATH TO BAD PIXEL INFORMATION
-# Typically 'C:\DetectorData\1339.6\Full\1339.6Full_BadPixel_d.txt.img'
 # Hard-coding this location in is inadvisable, as it makes the code less portable.
 # Either a relative or an absolute path can be used.  It's probably safer to use an absolute path.
 # (NB: the r prior to the string indicates a raw string, and must be included)
-badPixFile = r'C:\DetectorData\1339.6\Full\1339.6Full_BadPixel_d.txt.img'
-try:
-  with open(badPixFile, mode='rb') as badPxobj:
-    badPxobj.seek(8192)
-    badPixels = fread(badPxobj, numpy.uint16, num_X * num_Y)
-except IOError as e:
-   print '\nUnable to access bad pixel information at ' + badPixFile
-   print 'Ensure that the file exists, or change the "badPixFile" variable on line 26 to direct to the file location.\n'
-   sys.exit()
+#### SELECT BADPIXEL GE FILE
+if genum == 1:
+    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF43522-3\Full'
+    fname_badpixel = r'EF43522-3Full_BadPixel.img'
+elif genum == 2:
+    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF44064-6\Full'
+    fname_badpixel = r'EF44064-6Full_BadPixel.img'
+elif genum == 3:
+    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF43089-5\Full'
+    fname_badpixel = r'EF43089-5Full_BadPixel.img'
+elif genum == 4:
+    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF44066-7\Full'
+    fname_badpixel = r'EF44066-7Full_BadPixel.img'
+else:
+    print '\nno such GE exists ...'
+    print 'check GE_num ...\n'
 
+pfname_badpixel = os.path.join(pname_badpixel, fname_badpixel)
+print 'bad pixel file is  : ' + fname_badpixel
+
+#Read in bad pixel data
+try:
+    with open(pfname_badpixel, mode='rb') as badPxobj:
+        badPxobj.seek(GE_buffer)
+        badPixels = fread(badPxobj, numpy.uint16, num_X * num_Y)
+except IOError as e:
+    print '\nUnable to access bad pixel information at ' + pfname_badpixel
+    print 'Ensure that the file exists. \n'
+    sys.exit()
+
+badPixels = badPixels.reshape(num_X, num_Y, order='C')
+        
 # Find dark files.
 # The 'dark' stub can be anywhere in the filename (not necessarily at the start)
 darks = [x for x in allfiles if drk.lower() in x.lower()]
@@ -101,8 +123,8 @@ print "Using", darkfile
 # This reduces the number of 'over reduced' pixels.
 with open(darkfile, mode='rb') as darkobj:
   statinfo = os.stat(darkfile)
-  nFrames = (statinfo.st_size - 8192) / (2 * num_X * num_Y)
-  darkobj.seek(8192)
+  nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+  darkobj.seek(GE_buffer)
   for i in range(nFrames):
     binvalues = fread(darkobj, numpy.uint16, num_X * num_Y).astype('float32')
     sumvalues = sumvalues + binvalues
@@ -138,13 +160,13 @@ else:
 #Perform a loop over all files
 for f in files:
   statinfo = os.stat(f)
-  nFrames = (statinfo.st_size - 8192) / (2 * num_X * num_Y)
+  nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
   print "\nReading:",f, "\nFile contains", nFrames," frames.  Summing and dark correcting."
 
   # Sum all values in this file
   (d, fout) = os.path.split(f)
   with open(f, mode='rb') as fileobj:
-    fileobj.seek(8192)
+    fileobj.seek(GE_buffer)
     for i in range(nFrames):
       binvalues = fread(fileobj, numpy.uint16,num_X * num_Y).astype('float32')
 
