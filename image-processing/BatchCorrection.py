@@ -19,9 +19,7 @@ import sys
 import argparse
 
 # Command-line parser arguments - make everything more user friendly
-parser = argparse.ArgumentParser(
-  description='Dark correction and summing of GE2 files.',
-  epilog='Written by Chris Cochrane, Dec. 2012. E-mail: cochranec@gmail.com')
+parser = argparse.ArgumentParser(description='Dark correction and summing of GE2 files.', epilog='Written by Chris Cochrane, Dec. 2012. E-mail: cochranec@gmail.com')
 parser.add_argument('--lo', type=int, nargs=1, default=[-1], help='Lower bound of run numbers.')
 parser.add_argument('--hi', type=int, nargs=1, default=[-1], help='Upper bound of run numbers.')
 parser.add_argument('--all','-a', action='store_true', default=True, help='Flag to perform dark correction on all GE2 files in present directory.')
@@ -46,7 +44,7 @@ inpath = clargs.inpath[0]
 outpath = clargs.outpath[0]
 
 if (lo != -1) or (hi != -1):
-  clargs.all = False 
+    clargs.all = False 
 
 allfiles = glob.glob(inpath + os.sep + '*[0-9].ge' + str(genum))
 
@@ -54,11 +52,11 @@ allfiles = glob.glob(inpath + os.sep + '*[0-9].ge' + str(genum))
 fread = numpy.fromfile
 
 #Pre-allocate memory space for arrays
-sumvalues = numpy.zeros(num_X*num_Y,numpy.float32)
-binvalues = numpy.zeros(num_X*num_Y,numpy.float32)
-corrected = numpy.array(num_X*num_Y,numpy.float32)
-darkvalues= numpy.array(num_X*num_Y,numpy.float32)
-badPixels = numpy.array(num_X*num_Y,numpy.float32)
+sumvalues = numpy.zeros(num_X*num_Y, numpy.float32)
+binvalues = numpy.zeros(num_X*num_Y, numpy.float32)
+corrected = numpy.array(num_X*num_Y, numpy.float32)
+darkvalues= numpy.array(num_X*num_Y, numpy.float32)
+badPixels = numpy.array(num_X*num_Y, numpy.float32)
 
 #Read in bad pixel data
 # USER MUST DEFINE PATH TO BAD PIXEL INFORMATION
@@ -89,7 +87,7 @@ print 'bad pixel file is  : ' + fname_badpixel
 try:
     with open(pfname_badpixel, mode='rb') as badPxobj:
         badPxobj.seek(GE_buffer)
-        badPixels = fread(badPxobj, numpy.uint16, num_X * num_Y)
+        badPixels = fread(badPxobj, numpy.uint16, num_X * num_Y).astype('float32')
 except IOError as e:
     print '\nUnable to access bad pixel information at ' + pfname_badpixel
     print 'Ensure that the file exists. \n'
@@ -103,18 +101,21 @@ darks = [x for x in allfiles if drk.lower() in x.lower()]
 
 print len(darks), "candidate(s) for dark file found."
 if len(darks) == 0:
-  print "Double-check that dark file is properly located."
-  sys.exit()
+    print "Double-check that dark file is properly located."
+    sys.exit()
+
 for i in range(len(darks)):
-  print "   (" + str(i+1) + ") " + darks[i]
-print "Which dark file should we use?"
-dkI = 0
-while dkI < 1 or dkI > len(darks):
-  try:
-    dkI = int(raw_input().strip())
-  except:
+    print "   (" + str(i+1) + ") " + darks[i]
+    print "Which dark file should we use?"
     dkI = 0
-    print('Choose one of the available options. [1-' + str(len(darks)) + ']')
+
+while dkI < 1 or dkI > len(darks):
+    try:
+        dkI = int(raw_input().strip())
+    except:
+        dkI = 0
+        print('Choose one of the available options. [1-' + str(len(darks)) + ']')
+        
 darkfile = darks[dkI-1]
 print "Using", darkfile
 
@@ -122,12 +123,12 @@ print "Using", darkfile
 # Average over all the exposures in the file 
 # This reduces the number of 'over reduced' pixels.
 with open(darkfile, mode='rb') as darkobj:
-  statinfo = os.stat(darkfile)
-  nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
-  darkobj.seek(GE_buffer)
-  for i in range(nFrames):
-    binvalues = fread(darkobj, numpy.uint16, num_X * num_Y).astype('float32')
-    sumvalues = sumvalues + binvalues
+    statinfo = os.stat(darkfile)
+    nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+    darkobj.seek(GE_buffer)
+    for i in range(nFrames):
+        binvalues = fread(darkobj, numpy.uint16, num_X * num_Y).astype('float32')
+        sumvalues = sumvalues + binvalues
 
 darkvalues = sumvalues / nFrames
 sumvalues[:] = 0
@@ -141,69 +142,72 @@ print "Dark file and bad pixel data read successfully."
 
 # Produce list of files to be dark corrected
 if not clargs.all:
-  print "High val is",hi,"; low val is",lo
-  files = [x for x in allfiles if lo <= int(re.findall('_([0-9]*).ge2',x)[0]) <= hi and drk.lower() not in x.lower()]
+    print "High val is",hi,"; low val is",lo
+    files = [x for x in allfiles if lo <= int(re.findall('_([0-9]*).ge2',x)[0]) <= hi and drk.lower() not in x.lower()]
 else:
-  print "Correcting all files"
-  files = [x for x in allfiles if drk.lower() not in x.lower()]
+    print "Correcting all files"
+    files = [x for x in allfiles if drk.lower() not in x.lower()]
 
 print len(files), "of", len(allfiles), "GE files in directory are in range. ", len([x for x in allfiles if drk.lower() in x.lower()]), "dark files ignored."
 
 # Maybe use a try: construct here
 c = raw_input('Perform dark correction on all available files? ([y]/n)').strip()
 if c.lower() == 'n':
-  print "No dark correction will be performed.  Terminating script."
-  sys.exit()
+    print "No dark correction will be performed.  Terminating script."
+    sys.exit()
 else:
-  print "Proceeding with dark correction."
+    print "Proceeding with dark correction."
 
 #Perform a loop over all files
 for f in files:
-  statinfo = os.stat(f)
-  nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
-  print "\nReading:",f, "\nFile contains", nFrames," frames.  Summing and dark correcting."
-
-  # Sum all values in this file
-  (d, fout) = os.path.split(f)
-  with open(f, mode='rb') as fileobj:
-    fileobj.seek(GE_buffer)
-    for i in range(nFrames):
-      binvalues = fread(fileobj, numpy.uint16,num_X * num_Y).astype('float32')
-
-      ### SUBTRACT BACKGROUND
-      binvalues = binvalues - darkvalues
-
-      ### OLD CORRECTION METHOD
-      ### MIGHT WANT TO DO DIAGONAL NEIGHBORS
-      binvalues[badInd] = (binvalues[badInd + 1] + binvalues[badInd - 1] + binvalues[badInd + num_X] + binvalues[badInd - num_X]) / 4
-
-      # Set border region and negative pixels to 0
-      binvalues[badInd1] = 0
-      binvalues[numpy.where(binvalues<0)] = 0
-
-      ### SUM OF ALL FRAMES
-      sumvalues = sumvalues + binvalues
-
-      ### DUMP IF WANT INDIVIDUAL FRAMES
-      if clargs.ndel:
-        frameName = outpath + os.sep + fout + '.frame.' + str(i+1) + '.cor'
-        print 'saving frame number ' + str(i) + ' to ' + frameName
-        with open(frameName, mode='wb') as outFile:
-          binvalues.tofile(outFile)
-          
-  ### DUMP SUM OF FRAMES
-  sumName = outpath + os.sep + fout + '.sum'
-  print "saving sum to " + sumName
-  with open(sumName, mode='wb') as outFile:
-    sumvalues.tofile(outFile)
+    statinfo = os.stat(f)
+    nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+    print "\nReading:",f, "\nFile contains", nFrames," frames.  Summing and dark correcting."
     
-  ### DUMP IF WE WANT AVE OF FRAMES
-  sumvalues = sumvalues/nFrames
-  aveName = outpath + os.sep + fout + '.ave'
-  print "saving ave to " + aveName
-  with open(aveName, mode='wb') as outFile:
-    sumvalues.tofile(outFile)
-  
-  sumvalues[:] = 0
+    # Sum all values in this file
+    (d, fout) = os.path.split(f)
+    with open(f, mode='rb') as fileobj:
+        fileobj.seek(GE_buffer)
+        
+        for i in range(nFrames):
+            binvalues = fread(fileobj, numpy.uint16, num_X * num_Y).astype('float32')
+            
+            ### SUBTRACT BACKGROUND
+            binvalues = binvalues - darkvalues
+
+            ### OLD CORRECTION METHOD
+            ### MIGHT WANT TO DO DIAGONAL NEIGHBORS
+            # binvalues[badInd] = (binvalues[badInd + 1] + binvalues[badInd - 1] + binvalues[badInd + num_X] + binvalues[badInd - num_X]) / 4
+            
+            # Set border region and negative pixels to 0
+            # binvalues[badInd1] = 0
+            # binvalues[numpy.where(binvalues<0)] = 0
+            
+            ### SUM OF ALL FRAMES
+            sumvalues = sumvalues + binvalues
+        
+            ### DUMP IF WANT INDIVIDUAL FRAMES
+            if clargs.ndel:
+                frameName = outpath + os.sep + fout + '.frame.' + str(i+1) + '.cor'
+                print 'saving frame number ' + str(i) + ' to ' + frameName
+                with open(frameName, mode='wb') as outFile:
+                    numpy.uint16(binvalues).tofile(outFile)
+            sys.exit()
+            
+    ### DUMP SUM OF FRAMES
+    sumName = outpath + os.sep + fout + '.sum'
+    print "saving sum to " + sumName
+    with open(sumName, mode='wb') as outFile:
+        sumvalues.tofile(outFile)
+    
+    ### DUMP IF WE WANT AVE OF FRAMES
+    sumvalues = sumvalues/nFrames
+    aveName = outpath + os.sep + fout + '.ave'
+        
+    print "saving ave to " + aveName
+    with open(aveName, mode='wb') as outFile:
+        sumvalues.tofile(outFile)
+    
+    sumvalues[:] = 0
 
 print("Done")
