@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# batchcorrNP
 # Reproduces the functionality of batchcorr.exe for dark-correcting files produced
 # using the a-Si detector at 1-ID at APS, using Python.
 # Current version will run the correction on ALL *.ge2 files in the current working directory.
@@ -17,6 +16,8 @@ import re
 import glob
 import sys
 import argparse
+import matplotlib.pyplot as plt
+import detectorio
 
 # Command-line parser arguments - make everything more user friendly
 parser = argparse.ArgumentParser(description='Dark correction and summing of GE2 files.', epilog='Written by Chris Cochrane, Dec. 2012. E-mail: cochranec@gmail.com')
@@ -27,7 +28,8 @@ parser.add_argument('--ndel', action='store_true', default=False, help='Save dar
 parser.add_argument('--drk', type=str, nargs=1, default=['dark'], help='Dark stub.  Some string that is unique to dark files.  Need not be the ENTIRE stub.  Default = "dark"')
 parser.add_argument('--inpath', type=str, nargs=1, default=['.'], help='Path where the image files live. Default = ".".')
 parser.add_argument('--outpath', type=str, nargs=1, default=['.'], help='Path where the corrected image files are saved. Default = ".".')
-parser.add_argument('--genum', type=int, nargs=1, default=[2], help='GE number. Default = 2. NOT YET IMPLEMENTED')
+parser.add_argument('--genum', type=int, nargs=1, default=[2], help='GE number. Default = 2.')
+
 clargs = parser.parse_args()
 
 num_X = 2048
@@ -117,20 +119,17 @@ while dkI < 1 or dkI > len(darks):
         print('Choose one of the available options. [1-' + str(len(darks)) + ']')
         
 darkfile = darks[dkI-1]
-print "Using", darkfile
+print "Using ", darkfile
 
 # Read in dark file
 # Average over all the exposures in the file 
 # This reduces the number of 'over reduced' pixels.
-with open(darkfile, mode='rb') as darkobj:
-    statinfo = os.stat(darkfile)
-    nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
-    darkobj.seek(GE_buffer)
-    for i in range(nFrames):
-        binvalues = fread(darkobj, numpy.uint16, num_X * num_Y).astype('float32')
-        sumvalues = sumvalues + binvalues
-
-darkvalues = sumvalues / nFrames
+statinfo = os.stat(darkfile)
+nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+for i in range(nFrames):
+    binvalues = detectorio.NreadGE(darkfile, i+1)
+    sumvalues = sumvalues + binvalues
+darkvalues = sumvalues /  nFrames
 sumvalues[:] = 0
 
 # Pixel data is stored as 0, 1, 2, 3
@@ -159,55 +158,55 @@ else:
     print "Proceeding with dark correction."
 
 #Perform a loop over all files
-for f in files:
-    statinfo = os.stat(f)
+for fname in files:
+    statinfo = os.stat(fname)
     nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
-    print "\nReading:",f, "\nFile contains", nFrames," frames.  Summing and dark correcting."
+    print "\nReading:",fname, "\nFile contains", nFrames," frames.  Summing and dark correcting."
     
     # Sum all values in this file
-    (d, fout) = os.path.split(f)
-    with open(f, mode='rb') as fileobj:
-        fileobj.seek(GE_buffer)
+    (d, fout) = os.path.split(fname)
+    for i in range(nFrames):
+        binvalues = detectorio.NreadGE(fname, i+1)
         
-        for i in range(nFrames):
-            binvalues = fread(fileobj, numpy.uint16, num_X * num_Y).astype('float32')
-            
+        ### SUM OF ALL FRAMES
+        sumvalues = sumvalues + binvalues
+        
+        ### IF WANT INDIVIDUAL FRAMES
+        ### CORRECT INDIVIDUAL FRAMES & DUMP INTO COR FILES 
+        if clargs.ndel:
             ### SUBTRACT BACKGROUND
             binvalues = binvalues - darkvalues
-
-            ### OLD CORRECTION METHOD
-            ### MIGHT WANT TO DO DIAGONAL NEIGHBORS
-            # binvalues[badInd] = (binvalues[badInd + 1] + binvalues[badInd - 1] + binvalues[badInd + num_X] + binvalues[badInd - num_X]) / 4
-            
-            # Set border region and negative pixels to 0
-            # binvalues[badInd1] = 0
-            # binvalues[numpy.where(binvalues<0)] = 0
-            
-            ### SUM OF ALL FRAMES
-            sumvalues = sumvalues + binvalues
+            ### SET ANY PIXEL VALUE LESS THAN 0 TO 0
+            binvalues[numpy.where(binvalues<0)] = 0
+            ### 0TH ORDER NEIGHBOR CORRECTION METHOD
+            binvalues[badInd] = (binvalues[badInd + 1] + binvalues[badInd - 1] + binvalues[badInd + num_X] + binvalues[badInd - num_X]) / 4
+            ### Set border region to 1
+            binvalues[badInd1] = 0
         
-            ### DUMP IF WANT INDIVIDUAL FRAMES
-            if clargs.ndel:
-                frameName = outpath + os.sep + fout + '.frame.' + str(i+1) + '.cor'
-                print 'saving frame number ' + str(i) + ' to ' + frameName
-                with open(frameName, mode='wb') as outFile:
-                    numpy.uint16(binvalues).tofile(outFile)
-            sys.exit()
-            
+            frameName = outpath + os.sep + fout + '.frame.' + str(i) + '.cor'
+            print 'saving frame number ' + str(i) + ' to ' + frameName
+            detectorio.NwriteGE(frameName, binvalues)
+   
+    ### SUBTRACT BACKGROUND
+    sumvalues = sumvalues - nFrames * darkvalues
+    ### SET ANY PIXEL VALUE LESS THAN 0 TO 0
+    sumvalues[numpy.where(sumvalues<0)] = 0
+    ### 0TH ORDER NEIGHBOR CORRECTION METHOD
+    sumvalues[badInd] = (sumvalues[badInd + 1] + sumvalues[badInd - 1] + sumvalues[badInd + num_X] + sumvalues[badInd - num_X]) / 4
+    ### Set border region to 1
+    sumvalues[badInd1] = 0
+    
     ### DUMP SUM OF FRAMES
     sumName = outpath + os.sep + fout + '.sum'
     print "saving sum to " + sumName
-    with open(sumName, mode='wb') as outFile:
-        sumvalues.tofile(outFile)
+    detectorio.NwriteGE(sumName, sumvalues)
     
     ### DUMP IF WE WANT AVE OF FRAMES
-    sumvalues = sumvalues/nFrames
+    sumvalues = sumvalues / nFrames
     aveName = outpath + os.sep + fout + '.ave'
-        
     print "saving ave to " + aveName
-    with open(aveName, mode='wb') as outFile:
-        sumvalues.tofile(outFile)
+    detectorio.NwriteGE(aveName, sumvalues)
     
     sumvalues[:] = 0
-
+    
 print("Done")
