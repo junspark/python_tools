@@ -29,7 +29,7 @@ parser.add_argument('--drk', type=str, nargs=1, default=['dark'], help='Dark stu
 parser.add_argument('--inpath', type=str, nargs=1, default=['.'], help='Path where the image files live. Default = ".".')
 parser.add_argument('--outpath', type=str, nargs=1, default=['.'], help='Path where the corrected image files are saved. Default = ".".')
 parser.add_argument('--genum', type=int, nargs=1, default=[2], help='GE number. Default = 2.')
-
+parser.add_argument('--badpixelpath', type=str, nargs=1, default=['.'], help='Path where bad pixel files live. Default = ".".')
 clargs = parser.parse_args()
 
 num_X = 2048
@@ -65,18 +65,20 @@ badPixels = numpy.array(num_X*num_Y, numpy.float32)
 # Hard-coding this location in is inadvisable, as it makes the code less portable.
 # Either a relative or an absolute path can be used.  It's probably safer to use an absolute path.
 # (NB: the r prior to the string indicates a raw string, and must be included)
+pname_badpixel = clargs.badpixelpath[0]
+
 #### SELECT BADPIXEL GE FILE
 if genum == 1:
-    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF43522-3\Full'
+    pname_badpixel = os.path.join(pname_badpixel, r'bad-pixel-data\GE\EF43522-3\Full')
     fname_badpixel = r'EF43522-3Full_BadPixel.img'
 elif genum == 2:
-    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF44064-6\Full'
+    pname_badpixel = os.path.join(pname_badpixel, r'bad-pixel-data\GE\EF44064-6\Full')
     fname_badpixel = r'EF44064-6Full_BadPixel.img'
 elif genum == 3:
-    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF43089-5\Full'
+    pname_badpixel = os.path.join(pname_badpixel, r'bad-pixel-data\GE\EF43089-5\Full')
     fname_badpixel = r'EF43089-5Full_BadPixel.img'
 elif genum == 4:
-    pname_badpixel = r'C:\Users\parkjs\Documents\GitHub\python_tools\image-processing\bad-pixel-data\GE\EF44066-7\Full'
+    pname_badpixel = os.path.join(pname_badpixel, r'bad-pixel-data\GE\EF44066-7\Full')
     fname_badpixel = r'EF44066-7Full_BadPixel.img'
 else:
     print '\nno such GE exists ...'
