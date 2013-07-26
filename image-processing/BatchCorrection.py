@@ -126,8 +126,8 @@ print "Using ", darkfile
 # Read in dark file
 # Average over all the exposures in the file 
 # This reduces the number of 'over reduced' pixels.
-statinfo = os.stat(darkfile)
-nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+header = detectorio.ReadGEHeader(darkfile)
+nFrames = header['NumberOfFrames']
 for i in range(nFrames):
     binvalues = detectorio.NreadGE(darkfile, i+1)
     sumvalues = sumvalues + binvalues
@@ -161,8 +161,8 @@ else:
 
 #Perform a loop over all files
 for fname in files:
-    statinfo = os.stat(fname)
-    nFrames = (statinfo.st_size - GE_buffer) / (2 * num_X * num_Y)
+    header = detectorio.ReadGEHeader(fname)
+    nFrames = header['NumberOfFrames']
     print "\nReading:",fname, "\nFile contains", nFrames," frames.  Summing and dark correcting."
     
     # Sum all values in this file
