@@ -707,8 +707,6 @@ def NwriteGE(filename, imdata):
     #
     #   none
     #
-    import sys
-    import os
     import numpy
     
     GE_buffer = 8192
