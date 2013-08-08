@@ -208,7 +208,7 @@ for fname in files:
     aveName = outpath + os.sep + fout + '.ave'
     print "saving ave to " + aveName
     detectorio.NwriteGE(aveName, sumvalues)
-    
+    sys.exit()
     sumvalues[:] = 0
     
 print("Done")
