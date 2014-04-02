@@ -1,0 +1,3672 @@
+#******************************************************************************
+# Image Information Configuration File
+#******************************************************************************
+# Configuration file for the header of ADEPT sequences. 
+# This file is used by imageInformationDLL.dll
+#
+# REVISION HISTORY:
+# ----------------
+#
+# Rev     Date            By             SPR #              Comments
+# -----  ---------  -----------------  ----------  ----------------------------
+#   1    23/04/03   Ou Wei                N/A      First version
+#   2    09/19/03   H. Haralson, Joshi XRYge44862  SPR fixes and new parameters
+#                                      XRYge44276
+#                                      XRYge44926
+#                                      XRYge44841
+#                                      XRYge44977
+#   3    12/16/03   German Vera           N/A	   Added parameters for line repair
+#   4    24/03/04   Darrick White         N/A      Added version 4 with params
+#                                                  for the collimator
+#   5    24/09/04   German Vera        XRYge53745  Added params for TRAD rev info
+#                                                  and new parameters for LFOV Mammo
+#   6    21-Oct-04  German Vera        XRYge53745  Added PowerDown parameter
+#   7    14-Feb-05  German Vera        XRYge55514  Changed data type of SetCompensationVoltage
+#                                                  Added parameters for LFOV
+#   8    21-Jul-05  Darrick White         N/A      Added VFPAquisition parameter
+# 8001   10-Aug-05  German Vera           N/A      Added new FOV parameters
+#
+# *****************************************************************************
+
+
+$StandardHeader
+
+#VERSION 1
+version,1
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,ULONG,4,0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensity,FLOAT,4,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+
+
+########################################
+
+#VERSION 2
+#16 July 2003
+
+#Changes from version 1:
+#XRYge44862 - Change DetectorSignature from ULONG to STRING
+#XRYge44276 - Add AcquisitionFrameRateInFps
+#XRYge44926 - Add NDFilterSelection
+#XRYge44841 - Add Target level checking parameters
+#XRYge44977 - Add ramp information
+#XRYge45202 - Add test pattern parameters and StoreAECROI
+
+
+version,2
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+
+
+
+
+########################################
+
+#VERSION 3
+#16 Dec 2003
+
+#Changes from version 2:
+#Added LineRepaired and lineRepairFilename
+
+
+version,3
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 4
+# 24 Feb 2004
+
+# Changes from version 3:
+# Added parameters from peripheral
+
+
+version,4
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+
+################################################################################
+
+# VERSION 5
+# 24 Sept 2004
+
+# Changes from version 4:
+# Added parameters for TRAD and LFOV Mammo with DCB2
+
+
+version,5
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5
+
+#For LFOV Mammo with fiber DCB2
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet)
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+
+
+################################################################################
+
+# VERSION 6
+# 21 Oct 2004
+
+# Changes from version 5:
+# Added powerDown parameter
+
+
+version,6
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5
+
+#For LFOV Mammo with fiber DCB2
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet)
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+
+################################################################################,,,
+
+# VERSION 7,,,
+# 14 Feb 2005
+
+# Changes from version 6:
+# Changed type for CompensationVoltage to DOUBLE
+# Added parameters for LFOV:
+# FinalVCommon
+# DmrCollimatorSpotSize
+# DmrTrack
+# DmrFilter
+# FilterCarousel
+# Phantom
+# SetEnableHighTime
+# SetEnableLowTime
+# SetCompHighTime
+# SetCompLowTime
+# SetSyncLowTime
+# SetConvertLowTime,,,
+# SetSyncHighTime,,,
+# SetEOLTime,,,
+# SetRampOffsetTime,,,
+
+version,7,,
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters,,,
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information,,,
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information,,,
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques,,,
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings,,,
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,DOUBLE,8,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings,,,
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings,,,
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings,,,
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings,,,
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter,,,
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information,,,
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions,,,
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5,,,
+
+#For LFOV Mammo with fiber DCB2,,,
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet),,,
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#New parameters in rev. 6,,,
+InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+
+# DMR & other parameters,,,
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+
+#Programmable Ramp Parameters,,,
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Comment,,,
+
+Comment,STRING,200,XXXXX
+
+
+################################################################################,,,
+
+# VERSION 8,,,
+# 21 Jul 2005
+
+# Changes from version 7:
+# Added parameters for LFOV:
+# VFPAquisition
+
+version,8,,
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters,,,
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information,,,
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information,,,
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques,,,
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings,,,
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,DOUBLE,8,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings,,,
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings,,,
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings,,,
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings,,,
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter,,,
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information,,,
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions,,,
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5,,,
+
+#For LFOV Mammo with fiber DCB2,,,
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet),,,
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#New parameters in rev. 6,,,
+InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+
+# DMR & other parameters,,,
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+
+#Programmable Ramp Parameters,,,
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#VFP Section,,,
+VFPAquisition,STRING,2000,VFP Not Used
+
+#Comment,,,
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 1003
+# 6 Jan 2004
+
+# Changes from version 3:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+
+version,1003
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003# Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 2003
+# 23 Feb 2004
+
+# Changes from version 1003:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+
+version,2003
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 2004
+# 27 Apr 2004
+
+# Changes from version 4:
+#
+# labeled #1003#:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+#
+# labeled #2003#:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+
+version,2004
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003#
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 3004
+# 13 Sep 2004
+
+# Changes from version 4:
+#
+# labeled #1003#:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+#
+# labeled #2003#:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+#
+# labeled #3004#:
+# Added DisableScrubAck Parameter for DCBII
+
+version,3004
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+#3004#
+DisableScrubAck,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003#
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 4004
+# 23 Nov 2004
+
+# Changes from version 4:
+#
+# labeled #1003#:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+#
+# labeled #2003#:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+#
+# labeled #3004#:
+# Added DisableScrubAck Parameter for DCBII
+#
+# labeled #4004#:
+# Added X-ray Parameters for XT & ZT (DMR, Filter Carousel, Phantom)
+
+version,4004
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+#3004#
+DisableScrubAck,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+#kVp,FLOAT,4,0
+mA,FLOAT,4,0
+#mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+#
+#4004 start adding#
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+#
+#4004 start change order#
+kVp,FLOAT,4,0
+mAs,FLOAT,4,0
+#4004 end change order#
+#
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+#4004 end adding#
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003#
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 4005
+# 03 Dec 2004
+
+# Changes from version 4:
+#
+# labeled #1003#:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+#
+# labeled #2003#:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+#
+# labeled #3004#:
+# Added DisableScrubAck Parameter for DCBII
+#
+# labeled #4004#:
+# Added X-ray Parameters for XT & ZT (DMR, Filter Carousel, Phantom)
+#
+# labeled #4005#:
+# Added InitialVCommon, FinalVCommon for dynamic voltage change acquisitions
+
+version,4005
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+#
+#4005#
+InitialVCommon,DOUBLE,8,0
+FinalVCommon,DOUBLE,8,0
+#
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,USHORT,2,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+#3004#
+DisableScrubAck,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+#kVp,FLOAT,4,0
+mA,FLOAT,4,0
+#mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+#
+#4004 start adding#
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+#
+#4004 start change order#
+kVp,FLOAT,4,0
+mAs,FLOAT,4,0
+#4004 end change order#
+#
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+#4004 end adding#
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003#
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+# VERSION 4006
+# 12 Jan 2005
+
+# Changes from version 4:
+#
+# labeled #1003#:
+# Added Parameters for Programmable Firmware 0x12360007 (m36prog2.bin)
+#
+# labeled #2003#:
+# Added ScanModeSelect Parameter for LFOV Firmware 0x72200000 (lfov_20.bin)
+#
+# labeled #3004#:
+# Added DisableScrubAck Parameter for DCBII
+#
+# labeled #4004#:
+# Added X-ray Parameters for XT & ZT (DMR, Filter Carousel, Phantom)
+#
+# labeled #4005#:
+# Added InitialVCommon, FinalVCommon for dynamic voltage change acquisitions
+#
+# labeled #4006#:
+# Changed SetCompensationVoltage from USHORT to DOUBLE
+
+version,4006
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+#
+#4005#
+InitialVCommon,DOUBLE,8,0
+FinalVCommon,DOUBLE,8,0
+#
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+#
+#4006#
+#SetCompensationVoltage,USHORT,2,0
+SetCompensationVoltage,DOUBLE,8,0
+#
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+#
+#2003#
+ScanModeSelect,USHORT,2,0
+#
+#3004#
+DisableScrubAck,USHORT,2,0
+#
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings
+
+#kVp,FLOAT,4,0
+mA,FLOAT,4,0
+#mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+#
+#4004 start adding#
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+#
+#4004 start change order#
+kVp,FLOAT,4,0
+mAs,FLOAT,4,0
+#4004 end change order#
+#
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+#4004 end adding#
+
+#LightSource Settings
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#1003#
+#Programmable Ramp Parameters
+
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Ramp Information
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#Comment
+
+Comment,STRING,200,XXXXX
+
+################################################################################,,,
+
+# VERSION 7000
+
+# Copy of:
+
+# VERSION 7
+# 14 Feb 2005
+
+# Changes from version 6:
+# Changed type for CompensationVoltage to DOUBLE
+# Added parameters for LFOV:
+# FinalVCommon
+# DmrCollimatorSpotSize
+# DmrTrack
+# DmrFilter
+# FilterCarousel
+# Phantom
+# SetEnableHighTime
+# SetEnableLowTime
+# SetCompHighTime
+# SetCompLowTime
+# SetSyncLowTime
+# SetConvertLowTime,,,
+# SetSyncHighTime,,,
+# SetEOLTime,,,
+# SetRampOffsetTime,,,
+
+###########################################
+# Differences from version 4006 for LFOV: #
+###########################################
+# 
+# v4006:
+# InitialVCommon,DOUBLE,8,0
+# FinalVCommon,DOUBLE,8,0
+#
+# v7000:
+# InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+# FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+#
+###########################################
+
+version,7000
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters,,,
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information,,,
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information,,,
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques,,,
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings,,,
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,DOUBLE,8,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings,,,
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings,,,
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings,,,
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings,,,
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter,,,
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information,,,
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions,,,
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5,,,
+
+#For LFOV Mammo with fiber DCB2,,,
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet),,,
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#New parameters in rev. 6,,,
+InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+
+# DMR & other parameters,,,
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+
+#Programmable Ramp Parameters,,,
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#Comment,,,
+
+Comment,STRING,200,XXXXX
+
+################################################################################,,,
+
+# VERSION 8000
+
+# Copy of:
+
+# VERSION 8
+# 21 Jul 2005
+
+# Changes from version 7:
+# Added parameters for LFOV:
+# VFPAquisition
+
+version,8000
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters,,,
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information,,,
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information,,,
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques,,,
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings,,,
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,DOUBLE,8,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings,,,
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings,,,
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings,,,
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings,,,
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter,,,
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information,,,
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions,,,
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5,,,
+
+#For LFOV Mammo with fiber DCB2,,,
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet),,,
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#New parameters in rev. 6,,,
+InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+
+# DMR & other parameters,,,
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+
+#Programmable Ramp Parameters,,,
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+#VFP Section,,,
+VFPAquisition,STRING,2000,VFP Not Used
+
+#Comment,,,
+
+Comment,STRING,200,XXXXX
+
+################################################################################,,,
+
+# VERSION 8001,,,
+# 09 Aug 2005,,,
+
+# Changes from version 8:,,,
+# Added parameters for new FOV Command,,,
+# ColumnBinning,,,
+# RowBinning,,,
+# 64BorderColumns,,,
+# 64BorderRows,,,
+# 64FETOffRows,,,
+# 128FOVStartColumn,,,
+# 128FOVStartRow,,,
+# 128NumberOfColumns,,,
+# 128NumberOfRows,,,
+
+version,8001,,
+
+#Standard Parameter Name,Data Type,Data Size in Byte,Default Value
+
+#Format & Version (Fixed) Parameters,,,
+
+ImageFormat,STRING,10,ADEPT
+VersionOfStandardHeader,USHORT,2,0
+StandardHeaderSizeInBytes,ULONG,4,0
+VersionOfUserHeader,USHORT,2,0
+UserHeaderSizeInBytes,ULONG,4,0
+
+#Image Frame Information,,,
+
+NumberOfFrames,USHORT,2,0
+NumberOfRowsInFrame,USHORT,2,0
+NumberOfColsInFrame,USHORT,2,0
+ImageDepthInBits,USHORT,2,0
+
+#General Information,,,
+
+AcquisitionDate,STRING,20,XX-XXX-XXXX
+AcquisitionTime,STRING,20,XX:XX
+DUTID,STRING,20,XXXXX
+Operator,STRING,50,XXXXX
+DetectorSignature,STRING,20,0x0
+TestSystemName,STRING,20,XXXXX
+TestStationRevision,STRING,20,XXXXX
+CoreBundleRevision,STRING,20,XXXXX
+AcquisitionName,STRING,40,XXXXX
+AcquisitionParameterRevision,STRING,20,XXXXX
+OriginalNumberOfRows,USHORT,2,0
+OriginalNumberOfColumns,USHORT,2,0
+RowNumberUpperLeftPointArchiveROI,USHORT,2,0
+ColNumberUpperLeftPointArchiveROI,USHORT,2,0
+Swapped,USHORT,2,0
+Reordered,USHORT,2,0
+HorizontalFlipped,USHORT,2,0
+VerticalFlipped,USHORT,2,0
+WindowValueDesired,USHORT,2,0
+LevelValueDesired,USHORT,2,0
+
+#Acquisition Techniques,,,
+
+AcquisitionMode,USHORT,2,0
+AcquisitionType,USHORT,2,0
+UserAcquisitionCoffFileName1,STRING,100,XXXXX
+UserAcquisitionCoffFileName2,STRING,100,XXXXX
+FramesBeforeExpose,USHORT,2,0
+FramesDuringExpose,USHORT,2,0
+FramesAfterExpose,USHORT,2,0
+IntervalBetweenFrames,USHORT,2,0
+ExposeTimeDelayInMicrosecs,DOUBLE,8,0
+TimeBetweenFramesInMicrosecs,DOUBLE,8,0
+FramesToSkipExpose,USHORT,2,0
+ExposureMode,USHORT,2,0
+PrepPresetTimeInMicrosecs,DOUBLE,8,0
+ExposePresetTimeInMicrosecs,DOUBLE,8,0
+AcquisitionFrameRateInFps,FLOAT,4,0
+
+#Detector Settings,,,
+
+FOVSelect,USHORT,2,0
+ExpertMode,USHORT,2,0
+SetVCommon1,DOUBLE,8,0
+SetVCommon2,DOUBLE,8,0
+SetAREF,DOUBLE,8,0
+SetAREFTrim,ULONG,4,0
+SetSpareVoltageSource,DOUBLE,8,0
+SetCompensationVoltage,DOUBLE,8,0
+SetRowOffVoltage,DOUBLE,8,0
+SetRowOnVoltage,DOUBLE,8,0
+StoreCompensationVoltage,ULONG,4,0
+RampSelection,USHORT,2,0
+TimingMode,USHORT,2,0
+Bandwidth,USHORT,2,0
+ARCIntegrator,USHORT,2,0
+ARCPostIntegrator,USHORT,2,0
+NumberOfRows,ULONG,4,0
+RowEnable,USHORT,2,0
+EnableStretch,USHORT,2,0
+CompEnable,USHORT,2,0
+CompStretch,USHORT,2,0
+LeftEvenTristate,USHORT,2,0
+RightOddTristate,USHORT,2,0
+TestModeSelect,ULONG,4,0
+AnalogTestSource,ULONG,4,0
+VCommonSelect,ULONG,4,0
+DRCColumnSum,ULONG,4,0
+TestPatternFrameDelta,ULONG,4,0
+TestPatternRowDelta,ULONG,4,0
+TestPatternColumnDelta,ULONG,4,0
+DetectorHorizontalFlip,USHORT,2,0
+DetectorVerticalFlip,USHORT,2,0
+DFNAutoScrubOnOff,USHORT,2,0
+FiberChannelTimeOutInMicrosecs,ULONG,4,0
+DFNAutoScrubDelayInMicrosecs,ULONG,4,0
+StoreAECROI,USHORT,2,0
+TestPatternSaturationValue,USHORT,2,0
+TestPatternSeed,ULONG,4,0
+
+#Exposure settings,,,
+
+ExposureTimeInMillisecs,FLOAT,4,0
+FrameRateInFps,FLOAT,4,0
+
+#X-Ray Settings,,,
+
+kVp,FLOAT,4,0
+mA,FLOAT,4,0
+mAs,FLOAT,4,0
+FocalSpotInMM,FLOAT,4,0
+GeneratorType,STRING,20,XXXXX
+
+#LightSource Settings,,,
+
+StrobeIntensityInFtL,FLOAT,4,0
+NDFilterSelection,USHORT,2,0
+
+#Detector Sensor Readings,,,
+
+RefRegTemp1,DOUBLE,8,0
+RefRegTemp2,DOUBLE,8,0
+RefRegTemp3,DOUBLE,8,0
+Humidity1,FLOAT,4,0
+Humidity2,FLOAT,4,0
+DetectorControlTemp,DOUBLE,8,0
+
+#Dosimeter,,,
+
+DoseValueInmR,DOUBLE,8,0
+
+#Target Level Checking,,,
+TargetLevelROIRow0,USHORT,2,0
+TargetLevelROICol0,USHORT,2,0
+TargetLevelROIRow1,USHORT,2,0
+TargetLevelROICol1,USHORT,2,0
+FrameNumberForTargetLevelROI,USHORT,2,0
+PercentRangeForTargetLevel,USHORT,2,0
+TargetValue,USHORT,2,0
+ComputedMedianValue,USHORT,2,0
+
+#Ramp Information,,,
+
+LoadZero,USHORT,2,0
+MaxLUTOut,USHORT,2,0
+MinLUTOut,USHORT,2,0
+MaxLinear,USHORT,2,0
+Reserved,USHORT,2,0
+ElectronsPerCount,USHORT,2,0
+ModeGain,USHORT,2,0
+
+#Miscellaneous Additions,,,
+
+TemperatureInDegC,DOUBLE,8,0
+LineRepaired,USHORT,2,0
+LineRepairFileName,STRING,100,XXXXX
+
+CurrentLongitudinalInMM,FLOAT,4,0
+CurrentTransverseInMM,FLOAT,4,0
+CurrentCircularInMM,FLOAT,4,0
+CurrentFilterSelection,ULONG,4,0
+
+#New parameters in rev. 5,,,
+
+#For LFOV Mammo with fiber DCB2,,,
+DisableScrubAck,USHORT,2,0
+ScanModeSelect,USHORT,2,0
+
+#For TRAD (Ethernet),,,
+DetectorAppSwVersion,STRING,20,XXXXX
+DetectorNIOSVersion,STRING,20,XXXXX
+DetectorPeripheralSetVersion,STRING,20,XXXXX
+DetectorPhysicalAddress,STRING,20,XXXXX
+
+PowerDown,USHORT,2,0
+
+#New parameters in rev. 6,,,
+InitialVoltageLevel_VCOMMON,DOUBLE,8,0
+FinalVoltageLevel_VCOMMON,DOUBLE,8,0
+
+# DMR & other parameters,,,
+DmrCollimatorSpotSize,STRING,10,XXXXX
+DmrTrack,STRING,5,XXXXX
+DmrFilter,STRING,5,XXXXX
+FilterCarousel,USHORT,2,0
+Phantom,STRING,20,XXXXX
+
+#Programmable Ramp Parameters,,,
+SetEnableHighTime,USHORT,2,0
+SetEnableLowTime,USHORT,2,0
+SetCompHighTime,USHORT,2,0
+SetCompLowTime,USHORT,2,0
+SetSyncLowTime,USHORT,2,0
+SetConvertLowTime,USHORT,2,0
+SetSyncHighTime,USHORT,2,0
+SetEOLTime,USHORT,2,0
+SetRampOffsetTime,USHORT,2,0
+
+# FOV select command in Mobile,,,
+FOVStartingValue,USHORT,2,0
+ColumnBinning,USHORT,2,0
+RowBinning,USHORT,2,0
+64BorderColumns,USHORT,2,0
+64BorderRows,USHORT,2,0
+64FETOffRows,USHORT,2,0
+128FOVStartColumn,USHORT,2,0
+128FOVStartRow,USHORT,2,0
+128NumberOfColumns,USHORT,2,0
+128NumberOfRows,USHORT,2,0
+
+#VFP Section,,,
+VFPAquisition,STRING,2000,VFP Not Used
+
+#Comment,,,
+
+Comment,STRING,200,XXXXX
+
+########################################
+
+$UserHeader
+
+#Empty
