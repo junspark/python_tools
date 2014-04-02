@@ -1,0 +1,34 @@
+def EHutchTomoZrVolumeScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep) '{
+        
+    local isamYb fSamYb
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: EHutchTomoZrVolumeScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+
+    # Without spinning cork, Gain=4.0
+    epics_put("1idb:m21.VAL", 70)    
+     for (isamYb = 0; isamYb < 5; isamYb++) {
+       fSamYb = 2.43 + 0.02 * isamYb
+       umv samYb fSamYb
+       waitmove;
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, 1.7, "Zr")
+      }
+
+
+    # With spinning cork, Gain=4
+    epics_put("1idb:m21.VAL", 20) 
+    sleep(160)   
+     for (isamYb = 0; isamYb < 7; isamYb++) {
+       fSamYb = 2.43 + 0.02 * isamYb
+       umv samYb fSamYb
+       waitmove;
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, 2.5, "Zr_cork")
+      }
+
+    }
+
+}'

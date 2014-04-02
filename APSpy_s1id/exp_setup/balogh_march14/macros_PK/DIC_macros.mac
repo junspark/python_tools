@@ -1,0 +1,174 @@
+
+
+def TakePic '{
+    
+    if ( $# != 1) {
+        p "Usage:"
+        p "      $0 exp_time"
+        exit
+    }
+
+    local camPV filePV
+    
+    #camPV="dp_gc2450:cam1:"
+    #filePV="dp_gc2450:TIFF1:"
+    #camPV="s1idps1:cam1:"
+    #filePV="s1idps1:TIFF1:"
+    camPV="s1_gx2750:cam1:"
+    filePV="s1_gx2750:TIFF1:"    
+
+    epics_put(sprintf("%sImageMode", camPV), "Single")
+    epics_put(sprintf("%sAcquireTime", camPV),  $1, 10)
+    sleep(0.5)
+    epics_put(sprintf("%sAutoSave", filePV), "Yes", 2)
+    
+    p "DIC Next image number:", epics_get(sprintf("%sFileNumber_RBV", filePV))
+    epics_put(sprintf("%sAcquire", camPV), "Acquire")
+    
+    sleep(0.5+ 3*epics_get(sprintf("%sAcquireTime_RBV", camPV)) )
+}'
+
+
+def LiveDIC '{
+    
+    if ( $# != 1) {
+        p "Usage:"
+        p "      $0 exp_time"
+        exit
+    }
+
+    local camPV filePV
+    
+    #camPV="dp_gc2450:cam1:"
+    #filePV="dp_gc2450:TIFF1:"
+    #camPV="s1idps1:cam1:"
+    #filePV="s1idps1:TIFF1:"
+    camPV="s1_gx2750:cam1:"
+    filePV="s1_gx2750:TIFF1:"
+
+    epics_put(sprintf("%sImageMode", camPV), "Continuous")
+    epics_put(sprintf("%sAcquireTime", camPV),  $1, 10)
+    sleep(0.5)
+    epics_put(sprintf("%sAutoSave", filePV), "No", 2)
+    
+    p "DIC Next image number:", epics_get(sprintf("%sFileNumber_RBV", filePV))
+    epics_put(sprintf("%sAcquire", camPV), "Acquire")
+    
+    # sleep(0.5+ 3*epics_get(sprintf("%sAcquireTime_RBV", camPV)) )
+   
+
+}'
+
+
+"""
+def DICimages_XROa3 '{
+
+
+    umv aero 141
+    umv samYE 11.145
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}'
+
+ def DICimages_XPa2 '{
+
+
+    umv aero 136
+    umv samYE 11.165
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+ def DICimages_XBa2 '{
+
+
+    umv aero 143
+    umv samYE 11.155
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XPa1 '{
+
+
+    umv aero 140
+    umv samYE 11.11
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XA3_a '{
+
+
+    umv aero 40
+    umv samYE 10.115
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XA5_a '{
+
+
+    umv aero 40
+    umv samYE 10.1275
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XA5_a '{
+
+
+    umv aero 40
+    umv samYE 10.1275
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XBa3 '{
+
+
+    umv aero 140
+    umv samYE 11.1875
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XROa4 '{
+
+
+    umv aero 140
+    umv samYE 11.1575
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+def DICimages_XROa6 '{
+
+
+    umv aero 140
+    umv samYE 11.1875
+    p "Surface:"
+    TakePic 0.01
+    TakePic 0.01
+
+}' 
+
+"""

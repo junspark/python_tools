@@ -1,0 +1,11 @@
+def RetTest {
+		for (i = 0; i < 10; i++) {
+            det_wait
+            #FilePluginWait
+			TakeStillImage( 0.1 )
+			#sleep(0.5)
+            #PrintTableContent
+	    }
+	    det_wait
+	    
+}

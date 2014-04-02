@@ -1,0 +1,822 @@
+
+#--------------------------------------------
+# Hydra definition
+
+global CB_TIME
+global hydraNum
+global array hydra[6]
+
+#--------------------------------------------
+# Info:
+#   hydra       array of 4 integers, relevant indices: 1-4, contains the panels in order: 1=GE1, 2=GE2, etc
+#   hydraNum    integer, contains the number of panels used, valid numbers: 1-4
+# 
+#####  Setting the default configuration
+
+if (CB_TIME==0) CB_TIME=10.0
+
+#hydraNum = 3
+#hydra[1]=1 ; hydra[2]=3 ; hydra[3]=4 ; hydra[4]=0 
+
+hydraNum = 1
+hydra[1]=2 ;  hydra[2]=0 ; hydra[3]=0 ; hydra[4]=0 
+
+# --------------------------------------------
+# Users' preferred configurations
+def hydra3 '{
+    hydraNum = 3
+    hydra[1]=1 ; hydra[2]=3 ; hydra[3]=4 ; hydra[4]=0 
+}'
+
+def hydra1 '{
+    hydraNum = 1
+    hydra[1]=2 ;  hydra[2]=0 ; hydra[3]=0 ; hydra[4]=0 
+}'
+
+
+def hydra4 '{
+    hydraNum = 4
+    hydra[1]=1 ; hydra[2]=2 ; hydra[3]=3 ; hydra[4]=4 
+}'
+
+def hydra3_noGE2 '{
+    hydraNum = 4
+    hydra[1]=1 ; hydra[2]=3 ; hydra[3]=4 ; hydra[4]=0 
+}'
+
+#---------------------------------------------
+# Hydra macros
+
+def _adtrig_xtime_hydra '{
+	local x ihydra
+	if( $# == 0) {
+		p "Usage: $0 time(sec)"
+		exit
+	} 
+
+	_adwait_hydra
+
+	ccdset_expTime_hydra ($1)
+
+	#start GE acquisitions
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:Acquire",hydra[ihydra]),"Acquire"); # No callback on this PV (GE)
+	}
+	#sleep(0.01);
+}'
+
+def _ccdtrig_ad '{
+    local n
+    if($#==0) n=1 
+      else n=$1
+    while(epics_get(sprintf("%sAcquire",CCDPV))!="Done") { 
+        sleep(0.01)
+    }
+    epics_put(sprintf("%sNumImages",CCDPV),n, CB_TIME)
+    epics_put(sprintf("%sAcquire",CCDPV),"Acquire") # No callback on this PV (GE)
+}'
+
+def ccdhook_adge '
+    ccdhook_adcommon $*
+    def ccdtrig \'_ccdtrig_ad\'
+'
+
+def ccdset_expTime_hydra '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AcquireTime",hydra[ihydra]),$1, CB_TIME);
+	}
+	#sleep(0.02);
+}'
+
+def set_hydra_expTime 'ccdset_expTime_hydra'
+
+def ccdset_expTime_allGE '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AcquireTime",ihydra),$1, CB_TIME);
+	}
+	#sleep(0.02);
+}'
+
+
+def set_allGE_expTime 'ccdset_expTime_allGE'
+
+def _adwait_hydra '{
+	local ihydra
+#    while(epics_get(sprintf("%sAcquire",CCDPV))!="Done") {
+ #      sleep(0.02)
+ #   }
+   
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        while(epics_get(sprintf("GE%d:cam1:Acquire",hydra[ihydra]))!="Done") { 
+           sleep(0.01)
+        }
+    }
+}'
+
+# /home/beams/SPECADM/1id_macros/HEDM/GEfastscan.mac
+def allGE_abort '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:Acquire", ihydra), "Done") # No callback on this PV (GE)
+	}
+	sleep(0.2)
+}'
+
+def hydra_abort '{
+    local ihydra
+    p "hydra_abort:", hydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra=ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:Acquire", hydra[ihydra]), "Done") # No callback on this PV (GE)
+	}
+	sleep(0.2)
+}'
+
+#--------------------------
+def use_ge_hydra '{
+        p "use_ge_hydra"
+        ccdhook_adge $*
+        OSC["detector"]="GE_NEW"
+
+        #We have to give the reference PV from the Hydra array
+        if ($#==1) ADFILEPV=CCDPV="$1"
+        else  ADFILEPV=CCDPV=getsval("detector PV prefix",sprintf("GE%d:cam1:", hydra[1]))
+#        ADFILEPV=CCDPV="GE2:cam1:"
+        rdef det_trig \'_adtrig_xtime_hydra\'
+        rdef det_wait \'_adwait_hydra\'
+        rdef detget_imgprefix \'detget_imgprefix_ad\'
+        rdef detget_seqNumber \'detget_seqNumber_ad\'
+        rdef detabort \'hydra_abort\'
+		rdef ge_abort \'allGE_abort\'
+
+        OSC["detDelay"] = 0.5  # For software mode
+        OSC["cushion_time"] = 0.0
+        printf("Detector related macros are re-defined to %s in HYDRA mode, masterPV is %s\n",OSC["detector"], CCDPV)
+        
+}'
+
+def hydra_Initialize '{
+    # No global definitions on arrays only once!!!
+    #global hydraNum
+    #global array hydra[6]
+    local ihydra     
+    
+    #p "Aborting any acquisition on hydra"
+    #hydra_abort
+    
+    p "Resetting the FPGA"
+    epics_put("dth1:DTH:resetLogicBO", 1, CB_TIME)
+    sleep(1.0) # TODO: Is there a signal to wait for?
+    
+    ######## Defaults
+    epics_put("dth1:DTH:triggerDelayLO.VAL", 0, CB_TIME) # 0
+    epics_put("dth1:DTH:triggerDelayStepLO.VAL", 1, CB_TIME) # 1
+    epics_put("dth1:DTH:triggerWidthLO.VAL", 0, CB_TIME) # 0
+    epics_put("dth1:DTH:triggerWidthStepLO.VAL", 1, CB_TIME) # 1
+    
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet SW", CB_TIME) # Software controlled trigger 
+    #epics_put("dth1:DTH:ModeMBBO", "MultiDet Edge", CB_TIME) # HW signal controlled trigger with TTL rising edge (min pulse size is 2 usec)
+    #epics_put("dth1:DTH:ModeMBBO", "MultiDet Pulse", CB_TIME) # HW signal controlled trigger while TTL pulse is high (min pulse size is 4 usec)
+
+    # Setting all panel to UNUSED first
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+        epics_put(sprintf("dth1:DTH:Ge%dUsedBO", ihydra), "1", CB_TIME) # UNUSED FPGA Trigger transfer
+        sleep(0.2)
+    }
+    # Setting the current hydra panels to USED only
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        epics_put(sprintf("dth1:DTH:Ge%dUsedBO", hydra[ihydra]), "0", CB_TIME) # USED FPGA Trigger transfer
+        sleep(0.2)
+    }
+    if ($# == 1) {
+        use_ge_hydra "$1"
+    }
+    if ($# == 0) {
+        if (hydra[1]==1) { use_ge_hydra "GE1:cam1:" }
+        if (hydra[1]==2) { use_ge_hydra "GE2:cam1:" }
+        if (hydra[1]==3) { use_ge_hydra "GE3:cam1:" }
+        if (hydra[1]==4) { use_ge_hydra "GE4:cam1:" }
+	}
+    if ($# > 1) {
+        use_ge_hydra
+    }
+	
+    set_hydra_BufferSize 250
+}'
+
+# ---------------------------------
+# Own scripts for hydra parameter settings
+
+def set_hydra_FileName '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <filename>"
+		p "       Sets the file name on each hydra panel to <filename>"
+		exit
+	} 
+
+    fname="$1"
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        #p sprintf("GE%d:cam1:FileName",hydra[ihydra]), "=", fname
+		epics_put(sprintf("GE%d:cam1:FileName",hydra[ihydra]), fname, CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("File names = ")
+    get_hydra_AllFileNames
+}'
+
+def set_allGE_FileName '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <filename>"
+		p "       Sets the file name on all GE panel to <filename>"
+		exit
+	} 
+    fname="$1"
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) {
+        # p sprintf("GE%d:cam1:FileName",ihydra), "=", fname
+		epics_put(sprintf("GE%d:cam1:FileName",ihydra), fname, CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("File names = ")
+    get_allGE_AllFileNames
+}'
+
+def set_hydra_FilePath '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <path>"
+		p "       Sets the file name on each hydra panel to <path>"
+		exit
+	} 
+
+    fname="$1"
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        #p sprintf("GE%d:cam1:FilePath",hydra[ihydra]), "=", fname
+		epics_put(sprintf("GE%d:cam1:FilePath",hydra[ihydra]), fname, CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("File paths = ")
+    get_hydra_AllFilePaths
+}'
+
+def set_allGE_FilePath '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <path>"
+		p "       Sets the file name on all GE panel to <path>"
+		exit
+	} 
+    fname="$1"
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) {
+        # p sprintf("GE%d:cam1:FilePath",ihydra), "=", fname
+		epics_put(sprintf("GE%d:cam1:FilePath",ihydra), fname, CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("File paths = ")
+    get_allGE_AllFilePaths
+}'
+
+
+def set_hydra_FileNameFormat '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <format>"
+		p "       Sets the filename format on each hydra panel to <format>"
+		p "       An example format: %s%s_%05d"
+		p "       The extension will be automatically .geX, where X is the panel number"
+		exit
+	} 
+    fname="$1"
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) {
+        # p sprintf("GE%d:cam1:FileTemplate",hydra[ihydra]), "=", fname
+		epics_put(sprintf("GE%d:cam1:FileTemplate",hydra[ihydra]), sprintf("%s.ge%d",fname,hydra[ihydra]), CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("Filename formats = ")
+    get_hydra_AllFileNameFormats
+}'
+
+def set_allGE_FileNameFormat '{
+    local fname ihydra
+	if( $# != 1) {
+		p "Usage: $0 <format>"
+		p "       Sets the filename format on all GE panel to <format>"
+		p "       An example format: %s%s_%05d"
+		p "       The extension will be automatically .geX, where X is the panel number"
+		exit
+	} 
+    fname="$1"
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) {
+        # p sprintf("GE%d:cam1:FileTemplate",ihydra), "=", fname
+		epics_put(sprintf("GE%d:cam1:FileTemplate",ihydra), sprintf("%s.ge%d",fname,ihydra), CB_TIME)
+	}	
+	#sleep(0.2)
+	printf("Filename formats = ")
+    get_allGE_AllFileNameFormats
+}'
+
+def set_hydra_FileNumber '{
+    local ihydra fnum
+	if( $# != 1) {
+		p "Usage: $0 <filenumber>"
+		p "       Sets the file number (Next) on each hydra panel to <filenumber>"
+		exit
+	} 
+    fnum=($1)
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:FileNumber",hydra[ihydra]), fnum, CB_TIME)
+	}
+	#sleep(0.2)
+	printf("File numbers = ")
+    get_hydra_AllFileNumbers
+}'
+
+def set_allGE_FileNumber '{
+    local ihydra fnum
+	if( $# != 1) {
+		p "Usage: $0 <filenumber>"
+		p "       Sets the file number (Next) on all GE panel to <filenumber>"
+		exit
+	} 
+    fnum=($1)
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:FileNumber",ihydra), fnum, CB_TIME)
+	}
+	#sleep(0.2)
+	printf("File numbers = ")
+    get_allGE_AllFileNumbers
+}'
+
+def set_allGE_BufferSize '{
+    local ihydra fnum
+	if( $# != 1) {
+		p "Usage: $0 <filenumber>"
+		p "       Sets the buffer size (Buffer Size 1) on all GE panel to <filenumber>"
+		exit
+	} 
+    fnum=($1)
+    if (fnum>250) {
+        p "WARNING! You have set bigger number than 250!!!"
+    } 
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:BufferSize1",ihydra), fnum, CB_TIME)
+	}
+	sleep(0.2)
+	printf("Buffer sizes = ")
+    get_allGE_AllBufferSize
+}'
+
+def set_hydra_BufferSize '{
+    local ihydra fnum
+	if( $# != 1) {
+		p "Usage: $0 <filenumber>"
+		p "       Sets the buffer size (Buffer Size 1) on all GE panel to <filenumber>"
+		exit
+	} 
+    fnum=($1)
+    if (fnum>250) {
+        p "WARNING! You have set bigger number than 250!!!"
+    } 
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:BufferSize1",hydra[ihydra]), fnum, CB_TIME)
+	}
+	sleep(0.2)
+	printf("Buffer sizes = ")
+    get_hydra_AllBufferSize
+}'
+
+def set_hydra_AutoStoreYes '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AutoStore",hydra[ihydra]), "YES", CB_TIME)
+	}
+    #sleep(0.2)
+	p "Hydra in SAVE mode"
+}'
+def set_hydra_AutoStoreNo '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AutoStore",hydra[ihydra]), "NO", CB_TIME)
+	}
+    #sleep(0.2)
+	p "Hydra in NOSAVE mode"
+}'
+
+def set_allGE_AutoStoreYes '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AutoStore",ihydra), "YES", CB_TIME)
+	}
+    #sleep(0.2)
+	p "All GE in SAVE mode"
+}'
+def set_allGE_AutoStoreNo '{
+	local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:AutoStore",ihydra), "NO", CB_TIME)
+	}
+    #sleep(0.2)
+	p "All GE in NOSAVE mode"
+}'
+
+
+def set_hydra_NumberOfImagesPerDetTrig '{
+    local ihydra imnum
+	if( $# != 1) {
+		p "Usage: $0 <framenumber>"
+		p "       Sets the number of frames per file (Frames During Expose) on each hydra panel to <framenumber>"
+		exit
+	} 
+    imnum=($1)
+        for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+	    epics_put(sprintf("GE%d:cam1:NumImages",hydra[ihydra]), imnum, CB_TIME)
+	}
+	#sleep(0.2)
+}'
+
+def set_allGE_NumberOfImagesPerDetTrig '{
+    local ihydra imnum
+	if( $# != 1) {
+		p "Usage: $0 <framenumber>"
+		p "       Sets the number of frames per file (Frames During Expose) on all GE panel to <framenumber>"
+		exit
+	} 
+    imnum=($1)
+	for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:NumImages",ihydra), imnum, CB_TIME)
+	}
+	#sleep(0.2)
+}'
+
+
+def set_hydra_WindowAndLevel '{
+    local ihydra win level
+	if( $# != 2) {
+		p "Usage: $0 <Window> <Level>"
+		p "       Sets the GE display parameters (Window and Level Value) on each hydra panel to <Window> and <Level>, respectively"
+		exit
+	} 
+    win=($1)
+	level=($2)
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:WindowValueDesired",hydra[ihydra]), win, CB_TIME)
+		epics_put(sprintf("GE%d:cam1:LevelValueDesired",hydra[ihydra]), level, CB_TIME)
+	}
+}'
+
+def set_allGE_WindowAndLevel '{
+    local ihydra win level
+	if( $# != 2) {
+		p "Usage: $0 <Window> <Level>"
+		p "       Sets the GE display parameters (Window and Level Value) on all GE panel to <Window> and <Level>, respectively"
+		exit
+	} 
+    win=($1)
+	level=($2)
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:WindowValueDesired",ihydra), win, CB_TIME)
+		epics_put(sprintf("GE%d:cam1:LevelValueDesired",ihydra), level, CB_TIME)
+	}
+}'
+
+#def set_hydra_UserSingle '{
+#    local ihydra
+#    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+#		epics_put(sprintf("GE%d:cam1:TriggerMode",hydra[ihydra]),"USER SINGLE")
+#	}
+#	sleep(0.2)
+#}'
+
+#def set_allGE_UserSingle '{
+#    local ihydra
+#    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+#		epics_put(sprintf("GE%d:cam1:TriggerMode",ihydra),"USER SINGLE")
+#	}
+#	sleep(0.2)
+#}'
+
+
+def set_hydra_RadMode '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",hydra[ihydra]),"RAD", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet SW", CB_TIME) # Software controlled trigger 
+	sleep(0.2)
+}'
+
+def set_allGE_RadMode '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",ihydra),"RAD", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet SW", CB_TIME) # Software controlled trigger 
+	sleep(0.2)
+}'
+
+def set_hydra_MultiDetSW '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",hydra[ihydra]),"MULTI_DET SW", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet SW", CB_TIME) # Software controlled trigger 
+	sleep(0.2)
+}'
+
+def set_allGE_MultiDetSW '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",ihydra),"MULTI_DET SW", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet SW", CB_TIME) # Software controlled trigger 
+	sleep(0.2)
+}'
+
+def set_hydra_MultiDetEdge '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",hydra[ihydra]),"MULTI_DET Edge", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet Edge", CB_TIME) # HW signal controlled trigger with TTL rising edge (min pulse size is 2 usec)
+	sleep(0.2)
+}'
+
+def set_allGE_MultiDetEdge '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",ihydra),"MULTI_DET Edge", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet Edge", CB_TIME) # HW signal controlled trigger with TTL rising edge (min pulse size is 2 usec)
+	sleep(0.2)
+}'
+
+def set_hydra_MultiDetPulse '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",hydra[ihydra]),"MULTI_DET Pulse", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet Pulse", CB_TIME) # HW signal controlled trigger while TTL pulse is high (min pulse size is 4 usec)
+	sleep(0.2)
+}'
+
+def set_allGE_MultiDetEdge '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+		epics_put(sprintf("GE%d:cam1:TriggerMode",ihydra),"MULTI_DET Pulse", CB_TIME)
+	}
+    epics_put("dth1:DTH:ModeMBBO", "MultiDet Pulse", CB_TIME) # HW signal controlled trigger while TTL pulse is high (min pulse size is 4 usec)
+	sleep(0.2)
+}'
+
+
+
+####### GETs
+
+## This was not independent of the CCDPV/ADFILEP setup
+##def get_hydra_AutoStore 'epics_get(sprintf("%sAutoStore_RBV",ADFILEPV),"short")'
+
+def get_hydra_AutoStore(jhydra) '{
+    # The input number is the array index of the hydra
+    local autostore
+    autostore=epics_get(sprintf("GE%d:cam1:AutoStore_RBV",hydra[jhydra]),"short")
+    return autostore
+}'
+
+def get_hydra_FileNumber( jhydra ) '{
+   local fnum
+   fnum=epics_get(sprintf("GE%d:cam1:FileNumber_RBV", hydra[jhydra]))
+   return fnum
+}'
+
+def get_hydra_AllFileNumbers '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        printf("%d   ", epics_get(sprintf("GE%d:cam1:FileNumber_RBV",hydra[ihydra])))
+	}
+	printf("\n")
+}'
+
+def get_allGE_AllFileNumbers '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) {
+        printf("%d   ", epics_get(sprintf("GE%d:cam1:FileNumber_RBV",ihydra)))
+	}
+	printf("\n")
+}'
+def get_allGE_AllBufferSize '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) {
+        printf("%d   ", epics_get(sprintf("GE%d:cam1:BufferSize1_RBV",ihydra)))
+	}
+	printf("\n")
+}'
+def get_hydra_AllBufferSize '{
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) {
+        printf("%d   ", epics_get(sprintf("GE%d:cam1:BufferSize1_RBV",hydra[ihydra])))
+	}
+	printf("\n")
+}'
+
+def get_hydra_FileName(jhydra) '{
+   local s
+   s=""
+   s=epics_get(sprintf("GE%d:cam1:FileName_RBV",hydra[jhydra]), "string")
+   return s
+}'
+
+def get_hydra_AllFileNames '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=hydraNum; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FileName_RBV",hydra[jhydra]))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+def get_allGE_AllFileNames '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=4; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FileName_RBV",jhydra))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+
+def get_hydra_FilePath(jhydra) '{
+   local s
+   s=""
+   s=epics_get(sprintf("GE%d:cam1:FilePath_RBV",hydra[jhydra]), "string")
+   return s
+}'
+
+
+def get_hydra_AllFilePaths '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=hydraNum; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FilePath_RBV",hydra[jhydra]))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+def get_allGE_AllFilePaths '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=4; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FilePath_RBV",jhydra))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+def get_hydra_AllFileNameFormats '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=hydraNum; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FileTemplate_RBV",hydra[jhydra]))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+def get_allGE_AllFileNameFormats '{
+   local s ihydra jhydra
+   for (jhydra=1 ; jhydra<=4; jhydra++) {
+     s=""
+     local byte array fp[256]
+     fp=epics_get(sprintf("GE%d:cam1:FileTemplate_RBV",jhydra))
+     for(ihydra=0;ihydra<256;ihydra++) {
+        s= sprintf("%s%c",s,fp[ihydra])
+     }
+     printf("%s   ", s)
+   }  
+   printf("\n")
+}'
+
+
+
+#hydra_clearTrigLatch '{
+#    
+#}'
+
+#----------------------------------------------
+# SWEEP macros
+# For stepper motor and software trigger
+
+
+"""
+def sweep_hydra '{
+
+  set_hydra_UserSingle
+   # This setup is not working: there are no images on the detector!!!!
+#  set_hydra_MultiDet
+#  set_hydra_NumberOfImagesPerDetTrig 1
+
+  p "Initial file numbers:"
+  get_hydra_AllFileNumbers
+
+  fastsweep $*
+
+  p "Final file numbers (next):"
+  get_hydra_AllFileNumbers
+
+#  beep_dac
+}'
+"""
+
+def fastsweep_hydra '{
+
+  p "Initial file numbers:"
+  get_hydra_AllFileNumbers
+
+  fastsweep $*
+
+  p "Final file numbers (next):"
+  get_hydra_AllFileNumbers
+   
+  set_hydra_MultiDetSW
+  set_hydra_NumberOfImagesPerDetTrig 1
+  
+  beep_dac
+}'
+
+
+
+
+def supersweep_hydra '{
+
+    if (($# != 9) || ($8 != 1) ) {
+        p "Usage: supersweep [motorOUT] [start1] [end1] [steps] [motorIN] [start2] [end2] [steps=1] [seconds] "
+        exit
+    }
+    
+    local iout
+    local _step _first _last _snum _time _first1 _last1 _snum1 _step1 v1
+
+    #set_hydra_MultiDetSW
+    set_hydra_NumberOfImagesPerDetTrig 1
+
+    p "Initial file numbers:"
+    get_hydra_AllFileNumbers
+
+    get_angles
+    # Works only for the stepper motor sweep
+    if ( "$5" == "phi") {
+        supersweep $*  
+    }
+    
+    # This is a similar thing that is in the original supersweep
+    if ( "$5" == "aero") {
+        _first1=$2
+        _last1 = $3
+        _snum1 =int(($4)+1)
+        _step1 = (_last1-_first1)/($4)
+
+        _first=$6
+        _last=$7
+        _snum=$8
+        _time=$9
+        _step=(_last-_first)/_snum
+
+        for(iout=0; iout<_snum1; iout++) {
+            v1 =  _first1+iout*_step1;   
+            A[$1]= v1;
+            move_em; waitmove; get_angles
+            p "fastsweep aero",_first, _last, _snum, _time 
+            fastsweep aero $6 $7 $8 $9 
+        }
+    }
+        
+    p "Final file numbers (next):"
+    get_hydra_AllFileNumbers
+
+    beep_dac
+}'
+

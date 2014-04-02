@@ -1,0 +1,70 @@
+
+cd ~/new_data/Kenesei_Jul13
+on("FullLog.log")
+### To check the last scan number use:
+### u grep #S Kenesei_Jul13.spe
+
+newfile Kenesei_Jul13.spe
+
+global ALERTLIST
+
+
+#For detector tests
+#Switching off the fast shutter control:
+#   - pulling out the 'sweep' connector
+#   - disabling to change the shutter modes:
+#def shutter_manual '{}'
+#def shutter_sweep '{}'
+
+
+# FPGA controlled fast shutter mode selector
+qdo ./macros/FPGA_signals.mac 
+qdo ./hydra_2013Jun26/use_hydra.mac
+qdo ./fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Jun26/hookup_macros.mac
+#qdo ./TomoScans_2013Jun21/sweep_det_retiga.mac # Not existing
+qdo ./TomoScans_2013Jun26/continuous_acq.mac
+qdo ./TomoScans_2013Jun26/ccd_ad_retiga.mac
+qdo ./TomoScans_2013Jun26/Tomo_Scans_stabil.mac
+qdo ./TomoScans_2013Jun26/Tomo_DetContrlFuncs.mac
+#qdo ./macros/detsetup.mac
+
+### USER related scripts
+#qdo ./macros/ge_linescan.mac
+#qdo ./macros/ge_mapper.mac
+#qdo ./macros/HVcontrol.mac
+#qdo ./rmd_macros_Jul13.mac
+#qdo ./lagtime_rmd_Jul13.mac
+
+##### MUST BE space separated list of e-mails
+# ALERTLIST="kenesei@aps.anl.gov 3314813624@vtext.com pgcallah@andrew.cmu.edu smaddali@andrew.cmu.edu 4125762406@txt.att.net euanwielewski@gmail.com"
+ALERTLIST="kenesei@aps.anl.gov 3314813624@vtext.com" 
+
+# Switching to the "hydra=single GE2" setup
+####Okuniewski_Apr13_hydra1
+
+# Switching to the "near field=Retiga" setup
+
+
+
+# For Near Field
+#FS_Retiga_control
+#Kenesei_Jul13_Retiga
+
+# For Tomo
+FS_Retiga_control
+Kenesei_Jul13_Tomo
+
+# For GE2
+#FS_GE2SE_control
+#Kenesei_Jul13_hydra1
+
+
+#qdo ./macros/DoVolume.mac
+
+#qdo ./macros/DetectorFunctions.mac
+#qdo ./macros/WA_CMU.mac
+#qdo ./macros/isBeamOn_CMU.mac
+#qdo ./macros/DoVolume_samYb_fast.mac
+#qdo ./macros/DetZBeamPosScan.mac
+#qdo ./TomoScans_2013Mar05/Tomo_DetContrlFuncs.mac
+#qdo ./TomoScans_2013Mar05/Tomo_Scans.mac

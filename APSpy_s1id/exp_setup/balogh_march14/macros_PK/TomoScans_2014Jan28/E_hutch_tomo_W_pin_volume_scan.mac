@@ -1,0 +1,19 @@
+def EHutchTomoWPinVolumeScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+        
+    local isamYb fSamYb
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: EHutchTomoWPinVolumeScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+     #for (isamYb = 0; isamYb < 4; isamYb++) { # First interrupted scan
+     for (isamYb = 1; isamYb < 4; isamYb++) {
+       fSamYb = 11.96 + 0.02 * isamYb
+       mv samYb fSamYb
+       waitmove;
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+        }
+    }
+}'

@@ -1,0 +1,216 @@
+## implemented ccdscan hooks macros and other image server specific macros for AreaDetector interface
+#
+
+
+# require ccd_common.mac 
+
+
+####Global Variables
+global CCDPV CCD_DATA_DIR CCD_FILE_EXT  MULTI_IMGS 
+global pvDELAY_CTL pvDELAY_C pvDELAY_B
+global SHUTTER_OPEN_TIME SHUTTER_CLOSE_TIME
+global  CCD_MONITOR_ROI USE_CCDDET_FLAG CCD_DARK_NUM
+global ADFILEPV ADROIPV MNT_MAP ADSTATPV
+global EPICS_DELAY
+
+global CB_TIME
+if (CB_TIME==0) CB_TIME=10.0
+
+######### BEGIN Earlier these routines were in sweep_det_retiga.mac
+global CCD_DET[]
+
+##########set up AD for Retiga
+CCD_DET["AD_retiga"] = "use_ad_retiga [det.pv_prefix] [adfile_prefix]"
+def use_ad_retiga '{
+	ccdhook_adretiga $*
+    OSC["detector"]="Retiga"
+    if( $#==2 ) {
+        CCDPV="$1"; ADFILEPV="$2";
+	}
+    else {
+        CCDPV=getsval("detector PV prefix","QIMAGE1:cam1:")
+        ADFILEPV = getsval("AD file PV prefix","QIMAGE1:TIFF1:")
+    } 
+    rdef det_trig \'_adretigatrig_xtime\'
+    rdef det_wait \'_adretiga_wait\'
+    rdef detget_imgprefix \'detget_imgprefix_ad\'       
+    rdef detget_seqNumber \'detget_seqNumber_adretiga\'       # with RBV value (same as _ad)
+    rdef detabort \'detabort_adretiga\'
+    rdef ccdget_SeqNumber \'ccdget_SeqNumber_adretiga\'  # with not RBV value (same as _ad)
+    OSC["detDelay"] =0.0
+    OSC["cushion_time"]=0.0
+    printf("Detector related macros are re-defined to %s\n",OSC["detector"])
+    adretiga_setup 
+}'
+
+def _adretiga_wait '{
+    local iwait
+    iwait = 0
+
+# Frankie is debugging
+#if(epics_get(sprintf("%sDetectorState_RBV",CCDPV))!="Idle") {
+    while (epics_get(sprintf("%sDetectorState_RBV",CCDPV))!="Idle") {
+        #sleep(EPICS_DELAY)
+        ### Workaround for the Retiga IOC hang up issue
+        sleep(0.001)
+        iwait=iwait+1
+        if (iwait > 20000) {
+            p "Workaround: pressing the Start button"
+            epics_put(sprintf("%sAcquire",CCDPV), 1)
+            sleep(1.0)
+            iwait=0
+        }
+    }
+
+    while(epics_get(sprintf("%sAcquire",CCDPV))!="Done") {
+        sleep(EPICS_DELAY)
+    }
+
+}'
+
+def _adretigatrig_xtime '{
+    if( $# > 1) {
+        p "Usage: $0 [time(sec)]"
+        p "       If time is not given, it starts the acquisition, only"
+        exit
+    }
+     
+    _adretiga_wait
+    if ( $# == 1) {
+        ccdset_time_adretiga $1
+    }
+    ## Bad idea to put Initialize before each acquisition
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #sleep(EPICS_DELAY)
+
+    epics_put(sprintf("%sAcquire",CCDPV),"Acquire")
+    # If I would use CA Callback, then it waits until the acquisition is finished.
+}'
+
+def detabort_adretiga 'epics_put(sprintf("%sAcquire",CCDPV),"Done", CB_TIME); ccdset_Initialize' 
+
+def adretiga_setup '{
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+	epics_put(sprintf("%sTriggerMode",CCDPV),"Software", CB_TIME)
+	epics_put(sprintf("%sqReadoutSpeed",CCDPV), 0, CB_TIME) # 20 MHz
+	epics_put(sprintf("%sqImageFormat",CCDPV), "Raw16", CB_TIME) # Raw16
+	epics_put(sprintf("%sqCoolerActive",CCDPV), "On", CB_TIME) # On
+	epics_put(sprintf("%sAcquireTime",CCDPV), 1.0, CB_TIME) # 1 sec
+	epics_put(sprintf("%sAcquirePeriod",CCDPV), 1.0, CB_TIME) # 1 sec
+	#epics_put(sprintf("%sGain",CCDPV), 2.0, CB_TIME)   
+	epics_put(sprintf("%sGain",CCDPV), 1.0, CB_TIME)   # GAIN 1.0
+	epics_put(sprintf("%sqOffset",CCDPV), 0, CB_TIME) # Offset level, integer
+	epics_put(sprintf("%sTemperature",CCDPV), -45.0, CB_TIME) # Temp=-45C
+
+	epics_put(sprintf("%sBinX",CCDPV), 1, CB_TIME) # 1
+	epics_put(sprintf("%sBinY",CCDPV), 1, CB_TIME) # 1
+	epics_put(sprintf("%sMinX",CCDPV), 0, CB_TIME) # 0
+	epics_put(sprintf("%sMinY",CCDPV), 0, CB_TIME) # 0
+	epics_put(sprintf("%sSizeX",CCDPV), 2048, CB_TIME) # 2048
+	epics_put(sprintf("%sSizeY",CCDPV), 2048, CB_TIME) # 2048
+	epics_put(sprintf("%sReverseX",CCDPV), "No", CB_TIME) # No=0
+	epics_put(sprintf("%sReverseY",CCDPV), "No", CB_TIME) # No=0
+	epics_put(sprintf("%sDataType",CCDPV), "UInt16", CB_TIME) # UInt16
+	epics_put(sprintf("%sColorMode",CCDPV), "Mono", CB_TIME) # Mono
+
+
+    epics_put(sprintf("%sAutoIncrement",ADFILEPV),"Yes", CB_TIME)
+    epics_put(sprintf("%sFileWriteMode",ADFILEPV),"Single", CB_TIME)
+    epics_put(sprintf("%sAutoSave",ADFILEPV),"No", CB_TIME)
+
+    sleep(EPICS_DELAY)
+    ccdset_Initialize
+}'
+
+
+######### END Earlier these routines were in sweep_det_retiga.mac
+
+
+
+### Lights control macros
+
+def LightsOn 'epics_put("1ide1:IPC1:on_ch3.PROC", 1, 10)'
+def LightsOff 'epics_put("1ide1:IPC1:off_ch3.PROC", 1, 10)'
+
+def getLightsStatus 'epics_get("1ide1:IPC1:ch3")'
+def getEhutchLightsStatus '(epics_get("1ide:D1Ch3_raw.VAL")>0.13? 1: 0)'
+# returns 1, if on, 0 if off.
+
+###
+
+############atomic command for all operations
+
+# for retiga 
+def ccdset_Initialize '{
+    epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+
+    while(epics_get(sprintf("%sDetectorState_RBV",CCDPV))!="Idle") {
+        sleep(EPICS_DELAY)
+    }
+
+    #sleep(2.0) # sleep(EPICS_DELAY)
+}'
+
+def ccdset_time_adretiga '{
+   if($#!=1) {
+        p "Usage: $0 exptime"
+        exit
+   }
+   local xtime
+   xtime=($1)
+
+   #if(x != xtime) 
+   while ( fabs(xtime - epics_get(sprintf("%sqAcquireTimeRBV",CCDPV)) ) > 0.001 ) {
+        epics_put(sprintf("%sAcquireTime",CCDPV), xtime, CB_TIME)
+        sleep(EPICS_DELAY)
+        ccdset_Initialize
+   }
+   #ccdset_period_adretiga xtime # Not recommended to do automatically
+}'
+
+def ccdset_period_adretiga '{
+   if($#!=1) {
+        p "Usage: $0 periodtime"
+        exit
+   }
+   local xtime
+   xtime=($1)
+#   ### This is for Malbec, because that AD version cannot hadle the period time 
+#   if (CCDPV == "QIMAGE:cam1:") {
+#       # x=epics_get(sprintf("%sAcquirePeriod_RBV",CCDPV))
+#   }
+   if (CCDPV == "QIMAGE1:cam1:") {
+       while ( fabs(xtime - epics_get(sprintf("%sAcquirePeriod_RBV",CCDPV)) ) > 0.001 ) {
+            epics_put(sprintf("%sAcquirePeriod",CCDPV), xtime, CB_TIME)
+            sleep(EPICS_DELAY)
+            ccdset_Initialize
+       }
+   }
+}'
+
+def ccdhook_adretiga '
+    ccdhook_adcommon $*
+    rdef ccdset_time \'ccdset_time_adretiga\'
+    # This should be checked later!
+    rdef ccdset_filepath  \'adset_filepath_dummy\'
+    CCD_FILE_EXT="tif"
+'
+
+def ccdset_AutoSaveYes '{
+    epics_put(sprintf("%sAutoSave",ADFILEPV),"Yes", CB_TIME)
+    #sleep(EPICS_DELAY)
+}'
+
+def ccdset_AutoSaveNo '{
+    epics_put(sprintf("%sAutoSave",ADFILEPV),"No", CB_TIME)
+    #sleep(EPICS_DELAY)
+}'
+
+
+def ccdget_AutoSave 'epics_get(sprintf("%sAutoSave_RBV",ADFILEPV),"short")'
+
+
+def detget_seqNumber_adretiga 'epics_get(sprintf("%sFileNumber_RBV",ADFILEPV))'
+
+def ccdget_SeqNumber_adretiga 'epics_get(sprintf("%sFileNumber",ADFILEPV))'
+

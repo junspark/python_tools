@@ -1,0 +1,661 @@
+###############################################################################
+#   Macros for S1id osscillation/sweep scans
+################################################################################
+# Author: X. Jiao
+# Date:   April 2007
+#
+# User macros: 
+#        
+#         oscill <motor start finish time> -  do a oscillation of motor
+#                    "motor"  from "start" to "finish" with specific "time"  
+# 
+#         sweep <motor start finish intervals time> - do multiple(intervals) oscillation of motor
+#                   "motor", each oscillation's range is determined by the start, end and number
+#                    of intervals
+#         supersweep < m1 s1 f1 intervals1 m2 s2 f1 intervals2 time> - like a2scan ,but
+#                    the second motors does a oscillation at each scan point.
+#         
+# internal marcors:
+#          _oscill - similar to oscill but withou call "osc_calc", used by sweep and supersweep
+#          osc_calc 
+#          osc_cleanup 
+#          osc_set_pars
+#          osc_reste_pars
+#        
+
+#  
+#          arm_scalers
+#          reset_scalers
+#          osc_scaler_set ( to assign hardware settings of the scaler/shutter control)
+#
+#          reset_softioc           
+#          softioc_startscan
+#
+#   hook macros ( to be redefined based on users )
+#          write_parfile ( for backward compatibility )
+#          sweep_header
+#          sweep_fprnt_label
+#          sweep_fprnt_value        
+#
+# empty hook macros ( to be defined based on detectors)
+#
+#          det_trig
+#          det_wait
+#
+# 
+#   
+# Note:  Need load shutter_sweep etc. defined in other macro file.
+# 
+#---------------------------Global variables-----------------------------------
+
+global OSC[] 
+global CCDPV
+global SOFTIOC_USE SOFTIOC_PV MATLAB_OK
+global BRUKERFILE[]
+global IS_SWEEPSCAN
+global parfile
+global osc_MON osc_threshold
+global EPICS_DELAY
+
+osc_threshold=1000
+osc_MON=ic6b
+OSC["sweep_mode"] = "sweep"  # Default sweeping mode
+
+
+##New checkbeam feature to protect from beamtrips
+def chk_beam_osc '
+    # if(S[osc_MON]/COUNT_TIME >osc_threshold) {
+    #if(S[osc_MON]/OSC["exposure_time"]>osc_threshold) {
+
+	# This can overflow for fastsweep in case of the long integration time
+    #if(S[osc_MON]/S[sec]>osc_threshold) {
+    #if(moncnt[1]>osc_threshold && moncnt[OSC["nframes"]-2]>osc_threshold) {
+    if (isBeamOn() ) {
+    #if ( 1 ) {
+       # p "We had beam for the previous sweep"
+       break;
+    } else { 
+      local down_time back_time
+      sendemailalert
+      
+      if  ( epics_get(sprintf("%sAutoSave",ADFILEPV)) == "Yes") {
+        if (OSC["sweep_mode"] == "sweep") {
+          ccdset_seqnum (ccdget_SeqNumber-1) # Step back by one file, if we are in AutoSave mode
+        }
+        if (OSC["sweep_mode"] == "fastsweep") {
+          ccdset_seqnum (OSC["first_frame_number"]) # Step back to the beginning of the scan, if we are in AutoSave mode
+        }
+        sleep(0.2)
+        printf("reset file index to %i\n",ccdget_SeqNumber)
+      }
+
+      if(!isBeamOn()) {
+
+        down_time=time() # saves the current time
+        while(!isBeamOn()) {
+          printf("Been waiting %d seconds for beam ...\r",time()-down_time);
+          sleep(1);         
+        }
+        tty_cntl("ce");printf("\n");
+        back_time = time();
+        printf("%s : beam is back.\n",date());
+        fprintf(DATAFILE,"#C %s : beam is back after %d seconds wait.\n",date(),back_time-down_time)
+        if(beam_up_wait_time>0) {
+          printf("wait %d seconds before resume.\n",beam_up_wait_time);
+          do_sleep(beam_up_wait_time);
+          fprintf(DATAFILE,"#C waited %d seconds to stabilize.\n",beam_up_wait_time)
+        }
+        fprintf(DATAFILE,"#C resume scan after beam is back.\n")          
+      }
+    } 
+'
+
+#########standard oscillation for omega and phi
+## THIS IS OVERWRITTEN BY THE PRECI_FASTSWEEP macros
+def _oscill_sweep '{
+    if($#!=4) {
+      p "Usage: oscill motor start finish time"
+      exit
+    }
+    local start end range
+    range = ($3)-($2)
+    start = ($2)-OSC["arange"]
+    end = ($3) +OSC["arange"]
+    
+    if (OSC["motor"] == "ome") {
+    	mv $1 start-.1
+    	}
+  for(;;) {
+    mv $1 start
+    waitmove;
+    
+    osc_set_pars;
+   #to fix scaler hanging problem, dont know why the scaler behave like that
+    reset_scalers
+    
+    arm_scalers;
+    det_trig OSC["exposure_time"]+OSC["extra_time"]+OSC["cushion_time"]
+    sleep(OSC["detDelay"])   #synch shutter and detector
+
+    count_em OSC["exposure_time"]+OSC["extra_time"]
+    mv $1 end
+    det_wait 
+    waitmove
+    waitcount
+    get_counts
+    chk_beam_osc
+   }
+    osc_reset_pars
+}'
+
+
+def sweep '{
+    if (($# != 5) && (OSC["detector"]!="bruker")) {
+	p "Usage: sweep [motor] [start] [finish] [steps] [seconds] "
+	exit
+    }
+    if (($# != 6) && (OSC["detector"]=="bruker")) {
+	p "Usage: sweep [motor] [start] [finish] [steps] [seconds] [brukerbase] "
+	exit
+    }
+    local _step _first _last _snum _time i _stamp
+    if($#==6) {
+         OSC["imgprefix"] = BRUKERFILE["base"]="$6"
+    } else {
+
+         OSC["imgprefix"] = detget_imgprefix
+    }   
+    IS_SWEEPSCAN =1
+    shutter_sweep
+       
+    _first=$2
+    _last=$3
+    _snum=_n1=$4
+    _time=$5
+    _step=(_last-_first)/_snum
+    if (_snum == 0) _snum=1
+    _stamp[0]=0
+    _ctime = 0;
+    _stype=1|(1<<8)
+
+    osc_calc $1 _step _time
+    
+    cdef("cleanup_once","\nsweep_cleanup;","sweep","0x20")
+
+    softioc_startscan sweep  $1 _first _last
+   
+    HEADING = sprintf("sweep %s %g %g %g %g","$1",$2,$3,$4,$5)
+    X_L = motor_mne($1)
+    Y_L = cnt_name(DET)
+    _sx = _first; _fx = _last
+ 
+    sweep_fprnt_label
+    scan_head
+    #p "------This is before pre sweep -----------------" 
+    #user defined hooks (beampos etc)
+    user_pre_sweep
+    def _scan_on \'
+        {
+            for (; NPTS < _snum; NPTS++) {
+                _start = _first+NPTS*_step;
+                _stop  = _first+(NPTS+1)*_step;
+
+                _oscill $1 _start _stop _time
+                user_mid_sweep
+                #p " sweep print value " _start, _stop
+                sweep_fprnt_value
+                #p " before scan loop " _start, _stop
+                scan_loop
+                scan_data(NPTS, _start)
+                scan_plot
+                        
+            }
+        }
+	    scan_tail
+	\'
+    _scan_on
+    sweep_cleanup
+}' # END OF sweep
+
+
+def supersweep '{
+    if (($# != 9) && (OSC["detector"]!="bruker")) {
+	p "Usage: supersweep [motorOUT] [start1] [end1] [steps] [motorIN] [start2] [end2] [steps] [seconds] "
+	exit
+    }
+    if (($# != 10) && (OSC["detector"]=="bruker")) {
+	p "Usage: supersweep [motor1] [start1] [end1] [steps] [motor2] [start2] [end2] [steps] [secconds] [brukerbase] "
+	exit
+    }
+    local _step _first _last _snum _time i jj _first1 _last1 _snum1 _step1 v1
+    if($#==10) {
+         OSC["imgprefix"] = BRUKERFILE["base"]="$10"
+    } else {
+
+         OSC["imgprefix"] =detget_imgprefix
+    }   
+    IS_SWEEPSCAN =1
+    shutter_sweep
+
+    _first1=$2
+    _last1 = $3
+    _snum1 = _n1=int(($4)+1)
+    _step1 = (_last1-_first1)/($4)
+    
+
+       
+    _first=$6
+    _last=$7
+    _snum=_n2=$8
+    _time=$9
+    _step=(_last-_first)/_snum
+    if (_snum == 0)  _snum=1;
+    _stype= 1|8|(2<<8)
+    _ctime = 0;
+
+    osc_calc $5 _step _time
+    cdef("cleanup_once","\nsweep_cleanup;","sweep","0x20")
+
+    softioc_startscan supersweep $1 _first1 _last1
+    HEADING = sprintf("supersweep %s %g %g %g %s %g %g %g %g","$1",$2,$3,$4,"$5",$6,$7,$8,$9)
+    X_L = motor_mne($1)
+    Y_L = cnt_name(DET)
+    
+    _sx = $2; _fx = $3
+ 
+    sweep_fprnt_label
+    FPRNT = sprintf("%s  %s","$1",FPRNT);
+    PPRNT = sprintf("%s %s","$1",PPRNT);
+    VPRNT = PPRNT;
+ 
+    scan_head
+    def _scan_on \'
+	 {
+	    for(i=0;i<_snum1;i++) {
+              p " _scan_on:: sec 1 "
+               v1 =  _first1+i*_step1;   
+               if("$1" == "table") {
+                   A[M1V]=v1;A[M2V]=v1;A[M3V]=v1;
+               } else {
+                   A[$1]= v1;
+               }
+               p " _scan_on:: sec 2 "
+               scan_move;
+               p " _scan_on:: sec3 "
+               for (jj=0; jj < _snum; jj++) {
+                 _start = _first+jj*_step;
+                 _stop  = _first+(jj+1)*_step;
+                 _oscill $5 _start _stop _time 
+        		 sweep_fprnt_value  v1
+                 FPRNT = sprintf("%.8g %s",v1,FPRNT);
+                 PPRNT = sprintf("%9.4f %s",v1,PPRNT);
+                 VPRNT = PPRNT;
+		         scan_loop
+        		 scan_data(NPTS, A[$1])
+        		 scan_plot
+                 NPTS++;
+                 
+              }
+              p " _scan_on:: sec 4  "
+	   }
+	 }
+	 scan_tail
+	\'
+   _scan_on
+   sweep_cleanup
+  
+}' # END OF supersweep
+
+
+cdef("Fheader","\n sweep_header;\n","sweep","0x20");
+
+
+
+
+def sweep_cleanup '{
+   off(parfile)
+   IS_SWEEPSCAN=0
+   osc_reset_pars
+   reset_scalers
+   reset_softioc
+   shutter_manual
+   #detabort # causes trouble with mar server UL 25112009
+    # also with everything else
+}'
+
+
+
+
+#--------------------------internal macros used by oscill-----------------------
+
+def reset_softioc '{
+    local t
+    if(SOFTIOC_USE==1) {
+       while(MATLAB_OK && (epics_get(sprintf("%sBusy",SOFTIOC_PV),"short")==1)) {
+          if(t>30) {
+             p "Waited too long, force soft ioc to reset" 
+           
+             break;
+          }
+          sleep(0.5);
+          t++;
+       }
+       epics_put(sprintf("%sBusy",SOFTIOC_PV),0)
+       epics_put(sprintf("%sStatus",SOFTIOC_PV),"Idle")
+       epics_put(sprintf("%sscantype",SOFTIOC_PV),"")
+    }
+}'
+
+
+def softioc_startscan '{
+    if(SOFTIOC_USE ==1) {
+       MATLAB_OK = 1
+       epics_put(sprintf("%sscantype",SOFTIOC_PV),"$1")
+       epics_put(sprintf("%smotor",SOFTIOC_PV),OSC["motor"])
+       epics_put(sprintf("%sdetname",SOFTIOC_PV),OSC["detector"])
+       if($#== 4) {
+         epics_put(sprintf("%smotor",SOFTIOC_PV),motor_name($2))
+         epics_put(sprintf("%sstart0",SOFTIOC_PV),$3)
+         epics_put(sprintf("%send0",SOFTIOC_PV),$4) 
+       }
+       epics_put(sprintf("%simgprefix",SOFTIOC_PV),OSC["imgprefix"])
+       epics_put(sprintf("%sscann",SOFTIOC_PV),SCAN_N+1)
+       epics_put(sprintf("%stotalPts",SOFTIOC_PV),(_stype&8? _n1*_n2:_n1))
+       epics_put(sprintf("%sNPTS",SOFTIOC_PV),-1);
+       epics_put(sprintf("%sBusy",SOFTIOC_PV),0)
+       epics_put(sprintf("%sStatus",SOFTIOC_PV),"Scanning")
+    }
+}'
+
+
+
+def osc_reset_pars '{
+    motor_par(OSC["motor"],"base_rate",OSC["normal_base"])
+	motor_par(OSC["motor"],"velocity",OSC["normal_speed"])
+	sync
+
+}'
+
+def osc_set_pars '{
+#    motor_par(OSC["motor"],"base_rate",OSC["base"])
+#	motor_par(OSC["motor"],"velocity",OSC["speed"])
+#	sync
+    local _mpv _stepsperrev
+    
+    # Motor PV
+    _mpv = motor_par(OSC["motor"],"device_id") "m" motor_par(OSC["motor"],"channel")+1 
+    _stepsperrev = epics_get(sprintf("%s.SREV", _mpv ))
+    # WARNING: DC motors can use base_rate 0
+    epics_put(sprintf("%s.SBAS", _mpv ),  0.0) # Change motor base_speed
+    epics_put(sprintf("%s.S", _mpv ),  OSC["speed"]/_stepsperrev) # Change motor speed
+    sleep(EPICS_DELAY)
+	sync
+
+}'
+
+
+
+
+
+def osc_calc '{
+    if($#!=3) {
+      p "Usage: osc_calc motor range time"
+      exit
+    }
+    local _mpv tmp speed steps
+    
+    if(($4)< (tmp=(OSC["shutterclose_delay"]-OSC["shutteropen_delay"])) ) {
+        printf("Minimum exposure time: %.3f (due to shutter delay)\n",tmp);
+        exit
+    }
+   
+    # insure spec has the current motor settings from EPICS
+    sync
+
+    {
+       
+       OSC["motor"] =  motor_mne($1)
+       # Motor PV
+       _mpv = motor_par($1,"device_id") "m" motor_par($1,"channel")+1 
+       # tmp = speed of the motor in steps/sec from EPICS MaxSpeed and MotorResolution on Debug screen
+       tmp = fabs(epics_get(sprintf("%s.VMAX",_mpv))/epics_get(sprintf("%s.MRES",_mpv)))
+       if(tmp == 0) {
+          printf("Max speed of motor %s is not configured, use normal speed as max speed.", OSC["motor"])
+          tmp =  motor_par($1,"velocity")
+       } 
+       OSC["max_speed"]  =  int(tmp)
+       # Saves the current speed adjustments on the motor into "normal_*"
+       OSC["normal_atime"]=motor_par($1,"acceleration")/1000 # Converted to seconds
+       OSC["normal_base"]=motor_par($1,"base_rate")  # in steps/sec
+       OSC["normal_speed"]=motor_par($1,"velocity")  # in steps/sec
+        
+       # Workaround for the MTS motor:
+#       if (OSC["motor"] != "preciH") {
+#            OSC["normal_atime"] = 0.0 # In the motor record there is a 0.001 value
+#       }
+    }
+
+	# step_size is given in steps/deg from Epics .SREV/.UREV
+    #OSC["step_size"]=fabs(int(motor_par($1,"step_size")))    # fabs needed for negative mot resolution
+    # WARNING: DC MOTORS CAN HAVE FRACTIONAL STEPS!!!!
+    OSC["step_size"]=fabs(motor_par($1,"step_size"))    # fabs needed for negative mot resolution
+        # in steps/deg or steps/mm
+    
+    OSC["range"] = $2 # For fastsweep this is the full sweep range
+    OSC["exposure_time"] = $3  # For fastsweep this is the full sweep time, called "scantime" = GATE up through GATE down
+
+    
+    OSC["steps"]=steps = fabs(OSC["range"])*OSC["step_size"] # in steps
+
+	# The motor speed calculation is good if there is gap_time between frames !
+	# E.g. range = 180 deg, exp_time = scantime, scantime=numframe*(singleexp_time+gap_time) ==> speed = range*step_size / scantime
+	# calculate motor parameters
+    #speed =  int(steps/OSC["exposure_time"])
+    # WARNING: DC MOTORS CAN HAVE FRACTIONAL STEPS!!!!
+    speed =  steps/OSC["exposure_time"]  # in steps/sec
+    if(speed>OSC["max_speed"]) {
+        printf("Desired speed %i > max speed %i of motor %s",speed,OSC["max_speed"],OSC["motor"])
+        exit
+    }
+    if(speed<(OSC["normal_base"]/10) || (speed<1) ) {
+        printf("Desired speed %i of %s too slow, may miss steps",speed,OSC["motor"])
+        exit
+    }
+    OSC["speed"] =  speed  # This will be used as the velocity (sweeping speed) in steps/sec
+    OSC["speed_equ_per_sec"] = speed / OSC["step_size"]  # in deg/sec or mm/sec
+    
+    if(fabs(speed)<=fabs(OSC["normal_base"])) 
+            OSC["base"] = speed
+    else OSC["base"] = OSC["normal_base"];
+	# The "base" is the minimum adjustable speed on the motor
+
+    OSC["atime"] = OSC["normal_atime"]
+    
+# calculate ramp parameters   
+    OSC["open_steps"] = int(fabs(OSC["shutteropen_delay"]*OSC["speed"]))
+    OSC["close_steps"] = int(fabs(OSC["shutterclose_delay"]*OSC["speed"]))
+    if(OSC["base"]==OSC["speed"]) {
+         OSC["asteps"] =  OSC["open_steps"]+1
+         OSC["extra_time"] = 2*OSC["atime"]   
+    } else {
+         # E.g when the "base" == 0 like for preciH
+         #OSC["asteps"]  =  int(fabs((OSC["speed"]+OSC["base"])/2)*OSC["atime"])+OSC["open_steps"]+1
+         # WARNING: DC MOTORS CAN HAVE FRACTIONAL STEPS!!!!
+         OSC["asteps"]  =  (fabs((OSC["speed"]+OSC["base"])/2)*OSC["atime"])+OSC["open_steps"]
+         OSC["extra_time"] = 2*(OSC["atime"]+OSC["shutteropen_delay"])
+    }
+    OSC["arange"] = OSC["range"]/fabs(OSC["range"])*OSC["asteps"]/fabs(OSC["step_size"])
+    OSC["scaler1"] =  OSC["asteps"]-OSC["open_steps"]
+    OSC["scaler2"] =  OSC["asteps"]+fabs(OSC["steps"])-OSC["close_steps"] 
+    #printf("Desired speed of motor %s: %g\n",OSC["motor"],OSC["speed"]) 
+    #printf("Base speed of motor %s: %g\n", OSC["motor"],OSC["base"])
+}'
+
+
+def osc_scaler_set '{
+    if ($#!=3) {
+      p "Usage: osc_scaler_set motor s1_pv s2_pv"
+      exit
+    }
+    local aname
+    aname = sprintf("OSC_SCALER_%s","$1");
+    
+    global @aname[]
+    @aname["s1"] = "$2" 
+    @aname["s2"] =  "$3"
+}'
+
+
+def arm_scalers '{
+    local aname s1 s2
+    aname = sprintf("OSC_SCALER_%s",OSC["motor"])
+    if(whatis(aname)&0x1000000) {
+      s1 = @aname["s1"]  
+      s2 = @aname["s2"]
+      epics_put(sprintf("%s.PR1",s1),OSC["scaler1"])
+      epics_put(sprintf("%s.PR1",s2),OSC["scaler2"])
+      epics_put(sprintf("%s.CNT",s1),1)
+      sleep(0.1)
+      epics_put(sprintf("%s.CNT",s2),1)
+    } else {
+      #printf("Pulse from motor %s is not configured to control the scaler",OSC["motor"])
+      #exit
+    }
+}'
+
+
+def reset_scalers '{
+   local aname  s1 s2
+   aname = sprintf("OSC_SCALER_%s",OSC["motor"])
+   if(whatis(aname)&0x1000000) {
+     aname = sprintf("OSC_SCALER_%s",OSC["motor"])
+     s1=@aname["s1"]
+     s2=@aname["s2"]
+     epics_put(sprintf("%s.CNT",s1),0)
+     epics_put(sprintf("%s.CNT",s2),0)
+     #epics_put("1idc:scaler3.CNT",0)
+     #epics_put("1idc:scaler4.CNT",0)
+  } 
+}'
+
+#----------------------user defined data header and column, can be modified-------
+
+def sweep_header '{
+    if(IS_SWEEPSCAN) {
+       local x[]
+       printf("#C osi_N speed shutter_open shutter_close scaler1  scaler2  det\n")
+       printf("#C osi_V %g %g %g %g %g %s\n",OSC["speed"],OSC["shutteropen_delay"],OSC["shutterclose_delay"],OSC["scaler1"],OSC["scaler2"],OSC["detector"])
+       printf("#C SWP_N imgprefix ic1g ic1u ic2g ic2u hrmg hrmu jjuh jjuv jjdi jjdo jjdt jjdb HRdetY\n")
+       x[0] = OSC["imgprefix"]
+       x[1]= epics_get("1idc:A1sens_num.VAL") 
+       x[2]= epics_get("1idc:A1sens_unit.VAL")
+       x[3]= epics_get("1idc:A2sens_num.VAL") 
+       x[4]= epics_get("1idc:A2sens_unit.VAL") 
+       x[5]= epics_get("1id:A5sens_num.VAL")	 
+       x[6]= epics_get("1id:A5sens_unit.VAL")
+	#Upstreem slit setting
+	x[7]=epics_get("1idc:m62.RBV")
+	x[8]=epics_get("1idc:m64.RBV")
+	
+	#downstreem slit setting
+	x[9] =epics_get("1idc:m44.RBV")
+	x[10]=epics_get("1idc:m43.RBV")
+	x[11]=epics_get("1idc:m41.RBV")
+	x[12]=epics_get("1idc:m42.RBV")
+
+	#high res detector vertical pos
+	x[13]=epics_get("1idc:m45.RBV")
+        printf("#C SWP_V %s %g %g %g %g %g %g %g %g %g %g %g %g %g\n",x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8],x[9],x[10],x[11],x[12],x[13])
+   }      
+}'
+
+
+def sweep_fprnt_label '{
+    FPRNT=sprintf("start  end  imgn  samY_enc  ome_enc  tension  load  strain1  ")
+    PPRNT=sprintf("%9.9s %9.9s %9.9s %9.9s %9.9s %9.9s %9.9s %9.9s ","start","end","imgn","samY_enc","ome_enc","tension","load","strain1")
+    VPRNT=PPRNT 
+    _cols+=8;
+}'
+
+
+
+def sweep_fprnt_value '{
+    local imgn samY_enc ome_enc tension load strain1
+    if(OSC["detector"] == "bruker") {
+          imgn=(++BRUKERFILE["index"])
+    } else {
+          imgn = (detget_seqNumber-1);
+    }
+    samY_enc = epics_get("1id:AD4enc1:count")
+    ome_enc = epics_get("1id:Fed:s1:probe_5")
+    tension =  epics_get("1idc:m33.RBV")
+    load =  epics_get("1id:D1Ch2_raw.VAL")
+    strain1 = epics_get("1id:D1Ch4_raw.VAL")
+
+    FPRNT = sprintf("%.8g %.8g %.8g %.8g %.8g %.8g %.8g %.8g ",_start,_stop,imgn,samY_enc,ome_enc,tension,load,strain1);
+    PPRNT = sprintf("%9.4f %9.4f %.8g %9.4f %9.4f %9.4f %9.4f %9.4f ",_start,_stop,imgn,samY_enc,ome_enc,tension,load,strain1);
+    VPRNT=PPRNT
+    if(SOFTIOC_USE ) {
+      local t
+      if(MATLAB_OK) {
+        while(epics_get(sprintf("%sBusy",SOFTIOC_PV),"short")==1) {
+          if(t>20) {
+          printf("\nWaited too long, forced to unlock with matlab.\n")
+          epics_put(sprintf("%sBusy",SOFTIOC_PV),0)
+          MATLAB_OK = 0
+          break;
+          }
+          sleep(0.5)
+          t++
+        }
+      }
+      
+      epics_put(sprintf("%simgn",SOFTIOC_PV),imgn)
+      if(epics_get(sprintf("%sscantype",SOFTIOC_PV)) == "supersweep") {
+         epics_put(sprintf("%sstart",SOFTIOC_PV),$1)
+         epics_put(sprintf("%send",SOFTIOC_PV),$1)
+      } else {
+         epics_put(sprintf("%sstart",SOFTIOC_PV),_start)
+         epics_put(sprintf("%send",SOFTIOC_PV),_stop) # replaced _end
+      }   
+      epics_put(sprintf("%sNPTS",SOFTIOC_PV),NPTS+1)
+      epics_put(sprintf("%sBusy",SOFTIOC_PV),1)
+      
+    }  
+    write_parfile(OSC["detector"], imgn, OSC["imgprefix"],  OSC["motor"], _start, _stop )
+}'
+
+
+
+
+
+#-------------------initialize  hardware settings of 1id ----------------------------
+
+osc_scaler_set phi 1idc:scaler1 1idc:scaler2
+osc_scaler_set ome 1idc:scaler3 1idc:scaler4
+
+
+def _oscill \'_oscill_sweep\'
+def user_pre_sweep ''
+def user_mid_sweep ''
+def returnNull() '{return("NULL")}'
+
+# define empty macros if they are not defined
+if(!(whatis("det_trig")&&0x0010)) {
+   rdef det_trig ''
+   rdef det_wait ''
+   rdef detget_imgprefix'returnNull()'
+   rdef detget_seqNumber 'returnNull()'
+}
+if(unset("CCDPV")) {
+OSC["detector"]="none"
+CCDPV="dummyPV"
+}
+
+parfile ="/tmp/sweep_par"
+rdef write_parfile(detname,imgnr,imgprefix,motname,startpos,endpos) '{
+
+}'
+
+
+#need load macros file that contains shutter_sweep etc.

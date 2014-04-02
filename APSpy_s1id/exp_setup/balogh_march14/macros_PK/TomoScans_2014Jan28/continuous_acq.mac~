@@ -1,0 +1,75 @@
+
+global cont_acq_autosave
+
+
+# Needs use_ad_csnap or use_ad_retiga
+
+
+def cont_acqold '{
+    local exptime period
+    if( $# != 2) {
+      p "Usage: $0 exptime(sec) period(sec)"
+      exit
+    }
+    exptime = $1
+    period =$2
+    p "Periodic acquisition with exptime=", exptime, "sec and period=", period, "sec."
+    p "It is only for protecting the objective, the timing may not be perfect!"
+    epics_put(sprintf("%sImageMode",CCDPV),"Single")
+    #epics_put(sprintf("%sAutoSave",ADFILEPV),"No")
+    ccdset_AutoSaveNo
+    shutter_sweep
+    p "Switched to SWEEP shutter mode, AutoSave: Off"
+    p "Press CTRL+C to stop!"
+    sleep(0.5)
+    while (1) {
+      det_trig exptime
+      if (period > exptime) {
+        sleep(period)
+      }
+      det_wait
+    }
+}'
+
+
+def cont_acq '{
+#    global cont_acq_autosave
+    
+    local exptime period
+    if( $# != 2) {
+      p "Usage: $0 exptime(sec) period(sec)"
+      exit
+    }
+    # if we are still in cont_acq mode, first stop it
+    if (epics_get(sprintf("%sImageMode",CCDPV)) == "Continuous") stop_cont_acq 
+
+    exptime=$1
+    period=$2
+    ccdset_time_adretiga exptime
+    ccdset_period_adretiga period
+    cont_acq_autosave=ccdget_AutoSave
+    p "Periodic acquisition with exptime=", exptime, "sec and period=", period, "sec."
+    p "It is only for protecting the objective, the timing may not be perfect!"
+    
+    epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    ccdset_AutoSaveNo
+    shutter_sweep
+    p "Switched to SWEEP shutter mode, AutoSave: Off"
+    p "To stop acquisition use: stop_cont_acq"
+    det_trig exptime
+}'
+
+def stop_cont_acq '{
+    global cont_acq_autosave
+
+    epics_put(sprintf("%sAcquire",CCDPV),"Done",CB_TIME)
+    det_wait
+    epics_put(sprintf("%sImageMode",CCDPV),"Single")
+    if (cont_acq_autosave == 1) {
+        ccdset_AutoSaveYes
+        p "AutoSave: On"
+    }
+}'
+
+
+
