@@ -1,0 +1,215 @@
+# to edit and run this:
+# 1. save the edited version
+# 2. in spec window, type "qdo seetha_mar14_macros.mac"
+# 3. now any commands defined below can be run from the command line
+
+#*************************************************************
+def seetha_mar14_xyN '{
+
+#SwitchToGE
+
+# seetha_mar14_sw_mode
+
+if ($# != 11)
+  {
+  print "Usage: seetha_mar14_xyN [fname] [tframe] [Nframe] [x0] [Nx] [dx] [y0] [Ny] [dy] [nLoop] [tsleep]"
+  exit
+  }
+stX=$4; nX=$5; dX=$6;
+stY=$7; nY=$8; dY=$9;
+
+nLoop=$10; tsleep=$11;
+for (iLoop=0; iLoop<nLoop; iLoop++)
+  {
+  umv mtsYE stY
+  for (yLoop=0; yLoop<nY; yLoop++)
+    {
+     umv mtsXE stX
+     for (xLoop=0; xLoop<nX; xLoop++)
+       {
+       seetha_mar14_waxs_expose $3 $2 $1; #take waxs data
+       umvr mtsXE dX
+       sleep(tsleep) 
+     }
+   umvr mtsYE dY
+   }
+ #sleep(tsleep) 
+ }
+beep_dac
+}'
+
+#*************************************************************
+def seetha_mar14_waxs_expose '{
+
+# exposes GE2 for user-defined time
+#  x-ray exposure is controlled through fast shutter
+
+	if ($# != 3)
+	{
+	   print "Usage: seetha_mar14_waxs_expose [Nframe tframe fname]"
+	   exit
+	}  
+
+
+    # seetha_mar14_sw_mode
+    #use_ge_new "GE2:cam1:" # write this in spec, ensure it is set to GE2:cam1
+    delt=0.05; #wait time between epics commands
+    # umv stopX -40; #take waxs diode/beamstop out of beam
+    # umv sdX 50; #take saxs diode/beamstop out of beam
+    GE_Nframe=$1;
+    GE_tframe=$2
+    GE_fname="$3"
+    GE_fnum1=999; sleep(delt);
+    GE_fnum2=epics_get("GE2:cam1:FileNumber"); sleep(delt);
+    GE_fnum3=999; sleep(delt);
+    GE_fnum4=999; sleep(delt);
+
+    #Cclose; #arm shutters
+    check_beam_shutterA
+    Sopen; #arm shutters 	  
+    # shutter_sweep; #shutter will be controlled be GE TTL
+    shutter_manual; #shutter control using Copen/Cclose 
+
+    #epics_put("GE2:cam1:TriggerMode","MULTI DET");sleep(delt);
+    #epics_put("GE2:cam1:AcquireTime",GE_tframe); sleep(delt);
+
+    set_hydra_FileName $3
+    #epics_put("GE2:cam1:FileName","$3"); sleep(delt);
+    set_hydra_NumberOfImagesPerDetTrig GE_Nframe
+    #epics_put("GE2:cam1:NumImages",GE_Nframe); sleep(delt);
+    det_trig GE_tframe
+    #epics_put("GE2:cam1:Acquire","Acquire"); sleep(delt);
+
+    # sleep(GE_tframe);
+    # epics_put("1id:9440:1:bo_6.VAL",1); count(0.01); epics_put("1id:9440:1:bo_6.VAL",0); #start scintX exposure with TTL (external trigger mode)
+    Copen;
+    # epics_put("1id:9440:1:bo_7.VAL",1);sleep(0.1); epics_put("1id:9440:1:bo_7.VAL",0); #start GE with acromag hardware signal
+    # epics_put("ScintX:cam1:Acquire","Acquire"); #start scintX (internal trigger mode)
+    ct(GE_Nframe*(GE_tframe+0.15));#count scalers for metadata, include GE read time
+    #beep_dac; #for testing; listen&view oscilloscope
+    det_wait # Waiting for saving all ge_files
+    Cclose; #end x-ray exposure with fast shutter
+
+    #GE_1_4_handshake_epics; #wait until idle signal from all 4 GE detectors
+    #saxs_fnum=epics_get("ScintX:TIFF1:FileNumber")-1; sleep(delt);
+    saxs_fnum=999;
+
+    parfilename="/home/beams/S1IDUSER/new_data/seetha_mar14E/waxs_exposures.par"
+
+    #record beamline and exposure data in parameter file after exposure
+    initialize_beamline_parameters; get_beamline_parameters;
+    on(parfilename)
+    p date(),GE_fname,GE_fnum1,GE_fnum2,GE_fnum3,GE_fnum4,GE_tframe,GE_Nframe,S[0],S[1],S[2],S[4],S[5],S[8],S[9],S[10],S[19],p1Hs,p1Vs,Iring,energy,energy_cal,preamp1,preamp2,sammy_x,sammy_y,sammy_z,sammy_x2,sammy_z2,sammy_phi,keyence1,keyence2,cross,load,mts3,mts4,temp1,temp2,temp3,saxs_fnum
+    off(parfilename)
+
+    #shutter_manual; #allow acromag Copen/Cclose commands for shutter
+    close(parfilename)
+}'
+
+#************************************************************
+def initialize_beamline_parameters  '{
+    # set values to default value
+    local dval
+
+    dval=999;
+    energy_cal=dval; sammy_x=dval; sammy_y=dval; sammy_z=dval; sammy_x2=dval; sammy_z2=dval; sammy_phi=dval;
+    keyence1=dval; keyence2=dval; cross=dval; load=dval; mts3=dval; mts4=dval; temp1=dval; temp2=dval; temp3=dval; temp4=dval;
+}'
+
+#*************************************************************
+
+def get_beamline_parameters  '{
+    # grab relevant data
+    sammy_x=A[samX]; sammy_y=A[mtsYE]; sammy_x2=A[mtsXE]; sammy_phi=A[sam_phi];sammy_z2=A[hydraZ];
+    # sammy_x=A[samXX]; sammy_y=A[mtsYE]; sammy_x2=A[samX]; sammy_phi=A[phi];sammy_z2=A[hydraZ];
+    p1Hs=epics_get("1idc:m62.RBV");p1Vs=epics_get("1idc:m64.RBV");
+    Iring=epics_get("BL01:srCurrent");
+    keyence1=epics_get("1idc:DP41:s1:temp.VAL");
+    keyence2=epics_get("1idc:DP41:s2:temp.VAL");
+    cross=epics_get("1ide:D1Ch11_calc.VAL"); # crosshead position
+    load=epics_get("1ide:D1Ch12_calc.VAL");  # loadcell reading
+    mts3=epics_get("1id:D2Ch3_calc.VAL");
+    mts4=epics_get("1id:D2Ch6_calc.VAL");
+    #temp1=epics_get("1id:D2Dmm_calc.VAL");
+    temp1=epics_get("1ide:DP41:s3:temp.VAL"); # Temperature K-type, in furnace on the sample
+    temp2=epics_get("1id:DAC1_5.VAL");        # Flow rate control voltage in V, DAC ch 5
+    temp3=epics_get("1id:ET_RI:Temp3");
+    energy=epics_get("1id:userTran3.A");
+    preamp1=epics_get("1idc:A3sens_num.VAL");
+    preamp2=epics_get("1idc:A4sens_num.VAL");
+}'
+
+#*************************************************************
+
+def GE_2_handshake_epics '{
+# check if GE is idle using epics Area Detector Control application
+        poll_time=0.05; Ncheck_max=1000;
+       GE_address="GE2:cam1";
+        icheck=0; 
+        while (epics_get(sprintf("%s:DetectorState_RBV",GE_address)) != "IDLE")
+        {
+           icheck=icheck+1;   
+           sleep(poll_time)
+           if (icheck > Ncheck_max)
+              {
+              print "Exiting as waited too long for GE2 - check detector computer and restart programs / reboot as needed"
+              exit
+              }   
+        }
+      sleep(poll_time) #extra safety factor
+}'     
+
+#*************************************************************
+def beep_dac '{
+  epics_put("1id:DAC1_8.VAL",9); #send warning beep to world
+  sleep(0.5);
+  epics_put("1id:DAC1_8.VAL",0);
+}'
+
+def set_hydra_tframe '{
+ local i tframe
+ tframe=($1)
+ for (i=1; i<=2; i=i+1){
+    epics_put(sprintf("GE%d:cam1:AcquireTime",i),tframe)
+    }
+}'
+
+def acquire_hydra '{
+ local i 
+ for (i=1; i<=4; i=i+1){
+    epics_put(sprintf("GE%d:cam1:Acquire",i),"Acquire")
+    }
+}'
+
+
+def seetha_mar14_movie '{
+    local fname parf fExposureTime timestamp
+    
+    if ($# != 3) {
+        p "Usage:    $0 [filename] [exp_time] [gap_time]"
+        exit
+    }
+    fname="$1"
+    parf="./movie_$1.txt"
+    fExposureTime = $2
+
+    stop_cont_acq
+    ccdset_filename(fname)
+    ccdset_AutoSaveYes    
+    
+    for (i = 0; i < 1000000; i++) {
+            det_wait
+            
+			TakeStillImage( fExposureTime )
+			initialize_beamline_parameters; get_beamline_parameters;
+			timestamp=epics_get("QIMAGE2:image1:TimeStamp_RBV")-7.64214e8
+            on(parf)
+            p date(),ccdget_filename() ,ccdget_SeqNumber,ccdget_expTime, timestamp, S[0],S[1],S[2],S[4],S[5],S[8],S[9],S[10],S[19],p1Hs,p1Vs,Iring,energy,energy_cal,preamp1,preamp2,sammy_x,sammy_y,sammy_z,sammy_x2,sammy_z2,sammy_phi,keyence1,keyence2,cross,load,mts3,mts4,temp1,temp2,temp3,saxs_fnum
+            off(parf)
+            
+			sleep($3)
+	}
+   
+}'
+
+

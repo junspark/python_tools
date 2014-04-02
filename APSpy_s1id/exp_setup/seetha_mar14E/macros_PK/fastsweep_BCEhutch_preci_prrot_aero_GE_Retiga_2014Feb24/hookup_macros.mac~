@@ -1,0 +1,512 @@
+
+
+global EPICS_DELAY
+global CB_TIME
+EPICS_DELAY=0.02
+CB_TIME = 10.0  # The max time in seconds for waiting for the Callback in epics_put commands
+
+
+#DO_DIR="./macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/"
+DO_DIR="macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2014Feb24/"
+qdo beampos.mac
+qdo sweep_core_mod.mac
+qdo osc_fastsweep_FPGA_hydra.mac
+qdo write_parfile_general.mac
+
+
+
+# Overwriting this interactive macro
+# /home/beams/SPECADM/1id_macros/HEDM/sweep_det.mac
+def osc_setup_mod '{
+        local det
+        #OSC["shutteropen_delay"] =getval("Shutter open delay (Sec)",OSC["shutteropen_delay"])
+        OSC["shutteropen_delay"] = 0 
+        #OSC["shutterclose_delay"] =getval("Shutter close delay (Sec)",OSC["shutterclose_delay"])
+        OSC["shutterclose_delay"] = 0
+        
+        #if(SOFTIOC_USE=yesno("Use soft ioc to communicate with matlab?",SOFTIOC_USE)) {
+        #  SOFTIOC_PV = getval("Need to know the soft ioc prefix:",SOFTIOC_PV) 
+        #}
+        SOFTIOC_USE=0
+        
+        printf("\nPlease run the following setup macro based on detector type\n")
+        printf("####################################\n")
+        for(det in CCD_DET) {
+           printf("\t%s: %s\n",det,CCD_DET[det])
+        }
+      
+}'
+
+osc_setup_mod
+
+def seetha_mar14E_hydra1 '{
+    # Single GE2 with hydra scripts for aero/hexFly in E-hutch, PSO based FPGA control
+    
+    local ihydra
+    
+	#set_hydra_AutoStoreNo
+	#set_hydra_UserSingle
+	#qdo ./macros/use_hydra.mac
+    p "Hydra original:", hydra
+	# Select GE2
+	hydraNum=1
+    hydra[1]=2 ;  hydra[2]=0 ; hydra[3]=0 ; hydra[4]=0 
+    #use_ge_hydra "GE2:cam1:"  # This is not important any more
+
+    p "Hydra new:", hydra
+    
+    hydra_Initialize
+	
+	p "Hydra initialized:", hydra
+    OSC["detDelay"]=0.0
+    printf("Hydra array:       ")
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        printf("  %d", hydra[ihydra])
+    }
+    printf("\n")
+	printf("Next file paths:   ")
+	get_hydra_AllFilePaths
+	printf("Next file names:   ")
+	get_hydra_AllFileNames
+	printf("Next file formats:   ")
+	get_hydra_AllFileNameFormats
+	printf("Next file numbers: ")
+	get_hydra_AllFileNumbers
+
+	set_hydra_AutoStoreYes
+	#set_ge_AutoStoreNo
+	set_hydra_MultiDetSW
+#	set_hydra_MultiDetEdge
+#	set_hydra_MultiDetPulse
+#	set_hydra_RadMode
+	set_hydra_NumberOfImagesPerDetTrig 1
+	#set_hydra_BufferSize 290  # for GE3 GE4 and GE1 computers
+	#  for GE2 only 250, so do not need to do anything here
+	
+  
+    parfile="seetha_mar14E_FF.par"
+    fastparfile="fastpar_seetha_mar14E_FF.par"
+
+    #sxparfile="fastpar_seetha_mar14E_SX.par"
+
+	# setting up the osc
+    seetha_mar14E_set_Ehutch
+    #seetha_mar14E_set_Chutch
+    set_hydra_aero
+    #set_hydra_prrot
+    FrameSignalPV=DetPulsePV
+ 
+    FS_GE2SE_control
+    
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    #parfile="./test.par"
+    DEFAULT_GAP_TIME=0.150
+    # epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+
+def seetha_mar14E_combined '{
+    # Single GE2 with hydra scripts for prrot in E-hutch, AFRL
+    # Combined with teh near field Retiga detector called as QIMAGE1
+    
+    local ihydra
+    
+	# Select GE2
+	hydraNum=1
+    hydra[1]=2 ;  hydra[2]=0 ; hydra[3]=0 ; hydra[4]=0 
+
+    hydra_Initialize
+	
+	p "Hydra initialized:", hydra
+    OSC["detDelay"]=0.0
+    printf("Hydra array:       ")
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        printf("  %d", hydra[ihydra])
+    }
+    printf("\n")
+	printf("Next hydra file paths:   ")
+	get_hydra_AllFilePaths
+	printf("Next hydra file names:   ")
+	get_hydra_AllFileNames
+	printf("Next hydra file formats:   ")
+	get_hydra_AllFileNameFormats
+	printf("Next hydra file numbers: ")
+	get_hydra_AllFileNumbers
+
+	set_hydra_AutoStoreYes
+	#set_ge_AutoStoreNo
+	set_hydra_MultiDetSW
+#	set_hydra_MultiDetEdge
+#	set_hydra_MultiDetPulse
+#	set_hydra_RadMode
+	set_hydra_NumberOfImagesPerDetTrig 1
+	set_hydra_BufferSize 290  # for GE3 GE4 and GE1 computers
+	#  for GE2 only 250, so do not need to do anything here
+
+    # setting up the NF detector
+    use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+	OSC["detDelay"]=0.0
+	p  "Next Retiga file name:", detget_imgprefix
+	p  "Next Reatiga file number:", detget_seqNumber
+
+	OSC["detector"]="NFFF"
+    
+    parfile="seetha_mar14E_NFFF.par"
+    fastparfile="fastpar_seetha_mar14E_NFFF.par"
+
+    #sxparfile="fastpar_seetha_mar14E_SX.par"
+
+	# setting up the osc
+    seetha_mar14E_set_Ehutch
+    #seetha_mar14E_set_Chutch
+    #set_hydra_aero
+    #set_hydra_prrot
+    set_combined_prrot  # TODO set_combined_aero
+    #FrameSignalPV=DetPulsePV
+    FrameSignalPV=ReadoutPV # NF is the master
+
+    #FS_GE2SE_control
+    NFDet_select
+    FS_Retiga_control
+    
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+
+    # epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}' # combined setup
+
+
+def seetha_mar14E_Retiga '{
+    ## Suter feb13, aero/hexFly PSO based, Retiga in E-hutch
+    
+    use_ad_retiga "QIMAGE2:cam1:" "QIMAGE2:TIFF1:"
+	OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+    parfile="seetha_mar14E_NF.par"
+    fastparfile="fastpar_seetha_mar14E_NF.par"
+    #qdo ./write_parfile_general.mac
+    #qdo write_parfile_Retiga.mac
+    #def write_parfile_fast \'write_parfile_fast_Bhutch \'
+    #def write_parfile_fast \'write_parfile_fast_Ehutch \'
+	#def _write_line \'_write_GE2_line\'
+
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    #parfile="./test.par"
+
+	# setting up the osc
+    seetha_mar14E_set_Ehutch
+    #seetha_mar14E_set_Chutch
+    set_Retiga_aero
+    #set_Retiga_Ehutch_prrot
+    
+    FrameSignalPV=ReadoutPV
+
+    #DEFAULT_GAP_TIME=0.04
+
+    NFDet_select
+    FS_Retiga_control
+    
+    #epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+def seetha_mar14E_Tomo '{
+    ## Suter feb13, aero/hexFly PSO based, Retiga in E-hutch
+    ## Suter Apr13 Tomo with QTEST and old Retiga
+    
+#    use_ad_retiga "QTEST:cam1:" "QTEST:TIFF1:"
+    use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:" # This is for Aszu from AD NEW8
+#    use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"  # This is for Malbec
+
+	OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+    parfile="seetha_mar14E_Tomo.par"
+    fastparfile="fastpar_seetha_mar14E_Tomo.par"
+    #qdo ./write_parfile_general.mac
+    #qdo write_parfile_Retiga.mac
+    #def write_parfile_fast \'write_parfile_fast_Bhutch \'
+    #def write_parfile_fast \'write_parfile_fast_Ehutch \'
+	#def _write_line \'_write_GE2_line\'
+
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    #parfile="./test.par"
+
+# NO OSC, NO fastsweep, ONLY for TOMO
+	# setting up the osc
+    #seetha_mar14E_set_Ehutch
+    seetha_mar14E_set_Chutch
+    #set_Tomo_Ehutch_aero
+    set_Retiga_aero
+    #set_Tomo_Ehutch_prrot
+    FrameSignalPV=ReadoutPV
+
+    #DEFAULT_GAP_TIME=0.04
+
+    TomoDet_select
+    #NFDet_select
+    FS_Retiga_control
+    #epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+"""
+def switchto_EhutchGE2 '{
+	#set_hydra_AutoStoreNo
+	#set_hydra_UserSingle
+	use_ge_new "GE2:cam1:"
+	detabort
+    OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+	set_ge_AutoStoreYes
+	#set_ge_AutoStoreNo
+    parfile="parfile1.par"
+    fastparfile="fastparfile1.par"
+    qdo write_parfile_GE.mac
+	def _write_line \'_write_GE2_line\'
+	def _write_line \' \'
+  
+	# setting up the osc
+    set_Ehutch
+    set_GE	
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    parfile="./test.par"
+    DEFAULT_GAP_TIME=0.150
+    epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+def switchto_ChutchGE2 '{
+	#set_hydra_AutoStoreNo
+	#set_hydra_UserSingle
+	use_ge_new "GE2:cam1:"
+	detabort
+    OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+	set_ge_AutoStoreYes
+	#set_ge_AutoStoreNo
+    parfile="parfile2.par"
+    fastparfile="fastparfile2.par"
+    qdo write_parfile_GE.mac
+	def _write_line \'_write_GE2_line\'
+	def _write_line \' \'
+  
+	# setting up the osc
+    set_Chutch
+    set_GE	
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    parfile="./test.par"
+    DEFAULT_GAP_TIME=0.150
+#    epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+
+def switchto_RetigaE '{
+    ## PUP  AFRL Aug12, prrot time based, Retiga in E-hutch
+    
+    use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+	OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+    parfile="parfile2.par"
+    fastparfile="fastparfile2.par"
+    qdo write_parfile_Retiga.mac
+	#def _write_line \'_write_GE2_line\'
+
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    parfile="./test.par"
+    DEFAULT_GAP_TIME=0.04
+
+	# setting up the osc
+    set_Ehutch
+    set_Retiga	
+
+    epics_put("1ide:m5.CNEN", "Enable") # Enabling the Torque on PulseRay prrot motor
+    sleep(EPICS_DELAY)
+    sync
+    printOscGlobals
+}'
+
+def switchto_RetigaB '{
+    use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+	OSC["detDelay"]=0.0
+	p  "Next file name:", detget_imgprefix
+	p  "Next file number:", detget_seqNumber
+    parfile="hanson_oct12.par"
+    fastparfile="fast_hanson_oct12.par"
+    qdo write_parfile_Retiga.mac
+	#def _write_line \'_write_GE2_line\'
+
+	# setting up the osc
+    set_Bhutch
+    set_Retiga	
+
+    # Only for test purposes
+    # Comment out
+    osc_threshold = -1
+    parfile="./test.par"
+    DEFAULT_GAP_TIME=0.001
+
+    printOscGlobals
+}'
+
+"""
+
+def printvar '{
+    p "$1 =", $1 
+}'
+
+def printOscGlobals '{
+    p ""
+    printvar Mon_ScalerPV
+    printvar MonICName 
+    printvar TransmICName
+    printvar MonCount_ArrayPV 
+    printvar TransmCount_ArrayPV
+    printvar EMonICName 
+    printvar ETransmICName
+    printvar EMonCount_ArrayPV
+    printvar ETransmCount_ArrayPV
+
+    printvar DetPulsePV
+    printvar ReadoutPV
+    printvar SEXGEPV
+    printvar GATE_signalPV
+    printvar ScalerTrigPV 
+    printvar ScalerTrigDetPulsePV
+    printvar FPGAPV
+    printvar PSOPV
+    printvar DetRdyPV
+    printvar idFPGAPV
+    printvar DetPulseToADPV
+    printvar FrameCounterPV
+    printvar FrameCounterTriggerPV   
+    printvar DetPulsePV
+    printvar TimeStampPV
+    printvar TimeStampArrayPV
+    printvar FrameSignalPV
+    p ""
+    printvar parfile
+    printvar fastparfile
+    printvar osc_threshold
+    printvar EPICS_DELAY
+    printvar DEFAULT_GAP_TIME 
+    printvar GapAdjustmentTicks
+    printvar DecodingRate
+    printvar ShouldRotateBack
+    printvar DataDirectory
+    printvar FileSizeCheck    
+    
+    printvar hydraNum
+    printvar hydra
+    p ""
+    
+    printvar ALERTLIST
+    p ""
+}'
+
+def beep_dac '{
+  epics_put("1id:DAC1_8.VAL",9); #send warning beep to world
+  sleep(1);
+  epics_put("1id:DAC1_8.VAL",0);
+}'
+
+
+# /home/beams/SPECADM/1id_macros/HEDM/sweep_det.mac
+#def use_ge_new '{
+#        ccdhook_adge $*
+#        OSC["detector"]="GE_NEW"
+## PK - Correction is here
+##        if($#==1) CCDPV="$1"
+#        if($#==1) ADFILEPV=CCDPV="$1"
+#        else  ADFILEPV=CCDPV=getsval("detector PV prefix","GE2:cam1:")
+#        
+#        def det_trig \'_adtrig_xtime\'
+#        def det_wait \'_adwait\'
+#        def detget_imgprefix \'detget_imgprefix_ad\'
+#        def detget_seqNumber \'detget_seqNumber_ad\'
+#        def detabort \'detabort_ad_ge\'
+#        def ccdset_expNum_ad \'ccdset_expNum_ad_ge\'
+#        OSC["detDelay"] = 0.5
+#        OSC["cushion_time"]=0.0
+#        printf("Detector related macros are re-defined to %s\n",OSC["detector"])
+#}'
+
+#def detabort_ad_ge '{
+#    p "Aborting the GE detector..."
+#    epics_put(sprintf("%sAcquire", CCDPV), "Done");
+#    while(epics_get(sprintf("%sAcquire", CCDPV))!="Done") {
+#        sleep(0.02)
+#    }
+#    p "DONE"
+#    epics_put(sprintf("1iddth1:DTH:resetLogicBO", CCDPV), 1);
+#    sleep(2.0)
+#    p "FPGA trigger module is reset."
+#    
+#}'
+
+#def ccdset_expNum_ad_ge '{
+#    # Usage: $0 numframes
+#    local imnum
+#    imnum=($1)
+#	epics_put(sprintf("%sNumImages",CCDPV), imnum)
+#	sleep(0.2)    
+#}'
+
+
+#def set_ge_AutoStoreYes '{
+#    local ihydra
+#    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+#		epics_put(sprintf("%sAutoStore",CCDPV), "YES")
+#	}
+#    sleep(0.2)
+#	p CCDPV, "detector in SAVE mode"
+#}'
+
+#def set_ge_AutoStoreNo '{
+#    local ihydra
+#    for (ihydra=1 ; ihydra<=4; ihydra= ihydra+1) { 
+#		epics_put(sprintf("%sAutoStore",CCDPV), "NO")
+#	}
+#    sleep(0.2)
+#	p CCDPV, "detector in NOSAVE mode"
+#}'
+
+#def set_ge_UserSingle '{
+#    epics_put(sprintf("%sTriggerMode",CCDPV), "USER SINGLE")
+#    sleep(0.2)
+#	p CCDPV, "detector in USER SINGLE mode"
+#}'
+
+

@@ -1,0 +1,2910 @@
+
+global OSC[] 
+global SOFTIOC_USE SOFTIOC_PV MATLAB_OK
+global BRUKERFILE[]
+global IS_SWEEPSCAN
+global parfile CCDPV
+global sxparfile
+
+global osc_threshold
+global DEFAULT_GAP_TIME
+global EPICS_DELAY CB_TIME
+global ShouldChangeHydraMode
+
+global fastparfile
+global MonCount_ArrayPV TransmCount_ArrayPV Mon_ScalerPV
+global EMonCount_ArrayPV ETransmCount_ArrayPV 
+global IntegrTicks_ArrayPV 
+global ScalerTrigPV ScalerTrigDetPulsePV MonICName TransmICName EMonICName ETransmICName IntegrICName
+
+global array_NUSE
+array_NUSE=2000 # Number of array elements in the arrayCalcTools
+global array moncnt[array_NUSE]  # Monitor counter array
+global array trcnt[array_NUSE]   # Transm. counter array
+global array Emoncnt[array_NUSE]  # Monitor counter array
+global array Etrcnt[array_NUSE]   # Transm. counter array
+global array cntticks[array_NUSE]   # Scaler integration ticks array (in 10MHz ticks currently)
+global array timestamp[array_NUSE]   # TimeStamp array
+global FPGAPV GATE_signalPV
+global PSOPV, DetRdyPV, idFPGAPV
+global DetPulseToADPV DetPulsePV ReadoutPV FrameCounterPV FrameCounterTriggerPV
+global FrameSignalPV
+global TimeStampPV TimeStampArrayPV
+global GapAdjustmentTicks
+global DecodingRate
+global ShouldRotateBack # Should the rotation stage go back immediately after finishing the fastweep
+global MaxSavingTime # Maximum saving time for hydra in seconds that we should wait after the scan before we abort everything and start over
+global ALERTLIST # List of e-mail addresses to send alert e-mails in case of failures
+global DataDirectory HydraFileSizeCheck
+
+
+osc_threshold =1000 #ct/sec
+DEFAULT_GAP_TIME =  0.05 # default gap time in sec between the frames
+#GapAdjustmentTicks = 170 # For time driven FPGA
+GapAdjustmentTicks = 1 # For position driven FPGA
+# For the Position Driven FPGA
+DecodingRate=2 # 1x, 2x, 4x typically
+   # For B-hutch, Precitech 4x decoder for the controller and 2x decoder for the FPGA ticks
+   # So this value is 2, because the number of steps reported by EPICS is twice as large as the number of ticks arrives to the FPGA
+   # For E-hutch, Parker with Renishaw this value is 1
+
+ShouldRotateBack=0 # Do not rotate back by default
+MaxSavingTime=100  # 100 secs typically good for 300 frames
+HydraFileSizeCheck=0 # There is no check on size of the hydra files, by default
+DataDirectory="~/mnt/HEDM/"  # The Directory name where the hydra, GE files can be found in the file system, this is only the default
+ShouldChangeHydraMode=1  # To save time the hydra detector mode will not be changed (if it is 0) before and after fastsweep. It is the USER'S RESPONSIBILITY to adjust.
+
+#array_NUSE=2000 # Number of array elements in the arrayCalcTools
+
+# default values, but Users can overwrite it
+# B-hutch
+def set_Bhutch '{
+    MonCount_ArrayPV="1id:userArrayCalc1"
+    TransmCount_ArrayPV="1id:userArrayCalc3"
+    Mon_ScalerPV="1id:scaler2" 
+    MonICName="_cts2.C" # before the sample (from the orange field)
+    TransmICName = "_cts2.D" # after the sample
+     # Integration time counter
+    IntegrTicks_ArrayPV="1id:userArrayCalc6"
+    IntegrICName = "_calc5.VAL" # At the calc fields: A= 1id:scaler2_calc5.VAL
+
+    DetPulsePV="1id:9440:1:bi_0" # For getting the det_pulses for Scaler Triggering via the Acromag
+    #ReadoutPV="1id:9440:1:bi_0" # Gives the EPICS det_pulses (Acromag is necessary for transferring the signal to another crate)
+    ReadoutPV="1id:9440:1:bi_1" # Input ch1, Counts the Retiga READOUT signals now it is easier and more reliable
+    SEXGEPV="1id:9440:1:bi_2" # Input ch2, Counts the GE EXPOSURE signals
+
+    #ScalerTrigPV="1id:userStringCalc2"
+    ScalerTrigPV="1id:userCalcOut3"
+    DetPulseToADPV="1id:userStringCalc4" # This is not enabled with HW triggering
+    FrameCounterPV="1id:userTran10"
+    FrameCounterTriggerPV="1id:userCalcOut2"
+
+    FPGAPV="1mini1:sg:"
+    #GATE_signalPV="1mini1:sg:FO17_BI"
+    GATE_signalPV="1id:9440:1:bi_3" # CHECK THIS! NO .VAL field !
+
+    rdef RisingEdge_GATE \'Rising_GATE_Bhutch\'  # For waiting for the GATE
+    rdef FallingEdge_GATE \'Falling_GATE_Bhutch\'
+    rdef disableGATE \' \'
+    rdef enableGATE \' \'
+}'
+
+# Retiga
+def set_Retiga '{
+    # Good for precitech B_hutch posdriven
+    
+#    def arm_detector \'arm_detector_SWRetiga\'
+#    def arm_detector \'arm_detector_SWRetiga_PosDriven\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+
+#    def disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE1:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1id:userArrayCalc5"
+
+    #DEFAULT_GAP_TIME = 0.04
+    DEFAULT_GAP_TIME = 0.003 # For Position driven HW trig
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    #GapAdjustmentTicks = 5000  #  0 180 180 1 sec
+    #GapAdjustmentTicks = 3  # for position driven
+    GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+	
+}'
+
+def set_Retiga_Ehutch '{
+    # Good for prrot E-hutch time-based det_pulses and fake GATE
+
+#    def arm_detector \'arm_detector_SWRetiga\'
+#    def arm_detector \'arm_detector_SWRetiga_PosDriven\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+
+#    def disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE2:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1id:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.05
+    #DEFAULT_GAP_TIME = 0.001 # For Position driven HW trig
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    GapAdjustmentTicks = 5000  # prrot 0 180 180 1 sec 
+    #GapAdjustmentTicks = 3  # for position driven
+    #GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+	
+}'
+
+
+def set_Retiga_aero '{
+    # Good for aero/hexFly PSO based det_pulses 
+    # Sets up the Near-field detector
+
+#    rdef arm_detector \'arm_detector_SWRetiga\'
+#    rdef arm_detector \'arm_detector_SWRetiga_PosDriven\'
+#    rdef arm_detector \'arm_detector_HWtriggerRetiga\'
+#    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+#    rdef arm_detector \'arm_detector_HWtriggerRetiga_aerohexFly\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga_aeroPSOFly\'
+
+#    rdef disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE2:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1ide:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.002
+    #DEFAULT_GAP_TIME = 0.001 # For Position driven HW trig
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    #GapAdjustmentTicks = 5000  # prrot 0 180 180 1 sec 
+    #GapAdjustmentTicks = 3  # for position driven
+    #GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+    GapAdjustmentTicks = 0  # for aero/hexFly
+	
+}'
+
+def set_Retiga_Ehutch_prrot '{
+    # Good for prrot/FPGA E-hutch  
+    # Sets up the Near-field detector
+
+#    def arm_detector \'arm_detector_SWRetiga\'
+#    def arm_detector \'arm_detector_SWRetiga_PosDriven\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_aerohexFly\'
+#    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_prrot\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_prrot_Renishaw\'
+
+#    def disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE1:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1ide:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.005
+    #DEFAULT_GAP_TIME = 0.001 # For Position driven HW trig
+    #DEFAULT_GAP_TIME = 0.0062
+    
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    #GapAdjustmentTicks = 5000  # prrot 0 180 180 1 sec 
+    #GapAdjustmentTicks = 3  # for position driven
+    #GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+    GapAdjustmentTicks = 0   # for prrot/FPGA
+
+    DecodingRate=1  # For prrot FPGA 
+
+}'
+
+def set_Tomo_Ehutch_aero '{
+    # Good for aero/hexFly E-hutch PSO based det_pulses 
+
+#    def arm_detector \'arm_detector_SWRetiga\'
+#    def arm_detector \'arm_detector_SWRetiga_PosDriven\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_aerohexFly\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga_aeroPSOFly\'
+
+#    def disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE1:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1ide:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.001
+    #DEFAULT_GAP_TIME = 0.001 # For Position driven HW trig
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    #GapAdjustmentTicks = 5000  # prrot 0 180 180 1 sec 
+    #GapAdjustmentTicks = 3  # for position driven
+    #GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+    GapAdjustmentTicks = 0  # for aero/hexFly
+	
+}'
+
+def set_Tomo_Ehutch_prrot '{
+    # Good for prrot/FPGA E-hutch  
+
+#    def arm_detector \'arm_detector_SWRetiga\'
+#    def arm_detector \'arm_detector_SWRetiga_PosDriven\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_preci\'
+#    def arm_detector \'arm_detector_HWtriggerRetiga_aerohexFly\'
+#    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_prrot\'
+    rdef arm_detector \'arm_detector_HWtriggerRetiga_PosDriven_prrot_Renishaw\'
+
+#    def disarm_detector \'disarm_detector_SWRetiga\'
+    rdef disarm_detector \'disarm_detector_HWtriggerRetiga\'
+
+	TimeStampPV="QIMAGE1:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1ide:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.001
+    #DEFAULT_GAP_TIME = 0.001 # For Position driven HW trig
+    #GapAdjustmentTicks = 65000 # for 10 frames 1 sec
+    #GapAdjustmentTicks = 5000  # prrot 0 180 180 1 sec 
+    #GapAdjustmentTicks = 3  # for position driven
+    #GapAdjustmentTicks = 1  # for position driven 4000DC, 1ms gap_time
+    GapAdjustmentTicks = 0  # for aero/hexFly
+	
+}'
+
+# GE detector with prrot
+"""
+def set_GE '{
+    #def arm_detector \'arm_detector_HWtriggerGE\'
+    rdef arm_detector \'arm_detector_HWtriggerGE_PosDriven\'
+    rdef disarm_detector \'disarm_detector_HWtriggerGE\'
+    DEFAULT_GAP_TIME = 0.150
+    #GapAdjustmentTicks = 6933 # 180 frames 0.2 sec
+    GapAdjustmentTicks = 5200 # 0 180 180 frames 0.5 sec
+    GapAdjustmentTicks = 1 # Position driven
+}'
+"""
+
+# GE detector(s) with AeroTech stage, only short trigger pulses
+def set_hydra_aero '{
+    #def arm_detector \'arm_detector_HWtriggerGE\'
+    rdef arm_detector \'arm_detector_HWtriggerGE_FlyScan_Aero_hydra\'
+    rdef disarm_detector \'disarm_detector_HWtriggerGE_hydra\'
+    #rdef arm_detector \'arm_detector_HWtriggerGE_FlyScan_Aero_hydra_ScintX\'
+    #rdef disarm_detector \'disarm_detector_HWtriggerGE_hydra_ScintX\'
+    
+    # For ScintX
+    TimeStampPV="ScintX:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1id:userArrayCalc5"
+    
+    DEFAULT_GAP_TIME = 0.150
+    #GapAdjustmentTicks = 6933 # 180 frames 0.2 sec
+    #GapAdjustmentTicks = 5200 # 0 180 180 frames 0.5 sec
+    #GapAdjustmentTicks = 1 # Position driven
+    GapAdjustmentTicks = 0 # Aero FlyScan --> This is not used
+}'
+
+# GE detector(s) with Pulseray stage, full DetPulse from FPGA
+def set_hydra_prrot '{
+    #def arm_detector \'arm_detector_HWtriggerGE\'
+    #rdef arm_detector \'arm_detector_HWtriggerGE_prrot_hydra\'
+    rdef arm_detector \'arm_detector_HWtriggerGE_prrot_hydra_Renishaw\'
+    rdef disarm_detector \'disarm_detector_HWtriggerGE_hydra\'
+
+    DEFAULT_GAP_TIME = 0.150
+    #GapAdjustmentTicks = 6933 # 180 frames 0.2 sec
+    #GapAdjustmentTicks = 5200 # prrot 0 180 180 frames 0.5 sec
+    GapAdjustmentTicks = 0 # Position driven
+    #GapAdjustmentTicks = 0 # Aero FlyScan --> This is not used
+    
+    DecodingRate=1  # For prrot FPGA 
+}'
+
+def set_combined_prrot '{
+    # Good for prrot/FPGA E-hutch  
+    # Sets up the combined Near-field and Far-field detector
+
+    rdef arm_detector \'arm_detector_HWtriggerCombined_PosDriven_prrot_Renishaw\'
+    rdef disarm_detector \'disarm_detector_HWtriggerCombined\'
+
+	TimeStampPV="QIMAGE1:image1:TimeStamp_RBV"
+	TimeStampArrayPV="1ide:userArrayCalc5"
+
+    DEFAULT_GAP_TIME = 0.005
+    GapAdjustmentTicks = 0   # for prrot/FPGA
+
+    DecodingRate=1  # For prrot FPGA 
+
+}' # set_combined_prrot
+
+
+#E-hutch 
+def seetha_mar14E_set_Ehutch '{
+    # Prototype macro for aero/PSOFly, PSO based FPGA
+
+    ## Workaround for the 1ide crate reboot issue with Aerotech: Put back the correct number    
+    #epics_put("1ide:sg2:BUFFER-1_IN_Signal", "0!", 10)
+    
+    MonCount_ArrayPV="1ide:userArrayCalc1"
+    TransmCount_ArrayPV="1ide:userArrayCalc2"
+    #Mon_ScalerPV="1ide:3820:scaler2" 
+    Mon_ScalerPV="1ide:S2:scaler2" 
+    #MonICName="_cts1.D" # before the sample (from the orange field)
+    #TransmICName = "_cts2.A" # after the sample
+    #MonICName="_cts2.C" # standard IC in E, after the slit (from the orange field)
+    #MonICName="_cts2.B" # standard IC in E, after the slit (from the orange field)
+    #TransmICName = "_cts2.A" # pin diode after the sample
+
+    MonICName="_cts2.B" # standard IC in E, after the DS slit, before the sample 
+    TransmICName = "_cts2.A" # pin diode after the sample
+    #MonICName="_cts3.C" # Bot UP 
+    #TransmICName = "_cts3.D" # Bot DN
+
+    # Energy monitoring
+    EMonCount_ArrayPV="1ide:userArrayCalc3"
+    ETransmCount_ArrayPV="1ide:userArrayCalc4"
+    #EMonICName="_cts4.C" # before the E-calib foil (from the orange field)
+    #ETransmICName = "_cts4.D" # after the E-calib foil
+    #EMonICName="_cts4.A" # before the E-calib foil (from the orange field)
+    #ETransmICName = "_cts4.B" # after the E-calib foil
+
+    EMonICName="_cts4.A" # before the E-calib foil in B 
+    ETransmICName = "_cts4.B" # after the E-calib foil in B
+
+    #EMonICName="_cts1.B" # ic1e split ion chamber at the enrance of the E-hutch, top part
+    #ETransmICName = "_cts1.C" # ic2c split IC, bottom part
+
+    #EMonICName="_cts4.C" # Top Up
+    #ETransmICName = "_cts4.D" # Top DN
+
+    #ETransmICName = "_cts1.D" # After US Kohzu slits in E 
+    #EMonICName="_cts2.B" # split IC ds in E-hutch, upper half (from the orange field)
+    #ETransmICName = "_cts2.C" # --- lower half
+    # Integration time counter
+    IntegrTicks_ArrayPV="1ide:userArrayCalc6"
+    IntegrICName = "_calc1.VAL" # At the calc fields: A= 1ide:3820:scaler2_calc1.VAL
+
+    DetPulsePV="1id:9440:1:bi_0"
+    setup_DetPulsePV_Acromag
+    #ReadoutPV="1id:9440:1:bi_0" # Gives the EPICS det pulses
+    ReadoutPV="1id:9440:1:bi_1" # Retiga Readout for counting the frames
+    SEXGEPV="1id:9440:1:bi_2" # GE Single EXposure for counting the frames
+    setup_ReadoutPV_Acromag
+    setup_SEXGEPV_Acromag
+    #GATE_signalPV="1ide:userCalcOut1" # for prrot
+    GATE_signalPV="1id:9440:1:bi_3"
+    setup_GATEsignalPV_Acromag
+    
+    # Acromag at 1id
+    #ScalerTrigDetPulsePV="1id:9440:1:bi_0.VAL"  # Gives the trigger signal to the ScalerTrigPV
+    # E-FPGA, #19, det_pulses for prrot, development, DO NOT USE, not necessary
+    ScalerTrigDetPulsePV="1ide:sg:FI3_BI"  # Gives the trigger signal to the ScalerTrigPV
+    # E-FPGA, #21, det_pulses for aero
+    #ScalerTrigDetPulsePV="1ide:sg2:FO21_BI"  # Gives the trigger signal to the ScalerTrigPV
+    #ScalerTrigPV="1ide:userStringCalc2"
+    #ScalerTrigPV="1id:userCalcOut3"
+    ScalerTrigPV="1ide:userCalcOut2"
+    DetPulseToADPV="1id:userStringCalc4"
+    #TODO FrameSignalPV=DetPulsePV for GE
+    #TODO FrameSignalPV=ReadOutPV for Retiga
+    FrameSignalPV=DetPulsePV # This is only the default, it is set later correctly in the detector related macros
+    FrameCounterPV="1id:userTran10" # The triggered FrameCounter record
+    FrameCounterTriggerPV="1id:userCalcOut2" # The userCalOut record that triggers the framecounter
+    
+    #FPGAPV="1ide:sg:"  # For prrot
+    FPGAPV="1ide:sg2:"  # For aero
+    PSOPV="1ide:PSOFly1:"
+    DetRdyPV="1id:softGlue:DFF-2_OUT_BI" # For waiting when the hydra is ready for work
+    idFPGAPV="1id:softGlue:"
+    setup_DTHDetRdy_FPGA
+
+    rdef RisingEdge_GATE \'Rising_GATE_Ehutch\'  # For waiting for the GATE
+    rdef FallingEdge_GATE \'Falling_GATE_Ehutch\'
+    #setup_FakeGATEandDetPulse_aero # Stopping the GATE signal at the end of sweep only
+    #setup_FakeGATEandDetPulse_aero # Stopping the GATE signal at the end of sweep only
+    rdef disableGATE \' \' # For stopping the generation of signals during positioning the stage
+    rdef enableGATE \' \'
+}'
+
+
+# C-hutch PSOFly
+def seetha_mar14E_set_Chutch '{
+    # Prototype macro for aero/PSOFly, PSO based FPGA in the C-hutch
+    
+    MonCount_ArrayPV="1id:userArrayCalc1"
+    TransmCount_ArrayPV="1id:userArrayCalc2"
+    
+    Mon_ScalerPV="1id:scaler2"
+    
+    #MonICName="_cts1.D" # before the sample (from the orange field)
+    #TransmICName = "_cts2.A" # after the sample
+    #MonICName="_cts2.C" # standard IC in E, after the slit (from the orange field)
+    #MonICName="_cts2.B" # standard IC in E, after the slit (from the orange field)
+    #TransmICName = "_cts2.A" # pin diode after the sample
+
+    MonICName="_cts4.A" # standard IC, ic3c, after the DS slit, before the sample 
+    TransmICName = "_cts3.A" # IC downstream of hydra (ic7b or IC6)
+
+    # Energy monitoring
+    EMonCount_ArrayPV="1id:userArrayCalc3"
+    ETransmCount_ArrayPV="1id:userArrayCalc4"
+    #EMonICName="_cts4.C" # before the E-calib foil (from the orange field)
+    #ETransmICName = "_cts4.D" # after the E-calib foil
+    #EMonICName="_cts4.A" # before the E-calib foil (from the orange field)
+    #ETransmICName = "_cts4.B" # after the E-calib foil
+    EMonICName="_cts2.A" # before the E-calib foil in B 
+    ETransmICName = "_cts2.C" # after the foil in B 
+    #EMonICName="_cts2.B" # split IC ds in E-hutch, upper half (from the orange field)
+    #ETransmICName = "_cts2.C" # --- lower half
+    #EMonICName="_cts3.C" # split IC in C: IC1C 
+    #ETransmICName = "_cts3.D" # split IC in C: IC2C 
+    
+    # Integration time counter
+    IntegrTicks_ArrayPV="1id:userArrayCalc6"
+    IntegrICName = "_calc5.VAL" # Be sure: At the calc fields: 1id:scaler2_calc5.CALC = A => 1id:scaler2_calc5.VAL
+
+    DetPulsePV="1id:9440:1:bi_0"
+    setup_DetPulsePV_Acromag
+    #ReadoutPV="1id:9440:1:bi_0" # Gives the EPICS det pulses
+    ReadoutPV="1id:9440:1:bi_1" # Retiga Readout for counting the frames
+    SEXGEPV="1id:9440:1:bi_2" # GE Single EXposure for counting the frames
+    setup_ReadoutPV_Acromag
+    setup_SEXGEPV_Acromag
+    #GATE_signalPV="1ide:userCalcOut1" # for prrot
+    GATE_signalPV="1id:9440:1:bi_3"
+    setup_GATEsignalPV_Acromag
+    
+    # Acromag at 1id
+    #ScalerTrigDetPulsePV="1id:9440:1:bi_0.VAL"  # Gives the trigger signal to the ScalerTrigPV
+    # E-FPGA, #19, det_pulses for prrot, development, DO NOT USE
+    #ScalerTrigDetPulsePV="1ide:sg2:FO19_BI"  # Gives the trigger signal to the ScalerTrigPV
+    # E-FPGA, #21, det_pulses for aero
+    #ScalerTrigDetPulsePV="1ide:sg2:FO21_BI"  # Gives the trigger signal to the ScalerTrigPV
+    # C-FPGA, #21, det_pulses for aero
+    ScalerTrigDetPulsePV="1id:softGlue:FO3_BI"  # Gives the trigger signal to the ScalerTrigPV
+    #ScalerTrigPV="1ide:userStringCalc2"
+    #ScalerTrigPV="1id:userCalcOut3"
+    ScalerTrigPV="1id:userCalcOut3"
+    DetPulseToADPV="1id:userStringCalc4"
+    #TODO FrameSignalPV=DetPulsePV for GE
+    #TODO FrameSignalPV=ReadOutPV for Retiga
+    FrameSignalPV=DetPulsePV # This is only the default, it is set later correctly in the detector related macros
+    FrameCounterPV="1id:userTran10" # The triggered FrameCounter record
+    FrameCounterTriggerPV="1id:userCalcOut2" # The userCalOut record that triggers the framecounter
+    
+    FPGAPV="1ide:sg2:"
+    PSOPV="1ide:PSOFly1:"
+    DetRdyPV="1id:softGlue:DFF-2_OUT_BI" # For waiting when the hydra is ready for work
+    idFPGAPV="1id:softGlue:"
+    setup_DTHDetRdy_FPGA
+
+    rdef RisingEdge_GATE \'Rising_GATE_Ehutch\'  # For waiting for the GATE
+    rdef FallingEdge_GATE \'Falling_GATE_Ehutch\'
+    setup_FakeGATEandDetPulse_aero # Stopping the GATE signal at the end of sweep only
+    rdef disableGATE \' \' # For stopping the generation of signals during positioning the stage
+    rdef enableGATE \' \'
+}'
+
+"""
+#C-hutch
+def set_Chutch '{
+    MonCount_ArrayPV="1id:userArrayCalc1"
+    TransmCount_ArrayPV="1id:userArrayCalc3"
+    Mon_ScalerPV="1id:scaler1" 
+    MonICName="_cts4.A" # before the sample (from the orange field)
+    TransmICName = "_cts4.B" # after the sample
+
+    DetPulsePV="1id:9440:1:bi_0" # For getting the det_pulses
+    ReadoutPV="1id:9440:1:bi_1" # Gives the EPICS det_pulses (Acromag is necessary for transferring the signal to another crate)
+
+    #ScalerTrigPV="1id:userStringCalc2"
+    ScalerTrigPV="1id:userCalcOut3"
+    DetPulseToADPV="1id:userStringCalc4"
+    FrameCounterPV="1id:userTran10"
+    FrameCounterTriggerPV="1id:userCalcOut2"
+
+    FPGAPV="1ide:sg2:"
+    #GATE_signalPV="1ide:sg2:FO17_BI"
+    GATE_signalPV="1id:9440:1:bi_3" # CHECK THIS!
+
+    rdef RisingEdge_GATE \'Rising_GATE_Aero\'  # For waiting for the GATE
+    rdef FallingEdge_GATE \'Falling_GATE_Aero\'
+    rdef disableGATE \' \'
+    rdef enableGATE \' \'
+    #setup_FakeGATEandDetPulse
+}'
+"""
+
+########################## These are the fastsweep macros ######################################
+
+## preci sweep calculated from preciH but moves the preciS
+### THIS IS NOT WORKING YET !!! TODO Must be tested
+def _oscill_sweep '{
+    if($#!=4) {
+        p "Usage: $0 motor start finish time"
+        exit
+    }
+    local start end range
+    range = ($3)-($2)
+    start = ($2)-OSC["arange"]
+    end = ($3) +OSC["arange"]
+    #added checkbeam feature 
+    for(;;) {  
+        mv $1 start
+        waitmove;
+        osc_set_pars;  # changes the motor speeds
+        arm_scalers;   # this does nothing since preicH is not configured to any scalers 
+        # p "after _sweep arm_scalers"
+        # Added all the times even which are typically zeros
+        #p "det_trig", OSC["exposure_time"]+OSC["extra_time"]+OSC["cushion_time"]
+        det_trig OSC["exposure_time"]+OSC["extra_time"]+OSC["cushion_time"]
+        sleep(OSC["detDelay"])   #synch shutter and detector
+        count_em OSC["exposure_time"]+OSC["extra_time"]+OSC["cushion_time"]
+        # Moving the motor
+        if ("$1" == "preciH") {
+            mv preciS end
+        } else {
+            if ("$1" == "prrot") {
+                mv prrotS end
+            } else {
+                if ("$1" == "aero") {
+                    p "Flying with aero stage"
+                    epics_put(sprintf("%sfly",PSOPV), "Fly") # No callback on this button
+                } else {
+                    mv $1 end
+                }
+            }
+        }
+        det_wait 
+        waitmove
+        waitcount
+        get_counts
+        chk_beam_osc
+    }
+    osc_reset_pars
+}'
+
+
+#Redefine Header in .spe datafile. Different to omega and phi sweep
+def sweep_header '{
+    if(IS_SWEEPSCAN) {
+       local x[]
+        
+          printf("#C OSC_N speed shutter_open shutter_close  det\n")
+          printf("#C OSC_V %g %g %g %s\n",OSC["speed"],OSC["shutteropen_delay"],OSC["shutterclose_delay"],OSC["detector"])
+          printf("#C SWP_N imgprefix ic7g ic7u ic8g ic8u jjbot jjtop jjin jjout \n")
+          x[0] = OSC["imgprefix"]
+          x[1]= epics_get("1id:A7sens_num.VAL") 
+          x[2]= epics_get("1id:A7sens_unit.VAL")
+          x[3]= epics_get("1id:A8sens_num.VAL") 
+          x[4]= epics_get("1id:A8sens_unit.VAL") 
+         
+	   #Slits
+    	   x[5]=epics_get("1idb:m21.RBV")
+  	   x[6]=epics_get("1idb:m22.RBV")
+	   x[7] =epics_get("1idb:m23.RBV")
+	   x[8]=epics_get("1idb:m24.RBV")
+           printf("#C SWP_V %s %g %g %g %g %g %g %g %g\n",x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7],x[8])
+           
+   }      
+}'
+
+#Redefine label and value fields
+def sweep_fprnt_label '{
+    
+    FPRNT=sprintf("start  end  imgn  ")
+    PPRNT=sprintf("%9.9s %9.9s %9.9s ","start","end","imgn")
+    VPRNT=PPRNT 
+    _cols+=3;
+    
+}'
+
+
+
+def sweep_fprnt_value '{
+    local imgn 
+    if(OSC["detector"] == "bruker") {
+          imgn=(++BRUKERFILE["index"])
+      
+    } else {
+          imgn = (detget_seqNumber-1)
+          
+    }
+   
+    write_parfile_fast( OSC["detector"], imgn, OSC["imgprefix"],  OSC["motor"], _start, _stop )
+    FPRNT = sprintf("%.8g %.8g %.8g ",_start,_stop,imgn);
+    PPRNT = sprintf("%9.4f %9.4f %9.4f ",_start,_stop,imgn);
+    VPRNT=FPRNT
+        
+     if(SOFTIOC_USE ) {
+        local t
+        if(MATLAB_OK) {
+            while(epics_get(sprintf("%sBusy",SOFTIOC_PV),"short")==1) {
+            if(t>20) {
+                printf("\nWaited too long, forced to unlock with matlab.\n")
+                epics_put(sprintf("%sBusy",SOFTIOC_PV),0)
+                MATLAB_OK = 0
+                break;
+            }
+                sleep(0.5)
+                t++
+            }
+        }
+
+        epics_put(sprintf("%simgn",SOFTIOC_PV),imgn)
+        if(epics_get(sprintf("%sscantype",SOFTIOC_PV)) == "supersweep") {
+            epics_put(sprintf("%sstart",SOFTIOC_PV),$1)
+            epics_put(sprintf("%send",SOFTIOC_PV),$1)
+        } else {
+            epics_put(sprintf("%sstart",SOFTIOC_PV),_start)
+            epics_put(sprintf("%send",SOFTIOC_PV),_stop) # replaced _end
+        }   
+        epics_put(sprintf("%sNPTS",SOFTIOC_PV),NPTS+1)
+        epics_put(sprintf("%sBusy",SOFTIOC_PV),1) 
+    }  
+   
+}'
+
+
+###May not need write_parfile ? 
+
+#def write_parfile(detname,imgnr,imgprefix,motname,startpos,endpos) '{
+#	#takes: detector name, img number, img prefix
+#	#       motor name, startpos, endpos 
+#	#detname = "$1"
+#	#imgnr = $2
+#	#imgprefix=$3
+#	#motname = $4
+#	#startpos = $5
+#	#endpos = $6
+#
+#	get_angles
+#
+#	#read out intensity loggin to readable names
+#	
+#	#print to the par file.
+#       
+#	on(parfile);offt
+#
+#	# CMU Nov 2008
+#	p date(),detname,A[samXb],A[samYb],A[samZb],motname,startpos,endpos,OSC["exposure_time"],img#prefix,imgnr,S[ic7b],S[ic1b]
+#	ont;off(parfile)
+#     
+#	 
+#
+#}'
+
+
+def _oscill_fastsweep '{
+    # Redefinition of the _oscill for fastsweep purposes
+    
+   	if ($# != 4) {
+        p "Usage: $0 motor start finish scantime"
+        exit
+    }
+   	local start end range scantime ihydra endtime
+   	global moncnt trcnt Emoncnt Etrcnt
+    global MonCount_ArrayPV TransmCount_ArrayPV Mon_ScalerPV
+    global GATE_signalPV
+    #global hydraNum
+    #global array hydra[6]
+	global ShouldRotateBack
+
+    def arm_aero \'
+        # Disable_pulses_FPGA
+        epics_put("1ide:sg2:AND-1_IN2_Signal", 0, CB_TIME)
+        sleep(EPICS_DELAY)
+        # clear GATE state
+        epics_put("1ide:sg2:BUFFER-1_IN_Signal.PROC", 1, CB_TIME)
+        sleep(EPICS_DELAY)
+        # set PSO
+        epics_put(sprintf("%spulseType",PSOPV), "Gate", CB_TIME)
+        epics_put(sprintf("%sstartPos",PSOPV), $2, CB_TIME)
+        epics_put(sprintf("%sendPos",PSOPV), $3, CB_TIME)
+        epics_put(sprintf("%sslewSpeed",PSOPV), OSC["speed_equ_per_sec"], CB_TIME)
+        epics_put(sprintf("%sscanDelta",PSOPV), fabs(($3)-($2))/OSC["nframes"], CB_TIME)
+        epics_put(sprintf("%sdetSetupTime",PSOPV), OSC["gap_time"], CB_TIME) # gap time in sec
+        sleep(EPICS_DELAY)
+        # initPSO
+        #epics_put(sprintf("%sinitPSO.PROC",PSOPV), 1) # not existing any more
+        #sleep(0.1)
+        # Taxi
+        p "Taxi start"
+        epics_put(sprintf("%staxi",PSOPV), "Taxi", 400.0)  # This will wait (PSOFlyScan) while the taxi is finished, or time out after 400 sec
+        sleep(EPICS_DELAY)
+        while (epics_get(sprintf("%staxi",PSOPV)) !="Done") {
+            sleep(0.1)
+        }
+        p "Taxi end"
+        # arm PSO
+        #epics_put(sprintf("%sarmPSO.PROC",PSOPV), 1) # not existing any more
+        #sleep(0.1)
+        # clear GATE state
+        epics_put("1ide:sg2:BUFFER-1_IN_Signal.PROC", 1, CB_TIME)
+        sleep(EPICS_DELAY)
+        # Enable_pulses_FPGA
+        epics_put("1ide:sg2:AND-1_IN2_Signal", 1, CB_TIME)
+        sleep(EPICS_DELAY)
+        # Enable FakeGATE stop
+        epics_put("1ide:userCalcOut4.B", 1, CB_TIME)
+        sleep(EPICS_DELAY)
+    \'
+        
+    range = ($3)-($2)
+    start = ($2)-OSC["arange"]
+    end = ($3)+OSC["arange"]
+    scantime=($4)
+    
+    #added checkbeam feature 
+    for(;;) {  
+        setup_ICcounters OSC["nframes"]
+        moncnt[]=0.0; trcnt[]=0.0; # Resets the arrays
+        Emoncnt[]=0.0; Etrcnt[]=0.0; # Resets the E-monitor arrays
+        cntticks[]=0.0 # Resets the IC interation time counter array
+		timestamp[]=0.0 # Resets the timestamps
+	
+        disableGATE
+        if ( "$1" == "aero")  {
+            # Moving to start and initializing the FlyScan
+            arm_aero
+        } else {
+            mv $1 start
+        }
+        waitmove;
+        enableGATE
+        if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+            # Workarounds for the SW trigger Retiga
+            setup_DetPulseToAD  # The Det_pulse goes to Acromag and to AD "Start" button 
+			setup_TimeStampArray
+        }
+ 
+        setup_FrameCounter OSC["nframes"] # Counts the triggers to Retiga and stops DetPulseToAD when the frame number reached
+        setup_FrameCounterTrigger
+
+        # In case of Aerotech the FlyScan adjusts the speeds
+        if ( OSC["motor"] != "aero")  {
+            osc_set_pars;  # changes the motor speeds (base and velocity)
+        }
+        if ( OSC["motor"] == "prrot")  {
+            epics_put("1ide:m5.BVEL", OSC["speed_equ_per_sec"] );  # changes the backlash speeds on prrot
+        }
+        
+        arm_scalers;   # this does nothing since preicH is not configured to any scalers 
+        arm_ICcounters;
+        arm_detector;  # this makes the detector ready for the GATE signal
+        sleep(EPICS_DELAY)
+
+        # Moving the motor
+        if ("$1" == "preciH") {
+            mv preciS end
+        } else {
+            if ("$1" == "prrot") {
+                mv prrotS end
+            } else {
+                if ("$1" == "aero") {
+                    p "Flying with aero stage"
+                    epics_put(sprintf("%sfly",PSOPV), "Fly") # No callback on thi sbutton
+                } else {
+                    mv $1 end
+                }
+            }
+        }
+        
+        #p date()
+        # Waiting for the start of GATE signal
+        sleep(OSC["atime"]*0.5)
+        while ( RisingEdge_GATE) {
+            sleep(EPICS_DELAY)
+        }
+        
+        
+        p "Fastsweep started:", date()
+        # The scantime can be too long for the integration!!!
+        # ICscaler data per frame
+        # do not use this: count_em scantime 
+        sleep(OSC["scantime"]/2)
+        
+        #count_em 5.0  ## TODO calculate this time
+        local cttime
+        cttime = (OSC["scantime"]/2<5.0 ? OSC["scantime"]/2 : 5.0 )
+        count_em cttime  
+        get_counts # Supposing that the scaler1 is well configured (no check)
+       
+        #waitmove # It is not waiting for stopping preciS
+        # Waiting for the end of GATE signal + waiting for the deceleration
+        while (FallingEdge_GATE) {
+            sleep(0.2)
+        }
+        p "Fastsweep ended:", date()
+		endtime=time()
+        
+        if (OSC["motor"] != "aero") {
+            sleep(OSC["atime"]) 
+        } else {        
+            waitmove
+        }
+
+        # Moving back to the initial position
+		if (ShouldRotateBack) {
+		    p "Going back to the start position as requested during the saving"
+			if ( OSC["motor"] != "aero")  {
+				osc_reset_pars
+			}
+			sleep(EPICS_DELAY)
+			disableGATE
+			mv $1 start
+			waitmove
+			enableGATE
+		}
+
+		# Checking if the GE detectors are okay after the scan, i.e. get back to IDLE
+		# The maximum waiting time is MaxSavingTime
+        if (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF") {
+            for (ihydra=1; ihydra<=hydraNum; ihydra++) {
+				while ( (time()-endtime)<=MaxSavingTime && epics_get(sprintf("GE%d:cam1:DetectorState_RBV", hydra[ihydra])) != "IDLE" ) {
+					sleep(0.2)
+				}
+				if ((time()-endtime)>MaxSavingTime) {
+					p "WARNING! The hydra acquisition was hanging, the detector(s) will be aborted and the last scan will be repeated!"
+					
+					hydra_abort
+					# Important! The hydra will be initialized with the first panel as master!!!
+					hydra_Initialize
+					sleep(2)
+					OSC["ShouldRepeat"]=1
+				}
+            }
+                    
+        }
+
+        if ( "$1" == "aero")  {
+            # Disable_pulses_FPGA
+            epics_put("1ide:sg2:AND-1_IN2_Signal", 0, CB_TIME)
+            #sleep(0.1)
+            # clear GATE state
+            epics_put("1ide:sg2:BUFFER-1_IN_Signal.PROC", 1, CB_TIME)
+            #sleep(0.1)
+            # Disable FakeGATE stop
+            epics_put("1ide:userCalcOut4.B", 0, CB_TIME)
+            sleep(0.1)
+        }
+        
+        if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+            OSC["Retiga_TrgCount"] = epics_get(sprintf("%sqTrgCnt_RBV",CCDPV))
+            OSC["Retiga_ExpCount"] = epics_get(sprintf("%sqExpCnt_RBV",CCDPV))
+            OSC["Retiga_FrmCount"] = epics_get(sprintf("%sqFrmCnt_RBV",CCDPV))
+        }
+        p "disarm_ICcounters"       
+        disarm_ICcounters
+
+        p "disarm_detector"       
+        disarm_detector
+        
+        p "READY:", date()
+        # Get the IC counts
+        moncnt = epics_get(sprintf("%s.BB", MonCount_ArrayPV), "double", OSC["nframes"])       
+        trcnt = epics_get(sprintf("%s.BB", TransmCount_ArrayPV), "double", OSC["nframes"])       
+        Emoncnt = epics_get(sprintf("%s.BB", EMonCount_ArrayPV), "double", OSC["nframes"])       
+        Etrcnt = epics_get(sprintf("%s.BB", ETransmCount_ArrayPV), "double", OSC["nframes"])       
+        cntticks = epics_get(sprintf("%s.BB", IntegrTicks_ArrayPV), "double", OSC["nframes"])       
+		printdoublearray moncnt OSC["nframes"]
+		printdoublearray trcnt OSC["nframes"]
+		printdoublearray Emoncnt OSC["nframes"]
+		printdoublearray Etrcnt OSC["nframes"]
+		printdoublearray cntticks OSC["nframes"]
+
+		# Get the timestamps
+		if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+		    timestamp = epics_get(sprintf("%s.BB", TimeStampArrayPV), "double", OSC["nframes"])
+		    printdoublearray timestamp OSC["nframes"]
+		}
+
+
+        p "chk_beam_osc"       
+        chk_beam_osc # This checks the beam and exits from the for loop if the beam is OK,
+    			# otherwise it repeats the cycle, corrects the image_number, waits for the beam 
+
+        p "Repeating the last scan, because it failed according to the chk_beam_osc"
+        
+        #p "Wait for saving the files 2 sec"
+        #sleep(2.0)
+        disarm_ICcounters
+        disarm_detector
+
+        
+        det_wait # For Retiga HWtrig it does not do anything,for GE it is important
+        waitmove;
+
+        if ( OSC["motor"] != "aero")  {
+            osc_reset_pars
+        }
+
+    }
+
+    disarm_ICcounters
+    disarm_detector
+
+    #p "Wait for saving the files 2 sec"
+    #sleep(2.0)  # for Retiga
+
+    # Moving back to the initial position
+	if (ShouldRotateBack) {
+	    p "Going back to the start position as requested during the saving"
+		if ( OSC["motor"] != "aero")  {
+			osc_reset_pars
+		}
+		sleep(EPICS_DELAY)
+		disableGATE
+		mv $1 start
+		waitmove
+		enableGATE
+	}
+	
+    det_wait # for hydra only, in Retiga HWtrigger mode this is NOP
+    waitmove;
+
+    if ( OSC["motor"] != "aero")  {
+        osc_reset_pars
+    }
+}'  # oscill_fastsweep
+
+def Rising_GATE_Bhutch 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 1'
+def Falling_GATE_Bhutch 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 0'
+
+def Rising_GATE_Ehutch 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 1'
+def Falling_GATE_Ehutch 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 0'
+
+def Rising_GATE_Aero 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 1'
+def Falling_GATE_Aero 'epics_get(sprintf("%s.VAL",GATE_signalPV)) != 0'
+
+def fastsweep '{
+
+    # Usage: fastsweep motor start end nframes exp_time
+    # This is for preciTech only 
+
+# TODO: Workaround for the det_wait switces back to hydra macro
+#      prdef det_wait
+#      local autosave
+#      autosave=ccdget_AutoSave
+#      use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+#      if (autosave==1) { 
+#        ccdset_AutoSaveYes 
+#      }
+#      prdef det_wait
+# end TODO    
+    
+    if ($# != 5) {
+        p "Usage: $0 motor start end nframes exp_time"
+        fastsweep_end
+        exit
+    }
+    if ( (($4) != int($4)) || (($4)<=0) || (($5)<=0.0) ) {
+        p "Usage: fastsweep motor start end nframes exp_time"
+        p "The nframes must be positive integer!"
+        p "The exp_time must be positive!"
+        fastsweep_end
+        exit
+    }
+    if ( ("$1" == "prrot") && ($2>=$3) ) {
+        p ""
+        p "############# THE prrot CAN BE USED ONLY IN POSITIVE DIRECTION !!!!!!!!! ##############" 
+        p ""
+        exit
+    }
+    if ( (OSC["detector"] == "Retiga"  || OSC["detector"] == "NFFF") && (ccdget_AutoSave == 0) ) {
+        p ""
+        p "############# THE FRAMES WILL NOT BE SAVED TO FILES !!!!!!!!! ##############" 
+        p ""
+    }
+    local ihydra
+    for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+        if ( (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF") && (get_hydra_AutoStore(ihydra) == 0)) {
+            p ""
+            p "############# THE FRAMES WILL NOT BE SAVED TO FILES ON THE GE"ihydra" !!!!!!!!! ##############" 
+            p ""
+        }
+	}
+
+    if ( (OSC["ParamCheck"]==1) && ("$1" == "prrot")) {
+        p ""
+        p "############# DRY RUN for checking parameters, no actual sweep !!!!!!!!! ##############" 
+        p ""
+    }
+    
+	local _nframes _exptime NumOfFiles ScanRepeatCounter filesizehydraOK
+    _nframes=$4
+    _exptime=$5
+    OSC["sweep_mode"] = "fastsweep"
+    OSC["first_frame_number"] = detget_seqNumber ## Retiga or GE file number
+    if (OSC["detector"]=="GE_NEW" || OSC["detector"]=="NFFF") {
+        OSC["first_frame_number_hydra"] = get_hydra_FileNumber(1) ## hydra master file number
+    }
+    
+    FS_Sweep_control
+
+    p "First frame of the fastsweep scan:", OSC["first_frame_number"]
+
+    def user_pre_sweep \'
+        # p "BEFORE"
+        # p "osc_exptime=", OSC["exposure_time"] 
+        # p "osc_extratime=", OSC["extra_time"] 
+        # p "_step=", _step
+        # p "_snum=", _snum
+        # p "_n1=", _n1
+
+        #	Calculation of the oscillation parameters
+        _n1=_nframes
+        OSC["exposure_time"] = _exptime
+        OSC["extra_time"] = 0
+        OSC["nframes"] = _nframes
+        # This is moved to arm_detector
+        # ccdset_expNum_ad _nframes
+
+        # p "AFTER"
+        # p ""
+        # p "osc_exptime=", OSC["exposure_time"] 
+        # p "osc_extratime=", OSC["extra_time"] 
+        # p "_n1=", _n1
+        # p "osc_firstframenumber=", OSC["first_frame_number"] 
+        # p "osc_nframes=", OSC["nframes"] 
+    \'
+    
+    def _oscill \'_oscill_fastsweep\'
+    cdef("cleanup_once", "\n fastsweep_cleanup;", "sweep_fastsweep", "0x20")
+
+    # The exp time must be corrected according to the gaps between frames
+    # The "gap_time" was not defined here!!!
+    OSC["gap_time"]= DEFAULT_GAP_TIME  # users can change this value
+    OSC["delay_time"]= 0.0   # users can change this value
+    OSC["scantime"]= (_exptime+OSC["gap_time"])*_nframes
+
+    for (ScanRepeatCounter=0; ScanRepeatCounter<10000; ScanRepeatCounter++) {
+		OSC["ShouldRepeat"]=0 # Clear the repeat status
+
+        p "sweep", $1, $2, $3, 1, OSC["scantime"]
+        sweep $1 $2 $3 1 OSC["scantime"]
+        # sleep(0.2)
+
+        p "Fastsweep finished CORRECTLY:", date()
+        if (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF") {
+            p "Last saved frame on hydra:", OSC["first_frame_number_hydra"]
+        } 
+        if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+            p "First-Last frame of the fastsweep scan on Retiga:", OSC["first_frame_number"], "-", detget_seqNumber-1
+        }
+        if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+            # Checking if all the files were written correctly.
+            # Logging the NF data
+               
+            if (OSC["motor"] == "preciH") {
+                p "date", "owisY", "samYb", "DetZ", "DetName",\
+                    "ExpT", "GapT", "ScanT",\
+                    "ImgPrefix", "FirstFrameNum", "LastFrameNum",\
+                    "ArrayCounter_RBV", "TrgCount", "ExpCount", "FrameCount",\
+                    "FrameCounter", "NumberOfFiles"
+            }
+            if (OSC["motor"] == "prrot") {
+                p "date", "mtsY", "mtsX", "DetZ", "DetName",\
+                    "ExpT", "GapT", "ScanT",\
+                    "ImgPrefix", "FirstFrameNum", "LastFrameNum",\
+                    "ArrayCounter_RBV", "TrgCount", "ExpCount", "FrameCount",\
+                    "FrameCounter", "NumberOfFiles"
+            }
+            if (OSC["motor"] == "aero") {
+                p "date", "samY", "aeroX", "samX", "samZ", "DetZ", "DetName",\
+                    "ImgPrefix", "FirstFrameNum", "LastFrameNum",\
+                    "ArrayCounter_RBV", "TrgCount", "ExpCount", "FrameCount",\
+                    "FrameCounter", "NumberOfFiles"
+            }
+            on("FileCount.txt")
+            get_angles
+            NumOfFiles = detget_seqNumber-OSC["first_frame_number"]
+			sleep(0.2)
+            if (OSC["motor"] == "preciH") {
+                # B-hutch
+                p date(), A[owisY], A[samYb], A[DetZ], OSC["detector"], \
+                    OSC["exposure_time"], OSC["gap_time"], OSC["scantime"],\
+                    OSC["imgprefix"], OSC["first_frame_number"], detget_seqNumber-1,\
+                    epics_get(sprintf("%sArrayCounter_RBV",CCDPV)), \
+                    OSC["Retiga_TrgCount"], OSC["Retiga_ExpCount"], OSC["Retiga_FrmCount"],\
+                    epics_get(sprintf("%s.B",FrameCounterPV)), NumOfFiles
+            }
+            if (OSC["motor"] == "prrot") {
+                # E-hutch prrot stage
+                p date(), A[mtsY], A[mtsX], A[DetZ], OSC["detector"], \
+                  OSC["exposure_time"], OSC["gap_time"], OSC["scantime"],\
+                  OSC["imgprefix"], OSC["first_frame_number"], detget_seqNumber-1,\
+                  epics_get(sprintf("%sArrayCounter_RBV",CCDPV)), \
+                  OSC["Retiga_TrgCount"], OSC["Retiga_ExpCount"], OSC["Retiga_FrmCount"],\
+                  epics_get(sprintf("%s.B",FrameCounterPV)), NumOfFiles
+            }
+            if (OSC["motor"] == "aero") {
+                # E-hutch aero stage
+                p date(), A[samYE], A[aeroX], A[samXE], A[samZE], A[DetZ], OSC["detector"], \
+                  OSC["exposure_time"], OSC["gap_time"], OSC["scantime"],\
+                  OSC["imgprefix"], OSC["first_frame_number"], detget_seqNumber-1,\
+                  epics_get(sprintf("%sArrayCounter_RBV",CCDPV)), \
+                  OSC["Retiga_TrgCount"], OSC["Retiga_ExpCount"], OSC["Retiga_FrmCount"],\
+                  epics_get(sprintf("%s.B",FrameCounterPV)), NumOfFiles
+            }
+            
+            off("FileCount.txt")
+
+        }
+        # Workaround for the stupid file saving problems (missing/one-more frames)     
+        if ( OSC["detector"] == "Retiga" && ((ccdget_AutoSave==0) || (NumOfFiles == OSC["nframes"] && (OSC["ShouldRepeat"]==0))) ) {
+            break;
+        }
+        if ( OSC["detector"] == "Retiga" && !((ccdget_AutoSave==0) || (NumOfFiles == OSC["nframes"] && (OSC["ShouldRepeat"]==0))) ) {
+            p "WARNING! Not all files (", NumOfFiles, "of", OSC["nframes"], ") were saved. Scan will be repeated."
+            p "The images will be overwritten from", OSC["first_frame_number"], "to", detget_seqNumber-1
+            ccdset_seqnum OSC["first_frame_number"]
+            sleep(EPICS_DELAY)
+            p "Updated file number for the next scan:", detget_seqNumber
+            if ((ScanRepeatCounter%5 == 2)) {
+                sendemailalert
+            }
+        }
+           
+
+        if (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF") {
+    		filesizehydraOK = 1
+    		if (HydraFileSizeCheck==1 && (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF")) {
+                # TODO: fix the pathname program
+                local calcsize savedfilesize command ihydra
+                for (ihydra=1 ; ihydra<=hydraNum; ihydra= ihydra+1) { 
+                    command=sprintf("./macros_PK/filesize.sh %s/%s_%05d.ge%d", DataDirectory, get_hydra_FileName(ihydra), get_hydra_FileNumber(ihydra)-1, hydra[ihydra])
+                    p "Command: ", command
+                    unix(command, savedfilesize)
+                
+                    calcsize=(OSC["nframes"]*2048*2048*2+8192)
+                    filesizehydraOK=(savedfilesize==calcsize)
+                    p "Calculated size of the GE file: ", calcsize, "byte, the saved file size: ", savedfilesize, " ==> ", filesizehydraOK
+                }      
+            }    
+        }
+
+        # Condition of repeating the scan
+		if ((OSC["detector"] == "GE_NEW") && OSC["ShouldRepeat"]==0 && filesizehydraOK ) {
+			break;
+		} 
+    	if ((OSC["detector"] == "GE_NEW") && !(OSC["ShouldRepeat"]==0 && filesizehydraOK) )  {
+		    # In case of the hanged acquisition or if the file size was not correct
+			p "The images will be overwritten from", OSC["first_frame_number"], "to", get_hydra_FileNumber(1)-1
+			p "Current file numbers:"
+			get_hydra_AllFileNumbers
+			set_hydra_FileNumber OSC["first_frame_number"]
+			sleep(EPICS_DELAY)
+			p "Updated file numbers for the next scan:"
+			get_hydra_AllFileNumbers
+			sendemailalert				
+        }
+
+        if ( OSC["detector"] == "NFFF" && \
+                ( ((ccdget_AutoSave==0) || (NumOfFiles == OSC["nframes"] && (OSC["ShouldRepeat"]==0))) && \
+                  (OSC["ShouldRepeat"]==0 && filesizehydraOK) ) ) {
+            break;
+        }
+        if ( OSC["detector"] == "NFFF" && \
+                !( ((ccdget_AutoSave==0) || (NumOfFiles == OSC["nframes"] && (OSC["ShouldRepeat"]==0))) && \
+                  (OSC["ShouldRepeat"]==0 && filesizehydraOK) ) ) {
+            if ( !(NumOfFiles == OSC["nframes"] && (OSC["ShouldRepeat"]==0)) ) {
+                p "WARNING! Not all Retiga files (", NumOfFiles, "of", OSC["nframes"], ") were saved. Scan will be repeated."
+                p "The Retiga images will be overwritten from", OSC["first_frame_number"], "to", detget_seqNumber-1
+                ccdset_seqnum OSC["first_frame_number"]
+                sleep(EPICS_DELAY)
+                p "Updated Retiga file number for the next scan:", detget_seqNumber
+    			
+    			p "The hydra images will be overwritten from", OSC["first_frame_number_hydra"], "to", get_hydra_FileNumber(1)-1
+    			p "Current hydra file numbers:"
+    			get_hydra_AllFileNumbers
+    			set_hydra_FileNumber OSC["first_frame_number_hydra"]
+    			sleep(EPICS_DELAY)
+    			p "Updated hydra file numbers for the next scan:"
+    			get_hydra_AllFileNumbers
+    			sendemailalert				
+            }
+        }
+			
+        
+    }
+    #fastsweep_cleanup
+    fastsweep_end
+}' # fastsweep
+
+# TODO test this fastweep_end version
+def fastsweep_end '{
+    # This is running when the scan finishes correctly
+    # undefining the fastsweep macros
+    p "fastsweep_end is started"
+
+    def user_pre_sweep \'\'
+    def _oscill \'_oscill_sweep\'
+    OSC["sweep_mode"] = "sweep"
+    det_wait # for GE mostly
+    
+    ## TODO  Switch back to the correct FS control
+    if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+        FS_Retiga_control
+    }
+    if (OSC["detector"] == "GE_NEW") {
+        FS_GE2SE_control
+    }
+  
+}'
+
+def fastsweep_cleanup '{
+    # This is running when you Ctrl+C the scan
+    p "fastsweep_cleanup is started"
+    if (OSC["detector"] == "GE_NEW" || OSC["detector"] == "NFFF") {
+        hydra_abort
+    }
+    if (OSC["detector"] == "Retiga" || OSC["detector"] == "NFFF") {
+        detabort
+    }
+    if ( OSC["motor"] == "aero")  {
+        # Stop the hexFly
+        epics_put(sprintf("%sfly",PSOPV), "Done")
+        # Stop the motor TODO get the correct motor number for the aero mnemonic
+        epics_put("1ide:m9.STOP", 1)
+        #epics_put("1ide:m9.SPMG", 1) # Puts to STOP mode
+        # Disable_pulses_FPGA
+        epics_put("1ide:sg2:AND-1_IN2_Signal", 0)
+        sleep(0.1)
+        # clear GATE state
+        epics_put("1ide:sg2:BUFFER-1_IN_Signal.PROC", 1)
+        sleep(0.1)
+        # Disable FakeGATE stop
+        epics_put("1ide:userCalcOut4.B", 0)
+        sleep(0.1)
+
+    }
+
+    disarm_detector
+    disarm_ICcounters 
+    
+    fastsweep_end
+}'
+
+def arm_detector_SWRetiga '{
+    # Software triggering on Retiga
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi mode
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single")
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software") # Pressing the "Start" button
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    ccdset_Initilaize
+    #epics_put(sprintf("%sqInitialize",CCDPV),1)
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+
+    # Programming the detector trigger signal
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL89
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1)) # 
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 1) # Enabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None") # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+    
+    sleep(EPICS_DELAY)
+    sleep(1.0) # For settling (Retiga AD)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+
+}'
+
+
+def arm_detector_SWRetiga_PosDriven '{
+    # Software triggering on Retiga
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi mode
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single")
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software") # Pressing the "Start" button
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    ccdset_Initialize
+    #epics_put(sprintf("%sqInitialize",CCDPV),1)
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+
+    # Programming the detector trigger signal
+#    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+#    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+    
+    # Position driven Det_pulses
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate)) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1)) # 
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 1) # Enabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None") # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+    
+    sleep(EPICS_DELAY)
+    sleep(1.0) # For settling (Retiga AD)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}'
+
+
+def arm_detector_HWtriggerRetiga_PosDriven_preci '{
+    
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    
+    # Position driven Det_pulses
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+
+    p "Workaround FPGA position driven StrobeHi"
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE
+
+
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # Pressing the "Start" button
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    ccdset_Initialize
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+    #sleep(1.0) # For settling (Retiga AD)
+
+    # Programming the detector trigger signal
+#    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+#    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+    
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}' # HW trigger PosDriven preci
+
+
+
+def arm_detector_HWtriggerRetiga_PosDriven_prrot '{
+    
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    local StepConversion softmotres
+    softmotres=epics_get("1ide:userTran2.D")
+
+    StepConversion = softmotres/0.000264706  # Ratio of the softmotor resolution and the hard motor resolution
+    # Position driven Det_pulses
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/StepConversion/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/StepConversion/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Arms pulses signal. Just for sure, the soft motor does it anyway.
+
+    #p "Workaround FPGA position driven"
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when teh softmotor do it automatically there is no more signal)
+
+
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode and HWtrigger moder
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # Pressing the "Start" button
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    ccdset_Initialize
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+    #sleep(1.0) # For settling (Retiga AD)
+
+    # Programming the detector trigger signal
+#    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+#    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+    
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}' # HW trigger PosDriven prrot
+
+def  fastsweep_paramcheck '
+    OSC["Ideal_Exp_steps"]=OSC["exposure_time"]*OSC["speed"]/DecodingRate
+    OSC["Ideal_Gap_steps"]=OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks
+    OSC["Applied_Exp_steps"]=int(OSC["Ideal_Exp_steps"])
+    OSC["Applied_Gap_steps"]=int(OSC["Ideal_Gap_steps"])
+    OSC["Dettrig_steps"]=OSC["nframes"]*(OSC["Applied_Exp_steps"]+OSC["Applied_Gap_steps"])
+    OSC["Lost_steps"]=int(OSC["steps"]/DecodingRate)-OSC["Dettrig_steps"]
+    OSC["Lost_pos"]=OSC["Lost_steps"]*DecodingRate/OSC["step_size"]
+    OSC["Suggest_Gap"]= (OSC["steps"]/DecodingRate/OSC["nframes"]-OSC["Applied_Exp_steps"]-OSC["Applied_Gap_steps"])
+    OSC["Suggest_MinGapTime"]= 2/OSC["speed"]*DecodingRate
+
+    p "---- Sweep summary -----------------------"
+    p "All steps are in encoder units:", DecodingRate, "x EPICS motor steps"
+    p "Acceleration range/steps/time: ", OSC["arange"], "egu /",  OSC["asteps"]/DecodingRate, "steps /", OSC["atime"], "sec"
+    p "Sweep range/steps/time:        ", OSC["range"], "egu /",  OSC["steps"]/DecodingRate, "steps /", OSC["scantime"], "sec"
+    p "Full motion range/steps:       ", OSC["range"]+2*OSC["arange"], "egu /",  (OSC["steps"]+2*OSC["asteps"])/DecodingRate, "steps"
+    p "DEFAULT_GAP_TIME/GapAdjustmentTicks: ", DEFAULT_GAP_TIME, "/", GapAdjustmentTicks
+    p "Ideal/applied Exp steps:       ", OSC["Ideal_Exp_steps"], "/", OSC["Applied_Exp_steps"] 
+    p "Ideal/applied Gap steps:       ", OSC["Ideal_Gap_steps"], "/", OSC["Applied_Gap_steps"]
+    p "Number of frames:              ", OSC["nframes"]
+    p "Rotation speed:                ", OSC["speed_equ_per_sec"], "egu/sec =", OSC["speed"]/DecodingRate, "steps/sec" 
+    p "Resolution:                    ", OSC["step_size"]/DecodingRate, "steps/egu"
+    p "Exposure/Gap/Sweep steps:      ", OSC["Applied_Exp_steps"], "/", OSC["Applied_Gap_steps"], " /", OSC["steps"]/DecodingRate
+    p "Exposure/Gap/Sweep time:       ", OSC["exposure_time"], "sec /", OSC["gap_time"], "sec /", OSC["steps"], "sec"
+    p "Exposure/Gap/Sweep range:      ", OSC["Applied_Exp_steps"]*DecodingRate/OSC["step_size"], "egu /", OSC["Applied_Gap_steps"]*DecodingRate/OSC["step_size"], "egu /", OSC["range"], "egu"
+    p "------------------------------------------"
+    p "Lost steps overall/per-frame:     ", OSC["Lost_steps"], "steps /", OSC["Lost_steps"]/OSC["nframes"], "steps" 
+    p "Lost position overall/per-frame:  ", OSC["Lost_pos"], "egu /", OSC["Lost_pos"]/OSC["nframes"], "egu" 
+    p "------------------------------------------"
+
+    local isWarning
+    isWarning = 0
+    if (GapAdjustmentTicks < 0) {
+        p "WARNING: GapAdjustmentTicks is less than zero."
+        p "You have to increase the GapAdjustmentTicks."
+        isWarning = 1
+    }
+    if ( OSC["detector"] == "GE_NEW" && DEFAULT_GAP_TIME < 0.140) {
+        p "WARNING: DEFAULT_GAP_TIME is too small."
+        p "You have to increase the DEFAULT_GAP_TIME."
+        isWarning = 1
+    }
+    if ( (OSC["detector"] == "Retiga"  || OSC["detector"] == "NFFF") && DEFAULT_GAP_TIME < 0.001) {
+        p "WARNING: DEFAULT_GAP_TIME is too small."
+        p "You have to increase the DEFAULT_GAP_TIME."
+        p "Suggestion for min DEFAULT_GAP_TIME: ", OSC["Suggest_MinGapTime"]
+        isWarning = 1
+    }
+    if (OSC["Applied_Gap_steps"] < 2) {
+        p "WARNING: The gap is too short for triggering the detector."
+        p "You can increase the GapAdjustmentTicks or the DEFAULT_GAP_TIME."
+        p "Suggestion for min DEFAULT_GAP_TIME: ", OSC["Suggest_MinGapTime"]
+        isWarning = 1
+    }
+    if ((OSC["detector"] == "Retiga"  || OSC["detector"] == "NFFF") && OSC["Lost_steps"]/OSC["speed"]*DecodingRate > 0.2) {
+        p "WARNING: The Lost steps are too big (>readout). There will be at least one more frame at the end of the sweep."
+        p "You can increase the GapAdjustmentTicks."
+        p "Suggestion for GapAdjustmentTicks: ", OSC["Suggest_Gap"]
+        isWarning = 1
+    }
+    if (OSC["Lost_steps"] < 0) {
+        p "WARNING: The Lost steps are negative. The last frame(s) will be chopped."
+        p "You may want to decrease the GapAdjustmentTicks or increase the DEFAULT_GAP_TIME."
+        isWarning = 1
+    }
+    if (fabs(OSC["Lost_steps"]) > OSC["Applied_Exp_steps"]/2) {
+        p "WARNING: The Lost position is too big (> frame/2). You will have inaccurate frame positions."
+        p "You may want to increase the GapAdjustmentTicks."
+        p "Suggestion for GapAdjustmentTicks: ", OSC["Suggest_Gap"]
+        isWarning = 1
+    }
+    if (OSC["motor"] == "prrot" && OSC["speed_equ_per_sec"] < 0.1) {
+        p "WARNING: The speed is too low. The motion may be non-even."
+        p "You can decrease the exposure time."
+        isWarning = 1
+    }
+    if (isWarning == 0) {
+        p "No Warning."
+    }
+    p "------------------------------------------"
+    
+#    if (OSC["ParamCheck"] == 1 || isWarning == 1) {
+    if (OSC["ParamCheck"] == 1) {
+        p "End of parameter checking. Exiting."
+        fastsweep_cleanup
+        exit
+    }
+'    
+
+def arm_detector_HWtriggerCombined_PosDriven_prrot_Renishaw '{
+    # Combined NF and FF detector control. 
+    # The Near field is the master, CCDPV assumed to be set for this
+    
+    global FPGAPV CCDPV
+
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    
+    #local StepConversion softmotres
+    #softmotres=epics_get("1ide:userTran2.D")
+    #StepConversion = softmotres/0.000264706  # Ratio of the softmotor resolution and the hard motor resolution
+
+    fastsweep_paramcheck
+    
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+
+    #p "Workaround (FPGA position driven)" for precitech or prrot
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when the softmotor do it automatically there is no more signal)
+    
+    # NEW
+    # Hardware frame counter in the FPGA, blocking the det_pulses if more than necessary
+    epics_put(sprintf("%sDnCntr-4_PRESET", FPGAPV), OSC["nframes"], CB_TIME)
+    epics_put(sprintf("%sDnCntr-4_LOAD_Signal.PROC", FPGAPV), int(1), CB_TIME)
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    
+    set_hydra_NumberOfImagesPerDetTrig OSC["nframes"]
+    #set_hydra_expTime (OSC["exposure_time"]-0.15) # Not necessary, the exposure will set it
+    # edge mode for the combined triggering 
+    if (ShouldChangeHydraMode) set_hydra_MultiDetEdge
+    #if (ShouldChangeHydraMode) set_hydra_MultiDetPulse
+
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # Setting up the Retiga
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode and HWtrigger mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    ccdset_Initialize
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    
+    # Clears the latches in the DTH module
+    epics_put("dth1:DTH:resetTriggerBO", 1, CB_TIME)
+
+    # For HW triggering on GE/hydra we need to press the "Acquire" button
+    _adtrig_xtime_hydra (OSC["exposure_time"]-0.15) 
+    sleep(EPICS_DELAY)
+    wait_for_DetRdy
+   
+}'  # HWtriggerCombined_PosDriven_prrot_Renishaw
+
+def arm_detector_HWtriggerRetiga_PosDriven_prrot_Renishaw '{
+    
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+#    local StepConversion softmotres
+#    softmotres=epics_get("1ide:userTran2.D")
+#    StepConversion = softmotres/0.000264706  # Ratio of the softmotor resolution and the hard motor resolution
+
+    fastsweep_paramcheck
+    
+    # Position driven Det_pulses
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Arms pulses signal. Just for sure, the soft motor does it anyway.
+
+    #p "Workaround FPGA position driven"
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when teh softmotor do it automatically there is no more signal)
+
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode and HWtrigger mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # Pressing the "Start" button
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    ccdset_Initialize
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+    #sleep(1.0) # For settling (Retiga AD)
+ 
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}' # HW trigger PosDriven prrot Renishaw
+
+def arm_detector_HWtriggerRetiga_aerohexFly '{
+    
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    
+    # Position driven Det_pulses
+    #epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    #epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+
+    #p "Workaround FPGA position driven StrobeHi"
+    #epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE
+
+
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # Pressing the "Start" button
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    ccdset_Initialize
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+    sleep(1.0) # For settling (Retiga AD)
+
+    # Programming the detector trigger signal
+#    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+#    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+    
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}' # HW trigger aerohexFly
+
+def arm_detector_HWtriggerRetiga_aeroPSOFly '{
+    
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi/StrobeHi mode, but in EdgeHi
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"Software") # Pressing the "Start" button
+    epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+    # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    ccdset_Initialize
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+
+    #sleep(1.0) # For settling (Retiga AD), we do not need it any more because Initialize macro waits
+
+    # Programming the detector trigger signal
+#    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+#    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+
+    # FrameCounter on FPGA should be reset: clearNFExpCnt
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    #epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+  
+}' # HW trigger aero PSOFly
+
+
+def disarm_detector_SWRetiga '{
+    # Software triggering on Retiga
+
+    global FPGAPV CCDPV DetPulseToADPV FrameCounterPV
+    local Framesleft
+    #detabort # The detector is stopped acquiring
+    sleep(EPICS_DELAY)
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # IC scalers triggering TODO
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None", CB_TIME) # DetTrigToICscalers signal through EPICS
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME); # Disabling the TimeStampArray
+   
+    Framesleft=epics_get(sprintf("%s.B", FrameCounterPV))
+    if ( Framesleft != 0 ) {
+        p "WARNING! ", Framesleft, "frame(s) missing from the fastsweep."
+    }
+
+    # detector back to normal state
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software", CB_TIME)
+    epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    sleep(1.0)
+    
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    
+    sleep(EPICS_DELAY)
+    p "Next image number:", detget_seqNumber
+    
+}'
+
+
+def arm_detector_HWtriggerRetiga '{
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+    sleep(0.5)
+    
+    # Programming the detector trigger signal
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6), CB_TIME) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6 + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+    
+    # only in B-hutch for precitech or E-hutch for prrot
+    #p "Workaround FPGA"
+    #epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE
+
+
+
+    global FPGAPV CCDPV
+    # detector related settings
+    ccdset_expNum_ad OSC["nframes"] # This has no effect in Continuous mode
+    ccdset_time OSC["exposure_time"] # per frame, This has no effect in PulseHi mode
+    # OSC["gap_time"]=DEFAULT_GAP_TIME 
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"PulseHi", CB_TIME) # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL
+    #epics_put(sprintf("%sTriggerMode",CCDPV),"EdgeHi") # external TTL  This mode is good for the 4000R for overlapped HWtrigger
+    epics_put(sprintf("%sTriggerMode",CCDPV),"StrobeHi", CB_TIME) # external TTL  This mode is good for the 4000DC for overlapped HWtrigger
+
+   # For HW triggering we need to Initialize the Retiga but do not need to Acquire    
+    epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #epics_put(sprintf("%sAcquire",CCDPV), "Acquire") 
+    sleep(1.0) # For settling (Retiga AD)
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+    
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+
+    sleep(EPICS_DELAY)
+
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    sleep(0.5)
+  
+}'  #HW trigger
+
+def Retiga_FilePluginWait '{
+    local waittime dtime
+    waittime=0
+    dtime=0.1
+        
+    while(epics_get(sprintf("%sWriteFile_RBV",ADFILEPV))!="Done") {
+       sleep(dtime)
+       waittime+=dtime
+       if (waittime >= 30.0) {
+            p "ERROR: Waited for the detector file saving plugin more than 30 sec."
+       }
+    }
+}'
+
+def disarm_detector_HWtriggerCombined '{
+    global FPGAPV idFPGAPV
+
+    det_wait
+    Retiga_FilePluginWait
+    sleep(2)
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME); # Disabling the TimeStampArray
+    
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # The channel #19 died (used internally for fixed purposes) on 1ide so the #21 is used
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    #epics_put( sprintf("%sIn_21IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    
+    # FF detector back to normal state
+    if (ShouldChangeHydraMode) set_hydra_MultiDetSW          ## Solved
+    sleep(EPICS_DELAY)
+   	printf("Next hydra file names:   ")
+	get_hydra_AllFileNames
+	printf("Next hydra file numbers: ")
+	get_hydra_AllFileNumbers
+
+    # NF detector back to normal state
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software", CB_TIME)
+
+    ccdset_Initialize
+
+    #Resetting the FPGA for precitech and prrot
+    if (OSC["motor"]=="preciH" || OSC["motor"]=="prrot") {
+        epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when the softmotor do it automatically there is no more signal)
+    }
+    
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    
+    sleep(EPICS_DELAY)
+    p "Next Retiga image number:", detget_seqNumber
+
+}' # HWtriggerCombined
+
+def disarm_detector_HWtriggerRetiga '{
+    global FPGAPV CCDPV
+    #detabort # The detector is stopped watching
+    sleep(EPICS_DELAY)
+    
+    det_wait
+    Retiga_FilePluginWait
+    sleep(2)
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # IC scalers triggering TODO
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None", CB_TIME) # DetTrigToICscalers signal through EPICS
+  
+	epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME); # Disabling the TimeStampArray
+
+    # detector back to normal state
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software", CB_TIME)
+
+    ccdset_Initialize
+
+    #Resetting the FPGA for precitech and prrot
+    if (OSC["motor"]=="preciH" || OSC["motor"]=="prrot") {
+        epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when the softmotor do it automatically there is no more signal)
+    }
+
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #sleep(1.0)
+    
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    
+    sleep(EPICS_DELAY)
+    p "Next image number:", detget_seqNumber
+
+}' # HWtrigger Retiga
+
+
+def test_disarm_detector_HWtriggerRetiga '{
+    global FPGAPV CCDPV
+    #detabort # The detector is stopped watching
+    sleep(EPICS_DELAY)
+    
+    det_wait
+    Retiga_FilePluginWait
+    sleep(2)
+
+p "disarm Detector finished. Exiting."
+sleep(100000)
+exit    
+
+    # Put the detector to NoSave
+    local savemode
+    savemode=ccdget_AutoSave
+    ccdset_AutoSaveNo
+
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # IC scalers triggering TODO
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None", CB_TIME) # DetTrigToICscalers signal through EPICS
+  
+	epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME); # Disabling the TimeStampArray
+
+    # detector back to normal state
+    epics_put(sprintf("%sImageMode",CCDPV),"Single", CB_TIME)
+    epics_put(sprintf("%sTriggerMode",CCDPV),"Software", CB_TIME)
+
+    ccdset_Initialize
+
+    #Resetting the FPGA for precitech and prrot
+    if (OSC["motor"]=="preciH" || OSC["motor"]=="prrot") {
+        epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when teh softmotor do it automatically there is no more signal)
+    }
+
+    #epics_put(sprintf("%sqInitialize",CCDPV),1, CB_TIME)
+    #sleep(1.0)
+    
+    # Put the detector to the original Save mode
+    if (savemode) ccdset_AutoSaveYes else ccdset_AutoSaveNo
+    
+    sleep(EPICS_DELAY)
+    p "Next image number:", detget_seqNumber
+
+
+}' # HWTrigger Retiga test version
+
+################ GE
+
+
+def arm_detector_HWtriggerGE_FlyScan_Aero_hydra_ScintX '{
+    global FPGAPV CCDPV
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None") # no GATEToDetector signal in case of external TTL
+   
+    set_hydra_NumberOfImagesPerDetTrig OSC["nframes"]
+    ccdset_expTime_hydra OSC["exposure_time"] 
+    #if (ShouldChangeHydraMode) set_hydra_MultiDetEdge
+    if (ShouldChangeHydraMode) set_hydra_MultiDetPulse
+    
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME) # Enabling the counter, if switched to enable immediately counts down by one
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # Clears the latches in the DTH module
+    epics_put("dth1:DTH:resetTriggerBO", 1, CB_TIME)
+    
+    # Setting up teh ScintX detector and the related FPGA signals ready to go
+    arm_ScintX_FPGA
+    
+    # For HW triggering on GE/hydra we need to press the "Acquire" button
+    det_trig OSC["exposure_time"]
+    sleep(EPICS_DELAY)
+    
+    #sleep(4.0) # Finish the Autoscrub TODO
+    wait_for_DetRdy
+}'  #HW trigger FlyScan Aero hydra with ScintX
+
+##STRUCK MCS PVS
+def stop_struck 'epics_put("1id:mcs:StopAll", "Stop", CB_TIME);'
+def start_struck 'epics_put("1id:mcs:EraseStart", "Erase");'
+def read_struck4 'epics_get("1id:mcs:mca4");'
+def read_struck5 'epics_get("1id:mcs:mca5");'
+def read_struck6 'epics_get("1id:mcs:mca6");'
+def read_struck7 'epics_get("1id:mcs:mca7");'
+def read_struck8 'epics_get("1id:mcs:mca8");'
+def exttrig_struck 'epics_put("1id:mcs:ChannelAdvance","External", CB_TIME);'
+
+def arm_ScintX_FPGA '{
+
+    # ScintX AD
+    epics_put("ScintX:cam1:AcquirePeriod", 0.0, CB_TIME);
+    
+    # Setting up 1id:sg2
+    epics_put("1id:SG2Menu:name1", "SAXS_WAXS", CB_TIME)
+    epics_put("1id:SG2Menu:loadConfig1.PROC", 1, CB_TIME)
+
+    # arming the FPGA 
+    epics_put("1id:softGlue2:DnCntr-4_PRESET", 2, CB_TIME) # The delay between gate and channel advance in 8MHz ticks
+    epics_put("1id:softGlue2:DnCntr-4_LOAD_Signal.PROC", 1, CB_TIME) # Load it
+    epics_put("1id:softGlue2:DivByN-1_N", 2, CB_TIME) # Every nth signal from GE will trigger a frame on ScintX
+    epics_put("1id:softGlue2:DivByN-1_RESET_Signal.PROC", 1, CB_TIME) # Load and Reset
+    epics_put("1id:softGlue2:In_18Do.OUT", "ScintX:cam1:Acquire PP NMS", CB_TIME) # Start button PV
+    epics_put("1id:softGlue2:In_18IntEdge", "Rising", CB_TIME) # Pressing the start button on rising edge of the scintx trigger signal
+    epics_put("1id:softGlue2:DFF-1_CLEAR_Signal.PROC", 1, CB_TIME) # Clearing the signal selector
+
+    # Arming the struck    
+    exttrig_struck
+    start_struck
+    
+}'
+
+def disarm_ScintX_FPGA '{
+
+    # disarming the struck    
+    stop_struck
+
+    # disarming the FPGA and ScintX
+    epics_put("1id:softGlue2:In_18IntEdge", "None", CB_TIME) # Disabling the signals to the scintx Start button
+    
+}'
+
+def arm_detector_HWtriggerGE_FlyScan_Aero_hydra '{
+    global FPGAPV CCDPV
+
+    # Position driven Det_pulses
+    #epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate)) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks)) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*OSC["speed"])) # Delay Time, ext. TTL
+
+    #epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1)) # 
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None") # no GATEToDetector signal in case of external TTL
+    
+    # IC scalers triggering TODO
+    #epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"Rising") # DetTrigToICscalers signal through EPICS
+
+   	#epics_put(sprintf("%sImageMode",CCDPV),"Continuous")
+    #epics_put( sprintf("%sIn_17IntEdge", FPGAPV), "Both")   # GATEToDetector signal
+    
+   
+    set_hydra_NumberOfImagesPerDetTrig OSC["nframes"]
+    ccdset_expTime_hydra OSC["exposure_time"] 
+    # if (ShouldChangeHydraMode) set_hydra_MultiDetEdge
+    if (ShouldChangeHydraMode) set_hydra_MultiDetPulse
+    
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME) # Enabling the counter, if switched to enable immediately counts down by one
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # Clears the latches in the DTH module
+    epics_put("dth1:DTH:resetTriggerBO", 1, CB_TIME)
+    # For HW triggering on GE/hydra we need to press the "Acquire" button
+    det_trig OSC["exposure_time"]
+    sleep(EPICS_DELAY)
+    
+    #sleep(4.0) # Finish the Autoscrub TODO
+    wait_for_DetRdy
+}'  #HW trigger FlyScan Aero hydra
+
+def wait_for_DetRdy '{
+    while (epics_get(sprintf("%s",DetRdyPV)) != 1) {
+        sleep(EPICS_DELAY)
+    }
+}'
+
+def arm_detector_HWtriggerGE_prrot_hydra '{
+    global FPGAPV CCDPV
+
+     # Programming the detector trigger signal
+    #epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*8e6), CB_TIME) # Exp Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6)) # Gap Time, ext. TTL
+    #WARNING: Workaround for the FPGA Det_pulses generation: No extra one frame at the end of the scan
+    #epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*8e6+ GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+    #epics_put(sprintf("%sDnCntr-3_PRESET", FPGAPV), int(OSC["delay_time"]*8e6)) # Delay Time, ext. TTL
+
+    local StepConversion softmotres
+    softmotres=epics_get("1ide:userTran2.D")
+    StepConversion = softmotres/0.000264706  # Ratio of the softmotor resolution and the hard motor resolution
+
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/StepConversion/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/StepConversion/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+
+    #p "Workaround (FPGA position driven)"
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when teh softmotor do it automatically there is no more signal)
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    
+    set_hydra_NumberOfImagesPerDetTrig OSC["nframes"]
+    set_hydra_expTime OSC["exposure_time"] 
+    # if (ShouldChangeHydraMode) set_hydra_MultiDetEdge
+    if (ShouldChangeHydraMode) set_hydra_MultiDetPulse    
+
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # Clears the latches in the DTH module
+    epics_put("dth1:DTH:resetTriggerBO", 1, CB_TIME)
+
+    # For HW triggering on GE/hydra we need to press the "Acquire" button
+    #hydra_Initialize    
+    #sleep(1.0)
+    det_trig OSC["exposure_time"]
+    sleep(EPICS_DELAY)
+    #sleep(4.0) # Finish the Autoscrub
+    wait_for_DetRdy
+   
+}'  #HW trigger prrot hydra
+
+def arm_detector_HWtriggerGE_prrot_hydra_Renishaw '{
+    global FPGAPV CCDPV
+
+    #local StepConversion softmotres
+    #softmotres=epics_get("1ide:userTran2.D")
+    #StepConversion = softmotres/0.000264706  # Ratio of the softmotor resolution and the hard motor resolution
+
+    fastsweep_paramcheck
+    
+    epics_put(sprintf("%sDnCntr-1_PRESET", FPGAPV), int(OSC["exposure_time"]*OSC["speed"]/DecodingRate), CB_TIME) # Exp Time, ext. TTL
+    epics_put(sprintf("%sDnCntr-2_PRESET", FPGAPV), int(OSC["gap_time"]*OSC["speed"]/DecodingRate + GapAdjustmentTicks), CB_TIME) # Gap Time, ext. TTL
+
+    epics_put(sprintf("%sBUFFER-3_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # 
+
+    #p "Workaround (FPGA position driven)" for precitech or prrot
+    epics_put(sprintf("%sBUFFER-2_IN_Signal.PROC", FPGAPV), int(1), CB_TIME) # Workaround for the unwanted signal before the GATE (When this is reset there is a short pulse on the det_pulses line, if we do it here, then when teh softmotor do it automatically there is no more signal)
+
+    # FPGA interrupts
+    # userCalc activation
+    # epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"Rising") # GATEToDetector signal by software
+    epics_put(sprintf("%sIn_17IntEdge", FPGAPV), "None", CB_TIME) # no GATEToDetector signal in case of external TTL
+    
+    
+    set_hydra_NumberOfImagesPerDetTrig OSC["nframes"]
+    set_hydra_expTime OSC["exposure_time"] 
+    # if (ShouldChangeHydraMode) set_hydra_MultiDetEdge
+    if (ShouldChangeHydraMode) set_hydra_MultiDetPulse
+
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 1, CB_TIME); # Enabling the counter, if switched to enable immediately counts down by one
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 1, CB_TIME) # Enabling the TimeStampArray
+
+    # Clears the latches in the DTH module
+    epics_put("dth1:DTH:resetTriggerBO", 1, CB_TIME)
+
+    # For HW triggering on GE/hydra we need to press the "Acquire" button
+    #hydra_Initialize    
+    #sleep(1.0)
+    det_trig OSC["exposure_time"]
+    sleep(EPICS_DELAY)
+    #sleep(4.0) # Finish the Autoscrub
+    wait_for_DetRdy
+   
+}'  #HW trigger prrot hydra Renishaw
+
+
+def disarm_detector_HWtriggerGE_hydra '{
+    global FPGAPV idFPGAPV
+    #detabort # The detector is stopped watching
+    sleep(EPICS_DELAY)
+
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME) # Disabling the TimeStampArray
+
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # The channel #19 died (used internally for fixed purposes) on 1ide so the #21 is used
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    #epics_put( sprintf("%sIn_21IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    # detector back to normal state
+    if (ShouldChangeHydraMode) set_hydra_MultiDetSW          ## COMMENTED OUT FOR CORATELLA GROUP
+    
+    sleep(EPICS_DELAY)
+   	printf("Next file names:   ")
+	get_hydra_AllFileNames
+	printf("Next file numbers: ")
+	get_hydra_AllFileNumbers
+
+}' # HWtrigger_hydra
+
+def disarm_detector_HWtriggerGE_hydra_ScintX '{
+    global FPGAPV idFPGAPV
+    #detabort # The detector is stopped watching
+    sleep(EPICS_DELAY)
+
+
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0, CB_TIME) # Disabling the DetPulseToAD signals
+    epics_put(sprintf("%s.C", FrameCounterPV), 0, CB_TIME); # Disabling the counter
+    
+    epics_put(sprintf("%sBUFFER-4_IN_Signal.PROC", idFPGAPV), int(1))  # Clearing the latch for the DetRdy signal
+    
+    ## We do not have the frame timestamps yet.
+    # When this gets enabled, it will have immediately an element (junk) in the array!
+	#epics_put(sprintf("%s.C", TimeStampArrayPV), 0, CB_TIME) # Disabling the TimeStampArray
+
+    disarm_ScintX_FPGA
+    # FPGA interrupts
+    # userCalc deactivation   
+    epics_put( sprintf("%sIn_17IntEdge", FPGAPV),"None", CB_TIME)   # GATEToDetector signal
+    # The channel #19 died (used internally for fixed purposes) on 1ide so the #21 is used
+    epics_put( sprintf("%sIn_19IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    #epics_put( sprintf("%sIn_21IntEdge", FPGAPV),"None") # DetTrigToICscalers signal through EPICS
+    # detector back to normal state
+    if (ShouldChangeHydraMode) set_hydra_MultiDetSW          ## COMMENTED OUT FOR CORATELLA GROUP
+    
+    sleep(EPICS_DELAY)
+   	printf("Next file names:   ")
+	get_hydra_AllFileNames
+	printf("Next file numbers: ")
+	get_hydra_AllFileNumbers
+
+}' # HWtrigger_hydra with ScintX
+
+
+
+
+def _workaround_forADbug '{
+    local t savemode
+    savemode = epics_get(sprintf("%sAutoSave",ADFILEPV))
+
+    epics_put(sprintf("%sAutoSave",ADFILEPV), "No")
+    t = ccdget_expTime   
+    det_trig t
+    det_wait
+    det_trig t
+    det_wait
+    epics_put(sprintf("%sAutoSave",ADFILEPV), savemode)
+
+}'
+
+def setup_ICcounters '{
+    # Sets up the Monitor Counter and Transmitted Intensity Counter
+    # for fastsweep scans accumulating the data per frame in an array
+    # The data are in reverse order and normalized to 1 sec
+    if($#!=1) {
+        p "Usage: $0 numframes"
+        exit
+    }
+
+    local _arrayPV _numframes _userCalcName _ICname
+    _numframes=($1)
+    global MonCount_ArrayPV TransmCount_ArrayPV Mon_ScalerPV DetPulsePV ScalerTrigPV
+    global EMonCount_ArrayPV ETransmCount_ArrayPV 
+
+    # Setting up the scaler
+    epics_put(sprintf("%s.CONT", Mon_ScalerPV), "OneShot"); # Single triggering
+    epics_put(sprintf("%s.CNT", Mon_ScalerPV), "Done"); # Stop counting
+    epics_put(sprintf("%s_calc_ctrl.VAL", Mon_ScalerPV), "Cts/sec"); # Normalized counts
+    for (i=1; i<=16; i++) {
+        epics_put(sprintf("%s.G%d", Mon_ScalerPV, i), "N"); # Gates
+    }    
+    epics_put(sprintf("%s_calcEnable.VAL", Mon_ScalerPV), "ENABLE"); # Enable calcs
+    epics_put(sprintf("%s.DLY", Mon_ScalerPV), 0.0);  # Delay in sec
+    epics_put(sprintf("%s.RATE", Mon_ScalerPV), 2.0); # DisplayFreq in Hz
+    epics_put(sprintf("%s.CNT", Mon_ScalerPV), "Done"); # Stop counting
+
+    # Setting up the triggering tool
+    # printvar ScalerTrigPV
+    # This was the StringCalc version
+    #epics_put(sprintf("%s.DESC", ScalerTrigPV), "DetPulseToScaler"); # Mode
+    #epics_put(sprintf("%s.SCAN", ScalerTrigPV), "Passive"); # Mode
+    #epics_put(sprintf("%s.A", ScalerTrigPV), 0); # Initial value
+    #epics_put(sprintf("%s.B", ScalerTrigPV), 0); # Initial value, Disable 
+    #epics_put(sprintf("%s.INPA", ScalerTrigPV), sprintf("%s.VAL CP NMS", DetPulsePV)); # Input PV with Det_pulses
+    #epics_put(sprintf("%s.AA", ScalerTrigPV), "Count"); # Initial value
+    #epics_put(sprintf("%s.BB", ScalerTrigPV), "Done"); # Initial value
+    #epics_put(sprintf("%s.OOPT", ScalerTrigPV), "On Change");
+    #epics_put(sprintf("%s.DOPT", ScalerTrigPV), "Use OCAL");
+    #epics_put(sprintf("%s.CALC", ScalerTrigPV), "(A&B)"); # If B enabled then trigger the Scaler
+    #epics_put(sprintf("%s.OCAL", ScalerTrigPV), "(A&B)?AA:BB"); # If B enabled an there is change on CALC then trigger the Scaler
+    #epics_put(sprintf("%s.OUT", ScalerTrigPV), sprintf("%s.CNT PP NMS", Mon_ScalerPV));
+    #epics_put(sprintf("%s.WAIT", ScalerTrigPV), "NoWait");
+
+    # Setting up the triggering tool --> non StringCalc version
+    epics_put(sprintf("%s.DESC", ScalerTrigPV), "DetPulseToScaler"); # Mode
+    epics_put(sprintf("%s.SCAN", ScalerTrigPV), "Passive"); # Mode
+    epics_put(sprintf("%s.A", ScalerTrigPV), 0); # Initial value
+    epics_put(sprintf("%s.B", ScalerTrigPV), 0); # Initial value, Disable 
+    # epics_put(sprintf("%s.INPA", ScalerTrigPV), sprintf("%s.VAL CP NMS", DetPulsePV)); # Input PV with Det_pulses, OBSOLETE
+    # epics_put(sprintf("%s.INPA", ScalerTrigPV), sprintf("%s CP NMS", ScalerTrigDetPulsePV)); # Input PV with Det_pulses
+    epics_put(sprintf("%s.INPA", ScalerTrigPV), ""); # Input PV with Det_pulses, E-hutch scaler, this field will be written by FPGA 1ide:sg2
+    epics_put(sprintf("%s.OOPT", ScalerTrigPV), "On Change");
+    epics_put(sprintf("%s.DOPT", ScalerTrigPV), "Use OCAL");
+    epics_put(sprintf("%s.CALC", ScalerTrigPV), "(A&B)"); # If B enabled then trigger the Scaler
+    epics_put(sprintf("%s.OCAL", ScalerTrigPV), "(A&B)?1:0"); # If B enabled an there is change on CALC then trigger the Scaler
+    epics_put(sprintf("%s.OUT", ScalerTrigPV), sprintf("%s.CNT PP NMS", Mon_ScalerPV));
+    #epics_put(sprintf("%s.WAIT", ScalerTrigPV), "NoWait");
+
+    # Setting up SoftGlue Interrupts
+    #epics_put("1mini1:sg:In_17Do.OUT", "1mini1:userStringCalc1.A PP NMS" ); # GATE
+    #epics_put("1mini1:sg:In_19Do.OUT", "1mini1:userStringCalc2.A PP NMS" ); # DetPulses to Scaler
+    #epics_put("1mini1:sg:In_17IntEdge", "None") # Disabling
+    #epics_put("1mini1:sg:In_19IntEdge", "None") # Disabling
+
+    
+    #### THIS IS obsoleted
+    # Setup Acromag for Det_pulses, B-hutch, FPGA 19 output to Acromag input
+    # printvar DetPulsePV
+    #epics_put(sprintf("%s.DESC", DetPulsePV), "det_pulses"); # Mode
+    #epics_put(sprintf("%s.SCAN", DetPulsePV), "I/O Intr"); # Enable Acromag
+    #setup_DetPulsePV_Acromag
+    
+    # Setting up the userArrayCalc
+    def _fill_ArrayCalcfields \'
+        # The common fields for the scalers
+        #printvar _arrayPV
+
+        epics_put(sprintf("%s.DESC", _arrayPV), _userCalcName);
+        #epics_put(sprintf("%s.NUSE", _arrayPV), _numframes);
+        epics_put(sprintf("%s.NUSE", _arrayPV), array_NUSE);
+        epics_put(sprintf("%s.SCAN", _arrayPV), "Passive");
+        epics_put(sprintf("%s.INPA", _arrayPV), sprintf("%s%s NPP NMS", Mon_ScalerPV, _ICname)); # selected IC
+        epics_put(sprintf("%s.INPB", _arrayPV), sprintf("%s_cts1.A NPP NMS", Mon_ScalerPV)); # 10MHz
+        epics_put(sprintf("%s.INPC", _arrayPV), ""); # Disabled
+        epics_put(sprintf("%s.C", _arrayPV), 0.0); # Disabled
+        epics_put(sprintf("%s.INAA", _arrayPV), sprintf("%s%s CP NMS", Mon_ScalerPV, _ICname)); # Input array
+        epics_put(sprintf("%s.INBB", _arrayPV), ""); # Storage array
+        epics_put(sprintf("%s.BB", _arrayPV), 0); # Reset
+        epics_put(sprintf("%s.CALC", _arrayPV), "C?(BB>>1)+AA:BB"); # The formula
+        epics_put(sprintf("%s.ODLY", _arrayPV), 0.0); # Delay
+        epics_put(sprintf("%s.OEVT", _arrayPV), 0); # Output Event
+        epics_put(sprintf("%s.OOPT", _arrayPV), "Every Time"); # Processing
+        epics_put(sprintf("%s.DOPT", _arrayPV), "Use CALC"); # Use CALC
+        epics_put(sprintf("%s.OUT", _arrayPV), sprintf("%s.BB NPP NMS", _arrayPV)); # output PV
+        epics_put(sprintf("%s.WAIT", _arrayPV), "NoWait"); # No waiting
+    \'
+
+    # Monitor Counter (before the sample)
+    _arrayPV=MonCount_ArrayPV
+    _userCalcName="Fastsweep MonCnt";
+    _ICname=MonICName # from the orange field on the scaler MEDM window
+    _fill_ArrayCalcfields
+        
+    # Transmitted Intensity Counter (after the sample)
+    _arrayPV=TransmCount_ArrayPV
+    _userCalcName="Fastsweep TransmCnt";
+    _ICname=TransmICName 
+    _fill_ArrayCalcfields
+
+    # E-Monitor Counter (before the sample)
+    _arrayPV=EMonCount_ArrayPV
+    _userCalcName="Fastswp E-MonCnt";
+    _ICname=EMonICName # from the orange field on the scaler MEDM window
+    _fill_ArrayCalcfields
+
+    # Transmitted Intensity Counter (after the sample)
+    _arrayPV=ETransmCount_ArrayPV
+    _userCalcName="Fastswp E-TransmCnt";
+    _ICname=ETransmICName 
+    _fill_ArrayCalcfields
+
+    # Transmitted Intensity Counter (after the sample)
+    _arrayPV=IntegrTicks_ArrayPV
+    _userCalcName="Fastswp Integr.Ticks";
+    _ICname=IntegrICName 
+    _fill_ArrayCalcfields
+   
+}'
+
+def arm_ICcounters '{
+    global MonCount_ArrayPV TransmCount_ArrayPV Mon_ScalerPV DetPulsePV ScalerTrigPV
+    
+    # When these get enabled, they will have immediately an element (junk) in the array!
+    epics_put(sprintf("%s.C", MonCount_ArrayPV), 1.0); # Enable
+    epics_put(sprintf("%s.C", TransmCount_ArrayPV), 1.0); # Enable
+    epics_put(sprintf("%s.C", EMonCount_ArrayPV), 1.0); # Enable
+    epics_put(sprintf("%s.C", ETransmCount_ArrayPV), 1.0); # Enable
+    epics_put(sprintf("%s.C", IntegrTicks_ArrayPV), 1.0); # Enable
+    #epics_put(sprintf("%s", "1mini1:sg:In_19IntEdge"), "Both"); # Enable Det Pulses to IC Scaler
+    if (OSC["motor"] == "aero") {
+        ## E-hutch version
+        epics_put(sprintf("%s", "1ide:sg2:In_21Do.OUT"), sprintf("%s.A PP NMS",ScalerTrigPV), CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        epics_put(sprintf("%s", "1ide:sg2:In_21IntEdge"), "Both", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        epics_put(sprintf("%s", "1ide:sg2:FI21_Signal.DESC"), "Sc", CB_TIME); # Scaler label, for E-hutch
+        ## C-hutch version
+        #epics_put(sprintf("%s", "1id:softGlue:In_3Do.OUT"), sprintf("%s.A PP NMS",ScalerTrigPV), CB_TIME); # Enable Det Pulses to IC Scaler, for C-hutch
+        #epics_put(sprintf("%s", "1id:softGlue:In_3IntEdge"), "Both", CB_TIME); # Enable Det Pulses to IC Scaler, for C-hutch
+        #epics_put(sprintf("%s", "1id:softGlue:FI3_Signal.DESC"), "Sc", CB_TIME); # Scaler label, for C-hutch
+    }    
+    if (OSC["motor"] == "prrot") {
+        # TODO: The prrot FPGA control is fixed, the det_pulse signal is driven back to #3
+        #epics_put(sprintf("%s", "1ide:sg:In_21Do.OUT"), sprintf("%s.A PP NMS",ScalerTrigPV)); # Enable Det Pulses to IC Scaler, for E-hutch
+        #epics_put(sprintf("%s", "1ide:sg:In_21IntEdge"), "Both", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        epics_put(sprintf("%s", "1ide:sg:FI3_Signal.DESC"), "Sc", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        epics_put(sprintf("%s", "1ide:sg:In_3Do.OUT"), sprintf("%s.A PP NMS",ScalerTrigPV), CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        epics_put(sprintf("%s", "1ide:sg:In_3IntEdge"), "Both", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+    }    
+    # Acromag is supposed to be Enabled, OBSOLETE
+    # epics_put(sprintf("%s.SCAN", DetPulsePV), "I/O Intr"); # Enable
+    # Enabling the det_pulses to go to the Scaler
+    epics_put(sprintf("%s.B", ScalerTrigPV), 1, CB_TIME); # Enable 
+
+}'
+
+def disarm_ICcounters '{
+    global MonCount_ArrayPV TransmCount_ArrayPV Mon_ScalerPV DetPulsePV ScalerTrigPV
+    
+    epics_put(sprintf("%s.C", MonCount_ArrayPV), 0.0); # Disable
+    epics_put(sprintf("%s.C", TransmCount_ArrayPV), 0.0); # Disable
+    epics_put(sprintf("%s.C", EMonCount_ArrayPV), 0.0); # Disable
+    epics_put(sprintf("%s.C", ETransmCount_ArrayPV), 0.0); # Disable
+    epics_put(sprintf("%s.C", IntegrTicks_ArrayPV), 0.0); # Disable
+    #epics_put(sprintf("%s", "1mini1:sg:In_19IntEdge"), "None"); # Disable Det Pulses to IC Scaler
+    if (OSC["motor"] == "aero") {
+        ## E-hutch version
+        epics_put(sprintf("%s", "1ide:sg2:In_21IntEdge"), "None", CB_TIME); # Disable Det Pulses to IC Scaler, E-hutch
+        epics_put(sprintf("%s", "1ide:sg2:FI21_Signal.DESC"), "21", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+        ## C-hutch version
+        #epics_put(sprintf("%s", "1id:softGlue:In_3IntEdge"), "None", CB_TIME); # Disable Det Pulses to IC Scaler, C-hutch
+        #epics_put(sprintf("%s", "1id:softGlue:FI3_Signal.DESC"), "3", CB_TIME); # Enable Det Pulses to IC Scaler, for C-hutch
+    }
+    if (OSC["motor"] == "prrot") {
+        # TODO: The prrot FPGA control is fixed, the det_pulse signal is driven back to #3
+        epics_put(sprintf("%s", "1ide:sg:In_3IntEdge"), "None", CB_TIME); # Disable Det Pulses to IC Scaler, E-hutch
+        epics_put(sprintf("%s", "1ide:sg:FI3_Signal.DESC"), "3", CB_TIME); # Enable Det Pulses to IC Scaler, for E-hutch
+    }    
+    # Acromag should not be switched off, OBSOLETE
+    #epics_put(sprintf("%s.SCAN", DetPulsePV), "Passive"); # Disable
+    # Disabling the det_pulses to go to the Scaler
+    epics_put(sprintf("%s.B", ScalerTrigPV), 0); # Disable 
+}'
+
+def setup_DetPulseToAD '{
+    # Sets up the DetPulseToDet userStringCalc
+    # for pressing the "Start" button on AD
+    
+    if($#!=0) {
+        p "Usage: $0 "
+        exit
+    }
+
+    global DetPulseToADPV DetPulsePV
+    
+    # Setting up the triggering tool
+    # printvar DetPulseToADPV
+    epics_put(sprintf("%s.DESC", DetPulseToADPV), "DetPulseToAD"); # Mode
+    epics_put(sprintf("%s.SCAN", DetPulseToADPV), "Passive"); # Mode
+
+    epics_put(sprintf("%s.A", DetPulseToADPV), 0); # Initial value
+    epics_put(sprintf("%s.INPA", DetPulseToADPV), sprintf("%s.VAL CP NMS", DetPulsePV)); # Input PV with Det_pulses
+    epics_put(sprintf("%s.INPB", DetPulseToADPV), ""); # clear
+    epics_put(sprintf("%s.B", DetPulseToADPV), 0); # Initial value, Disable for disarming
+    epics_put(sprintf("%s.C", DetPulseToADPV), 0); # Initial value, Disable for DetPulseCounter
+   
+    epics_put(sprintf("%s.AA", DetPulseToADPV), "Acquire"); # Initial value
+    epics_put(sprintf("%s.BB", DetPulseToADPV), "NOP"); # Initial value
+    epics_put(sprintf("%s.CALC", DetPulseToADPV), "(A&B)&C"); # Is the triggering is Enabled?
+    epics_put(sprintf("%s.OCAL", DetPulseToADPV), "AA"); # Output string
+    epics_put(sprintf("%s.OOPT", DetPulseToADPV), "Transition To Non-zero");
+    epics_put(sprintf("%s.DOPT", DetPulseToADPV), "Use OCAL");
+    epics_put(sprintf("%s.OUT", DetPulseToADPV), sprintf("%sAcquire PP NMS", CCDPV));
+    epics_put(sprintf("%s.WAIT", DetPulseToADPV), "NoWait");
+
+}'
+
+def setup_FrameCounter '{
+    # Sets up the DetPulseCounter userTransform
+    # for stopping the DetPulseToAD when the "nframes" arereached
+   
+    if($#!=1) {
+        p "Usage: $0 nframes"
+        exit
+    }
+
+    global DetPulseToADPV FrameCounterPV
+    
+    # Setting up the triggering tool
+    # printvar FrameCounterPV
+    epics_put(sprintf("%s.DESC", FrameCounterPV), "FrameCounter"); # Name
+    epics_put(sprintf("%s.SCAN", FrameCounterPV), "Passive"); # Mode
+
+    epics_put(sprintf("%s.INPA", FrameCounterPV), ""); # clear
+    epics_put(sprintf("%s.INPB", FrameCounterPV), ""); # clear
+    epics_put(sprintf("%s.INPC", FrameCounterPV), ""); # clear
+    epics_put(sprintf("%s.INPD", FrameCounterPV), ""); # clear
+    epics_put(sprintf("%s.INPE", FrameCounterPV), ""); # clear
+
+    # The order is important
+    epics_put(sprintf("%s.CMTA", FrameCounterPV), "a nframes"); # Number of frames
+    epics_put(sprintf("%s.A", FrameCounterPV), $1); # Just for logging the starting number
+    epics_put(sprintf("%s.CLCA", FrameCounterPV), ""); # clear
+
+    epics_put(sprintf("%s.CMTB", FrameCounterPV), "b counter"); # Counter
+    epics_put(sprintf("%s.CLCB", FrameCounterPV), "C?(B-1):B"); # Counting down
+    epics_put(sprintf("%s.B", FrameCounterPV), 0); # Just for Initializing 
+
+    epics_put(sprintf("%s.CMTC", FrameCounterPV), "c enable"); # Enables the counter
+    epics_put(sprintf("%s.C", FrameCounterPV), 0); # Disabled now, if switched to enable immediately counts down by one
+    epics_put(sprintf("%s.CLCC", FrameCounterPV), ""); # clear
+
+    epics_put(sprintf("%s.CMTD", FrameCounterPV), "d disbl DetP_AD"); # Enab/Disables the DetPulseToAD signals
+    epics_put(sprintf("%s.D", FrameCounterPV), 0); # Enab/Disables the DetPulseToAD signals
+    epics_put(sprintf("%s.CLCD", FrameCounterPV), "(B<=0)?0:1"); # If the detector triggering should be stopped
+    
+    epics_put(sprintf("%s.COPT", FrameCounterPV), "Conditional");
+    epics_put(sprintf("%s.OUTB", FrameCounterPV), sprintf("%s.B NPP NMS", FrameCounterPV));
+    epics_put(sprintf("%s.OUTD", FrameCounterPV), sprintf("%s.C NPP NMS", DetPulseToADPV));
+
+    # Setting the good number
+    epics_put(sprintf("%s.B", FrameCounterPV), ($1)+1); # nframes+1 because of enabling with C
+
+}'
+
+def setup_FrameCounterTrigger '{
+    # Setting up the userCalc to keep pressing the PROC button on the DetPulseCounter
+	# when the DetPulsePV.VAL changes from 0 to 1
+    global FrameCounterPV FrameCounterTriggerPV
+    
+    # printvar FrameCounterTriggerPV
+    epics_put(sprintf("%s.DESC", FrameCounterTriggerPV), "FrameCounterTrigger"); 
+    epics_put(sprintf("%s.SCAN", FrameCounterTriggerPV), "Passive"); # Mode
+    epics_put(sprintf("%s.A", FrameCounterTriggerPV), 0); # Initial value, 0
+    epics_put(sprintf("%s.B", FrameCounterTriggerPV), 0); # Initial value, Disable
+    epics_put(sprintf("%s.INPA", FrameCounterTriggerPV), sprintf("%s.VAL CP NMS", FrameSignalPV)); # Input PV with Det_pulses
+    epics_put(sprintf("%s.OOPT", FrameCounterTriggerPV), "Transition To Non-zero");
+    epics_put(sprintf("%s.DOPT", FrameCounterTriggerPV), "Use OCAL");
+    epics_put(sprintf("%s.CALC", FrameCounterTriggerPV), "A==1"); 
+    epics_put(sprintf("%s.OCAL", FrameCounterTriggerPV), "1"); 
+    epics_put(sprintf("%s.OUT", FrameCounterTriggerPV), sprintf("%s.PROC PP NMS", FrameCounterPV));
+}'
+
+def setup_TimeStampArray '{
+        # Timestamps saving into an array
+        #printvar TimeStampPV
+
+        epics_put(sprintf("%s.DESC", TimeStampArrayPV), "TimeStamps");
+        #epics_put(sprintf("%s.NUSE", TimeStampPV), _numframes);
+        epics_put(sprintf("%s.NUSE", TimeStampArrayPV), array_NUSE);
+        epics_put(sprintf("%s.SCAN", TimeStampArrayPV), "Passive");
+        epics_put(sprintf("%s.INPA", TimeStampArrayPV), ""); # clear
+        epics_put(sprintf("%s.INPB", TimeStampArrayPV), ""); # clear
+        epics_put(sprintf("%s.INPC", TimeStampArrayPV), ""); # clear
+        epics_put(sprintf("%s.A", TimeStampArrayPV), OSC["nfames"]); # Number of frames
+        epics_put(sprintf("%s.B", TimeStampArrayPV), 0); # clear
+        epics_put(sprintf("%s.C", TimeStampArrayPV), 0); # Disabled
+        epics_put(sprintf("%s.INAA", TimeStampArrayPV), sprintf("%s CP NMS", TimeStampPV)); # Input array
+        epics_put(sprintf("%s.INBB", TimeStampArrayPV), ""); # Storage array
+        epics_put(sprintf("%s.BB", TimeStampArrayPV), 0); # Reset
+        epics_put(sprintf("%s.CALC", TimeStampArrayPV), "C?(BB>>1)+AA:BB"); # The formula
+        epics_put(sprintf("%s.ODLY", TimeStampArrayPV), 0.0); # Delay
+        epics_put(sprintf("%s.OEVT", TimeStampArrayPV), 0); # Output Event
+        epics_put(sprintf("%s.OOPT", TimeStampArrayPV), "Every Time"); # Processing
+        epics_put(sprintf("%s.DOPT", TimeStampArrayPV), "Use CALC"); # Use CALC
+        epics_put(sprintf("%s.OUT", TimeStampArrayPV), sprintf("%s.BB NPP NMS", TimeStampArrayPV)); # output PV
+        epics_put(sprintf("%s.WAIT", TimeStampArrayPV), "NoWait"); # No waiting
+}'
+
+
+def setup_FakeGATEandDetPulse '{
+    # For E-hutch
+    # Setting up the FAKE GATE signals
+    global DetPulsePV
+    local FakeGATEPV
+    
+    FakeGATEPV="1ide:userCalcOut1" 
+    # printvar FakeGATEPV
+    epics_put(sprintf("%s.DESC", FakeGATEPV), "MTS rot. dev. GATE"); 
+    epics_put(sprintf("%s.SCAN", FakeGATEPV), "Passive"); # Mode
+    epics_put(sprintf("%s.A", FakeGATEPV), 0); # Initial value
+    epics_put(sprintf("%s.B", FakeGATEPV), 0); # Initial value, Disable
+    epics_put(sprintf("%s.INPA", FakeGATEPV), "1ide:m5.DMOV CP NMS"); # Input PV with Det_pulses
+    epics_put(sprintf("%s.OOPT", FakeGATEPV), "Every Time");
+    epics_put(sprintf("%s.DOPT", FakeGATEPV), "Use CALC");
+    epics_put(sprintf("%s.CALC", FakeGATEPV), "(B&(!A))?1:0"); 
+    epics_put(sprintf("%s.OUT", FakeGATEPV), sprintf("%sBUFFER-1_IN_Signal.PROC PP NMS", FPGAPV));
+
+    # Setting up the FAKE DetPulse signals
+    # printvar DetPulsePV
+    #epics_put(sprintf("%s.DESC", DetPulsePV), "DetPulses in"); 
+    #epics_put(sprintf("%s.SCAN", DetPulsePV), "Passive"); # Mode
+    #epics_put(sprintf("%s.A", DetPulsePV), 0); # Initial value This receives interrupt from SoftGlue Field I/O 1
+    #epics_put(sprintf("%s.B", DetPulsePV), 0); # Initial value
+    #epics_put(sprintf("%s.INPA", DetPulsePV), ""); # Input PV with Det_pulses
+    #epics_put(sprintf("%s.INPB", DetPulsePV), ""); # Input PV with Det_pulses
+    #epics_put(sprintf("%s.OOPT", DetPulsePV), "Every Time");
+    #epics_put(sprintf("%s.DOPT", DetPulsePV), "Use CALC");
+    #epics_put(sprintf("%s.CALC", DetPulsePV), "A"); 
+    #epics_put(sprintf("%s.OUT", DetPulsePV), "");
+
+}'
+
+def setup_FakeGATEandDetPulse_aero '{
+    # For E-hutch
+    # Setting up the FAKE GATE signals
+    global DetPulsePV
+    local FakeGATEPV
+    
+    FakeGATEPV="1ide:userCalcOut4" 
+    # printvar FakeGATEPV
+    epics_put(sprintf("%s.DESC", FakeGATEPV), "AERO rot stopGATE"); 
+    epics_put(sprintf("%s.SCAN", FakeGATEPV), "Passive"); # Mode
+    epics_put(sprintf("%s.A", FakeGATEPV), 0); # Initial value
+    epics_put(sprintf("%s.B", FakeGATEPV), 0); # Initial value, Disable
+    epics_put(sprintf("%s.INPA", FakeGATEPV), sprintf("%sfly CP NMS", PSOPV)); # Input PV for status of Fly
+    epics_put(sprintf("%s.ODLY", FakeGATEPV), 0.0);
+    epics_put(sprintf("%s.OOPT", FakeGATEPV), "Transition To Zero");
+    epics_put(sprintf("%s.DOPT", FakeGATEPV), "Use CALC");
+    epics_put(sprintf("%s.CALC", FakeGATEPV), "(B&A)?1:0"); 
+    epics_put(sprintf("%s.OUT", FakeGATEPV), sprintf("%sBUFFER-1_IN_Signal.PROC PP NMS", FPGAPV));
+
+    # Setting up the FAKE DetPulse signals
+    # printvar DetPulsePV
+    #epics_put(sprintf("%s.DESC", DetPulsePV), "DetPulses in"); 
+    #epics_put(sprintf("%s.SCAN", DetPulsePV), "Passive"); # Mode
+    #epics_put(sprintf("%s.A", DetPulsePV), 0); # Initial value This receives interrupt from SoftGlue Field I/O 1
+    #epics_put(sprintf("%s.B", DetPulsePV), 0); # Initial value
+    #epics_put(sprintf("%s.INPA", DetPulsePV), ""); # Input PV with Det_pulses
+    #epics_put(sprintf("%s.INPB", DetPulsePV), ""); # Input PV with Det_pulses
+    #epics_put(sprintf("%s.OOPT", DetPulsePV), "Every Time");
+    #epics_put(sprintf("%s.DOPT", DetPulsePV), "Use CALC");
+    #epics_put(sprintf("%s.CALC", DetPulsePV), "A"); 
+    #epics_put(sprintf("%s.OUT", DetPulsePV), "");
+
+}'
+
+def setup_DetPulsePV_Acromag '{
+    # Setup Acromag for Det_Pulse signals, FPGA det_pulses output to Acromag input
+    # printvar ReadoutPV
+    epics_put(sprintf("%s.DESC", DetPulsePV), "det_pulses"); # Mode
+    epics_put(sprintf("%s.SCAN", DetPulsePV), "I/O Intr"); # Enable Acromag
+}'
+
+
+def setup_ReadoutPV_Acromag '{
+    # Setup Acromag for READOUT signals, B-hutch, Retiga output to Acromag input
+    # printvar ReadoutPV
+    epics_put(sprintf("%s.DESC", ReadoutPV), "Readout"); # Mode
+    epics_put(sprintf("%s.SCAN", ReadoutPV), "I/O Intr"); # Enable Acromag
+}'
+
+def setup_SEXGEPV_Acromag '{
+    # Setup Acromag for Single Exposure PV signals, GE output to Acromag input
+    # printvar SEXGEPV
+    epics_put(sprintf("%s.DESC", SEXGEPV), "SEX_GE"); # Mode
+    epics_put(sprintf("%s.SCAN", SEXGEPV), "I/O Intr"); # Enable Acromag
+}'
+
+def setup_GATEsignalPV_Acromag '{
+    # Setup Acromag for GATE signals, FPGA output to Acromag input
+    # printvar GATE_signalPV
+    epics_put(sprintf("%s.DESC", GATE_signalPV), "GATEsignal"); # Mode
+    epics_put(sprintf("%s.SCAN", GATE_signalPV), "I/O Intr"); # Enable Acromag
+}'
+
+def setup_DTHDetRdy_FPGA '{
+    # Generating the latch circuit in the FPGA for sensing the DetRdy signal
+    # printvar idFPGAV
+    epics_put(sprintf("%sFI4_Signal", idFPGAPV), "DTHDetRdy"); # Mode
+    epics_put(sprintf("%sDFF-2_CLOCK_Signal", idFPGAPV), "DTHDetRdy"); # CLOCK
+    epics_put(sprintf("%sDFF-2_SET_Signal", idFPGAPV), 1); # SET
+    epics_put(sprintf("%sDFF-2_D_Signal", idFPGAPV), 1); # DATA
+    epics_put(sprintf("%sDFF-2_CLEAR_Signal", idFPGAPV), "clrDetRdy"); # DATA
+    epics_put(sprintf("%sBUFFER-4_OUT_Signal", idFPGAPV), "clrDetRdy"); # BUF-out
+    epics_put(sprintf("%sBUFFER-4_IN_Signal", idFPGAPV), "0!"); # BUF-in
+}'
+
+def printdoublearray '{
+    # Prints out the first n array elements in full presicion in reverse order.
+    if($#!=2) {
+        p "Prints out the first n array elements in full precision (double) in reverse order."
+        p "No check for the validity of indices."
+        p "Usage: $0 [array_name] [numelems]"
+        exit
+    }
+    
+    local ielem
+    printf("{ ")
+    for (ielem=(($2)-1); ielem>=0; ielem--) {
+        printf("%15.8f  ", $1[ielem])
+    }
+    printf("}\n")
+}'
+
+def sendemailalert '{
+    local text
+    #if ($# == 1) {
+       # unix("sed -e s/TEXT/" $1 "/g", $1))
+    #}
+    unix(sprintf("sendmail %s <./macros_PK/alertmail.txt", ALERTLIST))
+
+    #content=$1
+    #text=sprintf("Subject: 1ID SPEC alert %s at %s", content, date()) 
+    # TODO: Problem with the CR
+    #unix(sprintf("echo %s | sendmail %s", text, ALERTLIST))
+    #p "WARNING! E-MAIL ALERT has been sent to " ALERTLIST
+    #p text
+}'
+
+
+

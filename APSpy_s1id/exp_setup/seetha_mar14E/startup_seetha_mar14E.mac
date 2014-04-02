@@ -1,0 +1,101 @@
+
+cd ~/new_data/seetha_mar14E
+on("FullLog.log")
+
+global spec_lastscan
+unix("spec_lastscan.sh seetha_mar14E.spe", spec_lastscan)
+p "spec_lastscan = ", spec_lastscan
+#exit
+newfile seetha_mar14E.spe spec_lastscan
+
+global ALERTLIST DataDirectory
+global HydraFileSizeCheck
+
+
+#For detector tests
+#Switching off the fast shutter control:
+#   - pulling out the 'sweep' connector
+#   - disabling to change the shutter modes:
+#def shutter_manual '{}'
+#def shutter_sweep '{}'
+
+# FPGA controlled fast shutter mode selector.
+qdo macros_PK/FPGA_2013Aug11/FPGA_signals.mac 
+#qdo macros_PK/hydra_2013Aug11/use_hydra.mac
+#qdo macros_PK/hydra_2013Nov20/use_hydra.mac
+qdo macros_PK/hydra_2014Feb24/use_hydra.mac
+#qdo macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/hookup_macros.mac
+qdo macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2014Feb24/hookup_macros.mac
+qdo macros_PK/TomoScans_2014Jan28/continuous_acq.mac
+qdo macros_PK/TomoScans_2014Jan28/ccd_ad_retiga.mac
+qdo macros_PK/TomoScans_2014Jan28/Tomo_Scans_stabil.mac
+qdo macros_PK/TomoScans_2014Jan28/Tomo_DetContrlFuncs.mac
+
+qdo macros_PK/E_mon.mac
+qdo macros_PK/E_scan.mac
+qdo macros_PK/DIC_macros.mac
+qdo macros_PK/Atten.mac
+qdo macros_PK/UndMacros.mac
+
+### USER related scripts
+# qdo samples.mac
+#qdo macros/ge_linescan.mac
+#qdo ge_mapper.mac
+#qdo macros/HVcontrol.mac
+#qdo rmd_macros_Jul13.mac
+#qdo lagtime_rmd_Jul13.mac
+#qdo macros/DetectorFunctions.mac
+#qdo rmd_macros_Dec13.mac
+
+#qdo macros/Au_Calibration.mac
+#qdo macros/NF_Volume_Scan_2L_3L.mac
+#qdo macros/DoVolume.mac
+#qdo macros/DetectorFunctions.mac
+
+tomoparfile = "./seetha_mar14E_tomopar.par"
+
+def isBeamOn() '{
+    if( (epics_get("S:SRcurrentAI")>30) && (epics_get("PA:01ID:A_SHTRS_CLOSED") == "Open") && (epics_get("PA:01ID:B_SHTRS_CLOSED") == "Open") ) {
+       return 1;
+    } else {
+       return 0;
+       #return 1; #### For testing purposes
+    }
+  
+}'
+
+##def user_postcount 'sleep(0.3)'
+
+##### MUST BE space separated list of e-mails
+ALERTLIST="okasinski@aps.anl.gov kenesei@aps.anl.gov" 
+
+# Switching to the "near field=Retiga" setup
+# Default setup
+
+# For Near Field
+seetha_mar14E_Retiga
+
+# For Tomo
+# seetha_mar14E_Tomo
+
+# For GE2 in E , GE2 in C
+#seetha_mar14E_hydra1
+
+# For combined NF and FF
+#seetha_mar14E_combined
+
+HydraFileSizeCheck=1  # If 0, there is no check on file size and the DataDirectory is non-effective
+# The path for the GE files on the machine which runs SPEC (where the GE Windows is practically saving the files)
+DataDirectory="/home/beams/S1IDUSER/mnt/WAXS/seetha_mar14/GE/"
+ShouldRotateBack=0  # 0, 1: Rotation back to initial position during the file saving of hydra
+ShouldChangeHydraMode=1 # The 1 is safe, 0 is risky, it disables the detector mode change between scans
+if (OSC["detector"]=="GE_NEW" && ShouldChangeHydraMode==0) set_hydra_MultiDetPulse
+if (OSC["detector"]=="NFFF" && ShouldChangeHydraMode==0) set_hydra_MultiDetEdge
+
+#qdo ./macros/DetectorFunctions.mac
+#qdo ./macros/WA_CMU.mac
+#qdo ./macros/isBeamOn_CMU.mac
+#qdo ./macros/DoVolume_samYb_fast.mac
+#qdo ./macros/DetZBeamPosScan.mac
+#qdo ./TomoScans_2013Mar05/Tomo_DetContrlFuncs.mac
+#qdo ./TomoScans_2013Mar05/Tomo_Scans.mac

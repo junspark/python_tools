@@ -1,0 +1,541 @@
+#####################################################
+#
+#	Tomography Scan with Still or Sweeped Images
+#
+#	Still: Does the conventional tomography scan with stopped motors, or 
+#	Sweep: Sweeping mode according to the bScanType parameter; 
+#          the files are compatible with the reconstruction method taking 
+#          white field and dark field images
+#   Fastsweep: Fastsweep tomography
+#
+#	Usage:
+#		TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+#
+#   Indepedent on the detector (CCDPV), uses ADFILEPV, so the detector should be in good triggering mode
+#	tomoparfile shuld be defined before use, otherwise tomopar001.par will be used
+#####################################################
+
+global tomoparfile ADFILEPV
+
+
+def TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    local omega nWhiteField nDarkField sShiftMotor fSampleShift sOmegaMotor sOmegaPos i FirstImgSeq 
+    local SETTLING
+    global tomoparfile
+    
+    SETTLING=0.3  # settling time for omega rotation stage in sec
+    
+    # The configurable variables
+    nWhiteField = 10   # 10
+	nDarkField = 10    # 10
+	sShiftMotor = samXb  # No quotes for motor names
+	#sShiftMotor = stageXX  
+	#sShiftMotor = samZ  
+	#sShiftMotor = mtsX  
+    #sShiftMotor = samZE  
+    #sShiftMotor = aeroXE  
+	#sShiftMotor = samX  # No quotes for motor names
+	#sShiftMotor = samZb  
+
+	fSampleShift = 0.5
+	sOmegaMotor = preciH # No quotes for motor names
+	#sOmegaMotor = phi
+	#sOmegaMotor = prrot
+	#sOmegaMotor = aero
+	#sOmegaMotor = sam_phi
+	#fOmegaPos = -90.0    # Position where the WF images will be taken
+	fOmegaPos = -180.0    # Position where the WF images will be taken
+	#fOmegaPos = 10000  # If there is no need for special positioning for the WF images
+    
+
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0) || fOmegaStep == 0) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2, Fastsweeped images, if 3. "
+		p "       This will use the motor", motor_mne(sShiftMotor), "for moving out the sample by", fSampleShift, "at position", motor_mne(sOmegaMotor), "=", fOmegaPos,"!!!!"
+		p ""
+	} else {
+		if (bScanType == 1) {
+			TomoScanFile = sPrefix "_TomoStillScan.dat";
+		} else if (bScanType == 2) {
+			TomoScanFile = sPrefix "_TomoContScan.dat";
+		} else {
+			p "Wrong bScanType parameter!"
+			return(-1)
+		}
+        if (tomoparfile==0) tomoparfile = "./tomopar001.par"
+        open(tomoparfile)
+
+        OmegaMotorName = motor_mne(sOmegaMotor)
+
+        ccdset_time(fExposureTime)
+        ccdset_AutoSaveYes
+        #epics_put(sprintf("%sAutoSave",ADFILEPV),"Yes")
+        ccdset_filename(sPrefix)
+
+		p "Output is redirected to", TomoScanFile
+		open( TomoScanFile )
+		on( TomoScanFile )
+		p "Beginning of tomography scan at:", date()
+        p "Path:",  ccdget_filepath_ad()
+		p "Image prefix:", ccdget_filename()
+        p "Exposure time:", fExposureTime
+
+        FilePluginWait
+		offset=ccdget_SeqNumber
+        FirstImgSeq = offset
+		p "White field image sequence starts at:", offset
+    	
+		sync
+		get_angles
+		
+		### White fields initial: nWhiteField
+		p "Number of white field images:", nWhiteField
+		if (fOmegaPos == 10000) { # No positioning
+		    omega=A[sOmegaMotor]
+		} else { # Position out
+            # p A[sShiftMotor], A[sOmegaMotor]
+            SampleMoveInOut(sShiftMotor, fSampleShift, sOmegaMotor, fOmegaPos)
+            #p A[sShiftMotor], A[sOmegaMotor]
+            omega=fOmegaPos
+       		sleep(0.1)
+       	}
+        PrintTableHeader
+		for (i = 0; i < nWhiteField; i++) {
+            det_wait
+			TakeStillImage( fExposureTime )
+            PrintTableContent
+	    }
+		p ""
+		if (fOmegaPos != 10000) { # Position back
+    		SampleMoveInOut(sShiftMotor, -fSampleShift, sOmegaMotor, fOmegaPos)
+		}
+
+        det_wait
+		FilePluginWait
+        offset=ccdget_SeqNumber
+		p "Tomography scan image sequence starts at:", offset
+
+		nImages = 1 + int( (fOmegaStop - fOmegaBegin + 0.5*fOmegaStep)/fOmegaStep );
+		p "Number of scan images:", nImages
+		p ""
+
+		### Starting the scan
+		
+		if (bScanType == 1) {
+			p "Starting the tomography scan with STILL IMAGES"
+            PrintTableHeader
+			for (i = 0; i < nImages; i++) {
+				omega = fOmegaBegin + i*fOmegaStep;
+				#mv preciH omega
+                get_angles
+                A[sOmegaMotor] = omega
+                move_em
+				waitmove
+                det_wait
+                sleep(SETTLING)
+				TakeStillImage( fExposureTime )
+                get_angles
+                PrintTableContent
+			}
+		} else if (bScanType == 2) {
+			p "Starting the tomography scan with SWEEPED IMAGES"
+			p "sweep preciH" fOmegaBegin, fOmegaStop, nImages , fExposureTime
+        	sweep preciH fOmegaBegin fOmegaStop nImages fExposureTime     
+		} else if  (bScanType == 3) {
+			p "Starting the tomography scan with FASTSWEEPED IMAGES"
+			p "fastsweep", OmegaMotorName, fOmegaBegin, fOmegaStop, nImages, fExposureTime
+        	# fastsweep sOmegaMotor fOmegaBegin fOmegaStop nImages fExposureTime
+        }
+		p ""
+
+
+		### White fields final: nWhiteField
+		if (fOmegaPos == 10000) { # No positioning
+		    omega=A[sOmegaMotor]
+		} else { # Position out
+            #p A[sShiftMotor], A[sOmegaMotor]
+	    	SampleMoveInOut(sShiftMotor, fSampleShift, sOmegaMotor, fOmegaPos)
+            #p A[sShiftMotor], A[sOmegaMotor]
+            omega=fOmegaPos
+       		sleep(0.1)
+       	}
+        det_wait      
+		FilePluginWait
+        offset=ccdget_SeqNumber
+		p "White field image sequence starts at:", offset
+		p "Number of white field images:", nWhiteField
+        PrintTableHeader
+		for (i = 0; i < nWhiteField; i++) {
+            det_wait
+			TakeStillImage( fExposureTime )
+            PrintTableContent
+		}
+		p ""
+		if (fOmegaPos != 10000) { # Position back
+    		SampleMoveInOut(sShiftMotor, -fSampleShift, sOmegaMotor, fOmegaPos)
+		}
+
+		### Dark fields: nDarkField
+        det_wait       
+		FilePluginWait
+        offset=ccdget_SeqNumber
+		p "Dark field image sequence starts at:", offset
+		p "Number of dark field images:", nDarkField
+        omega=A[sOmegaMotor]
+        PrintTableHeader
+		for (i = 0; i < nDarkField; i++) {
+            det_wait
+			TakeStillImage_Dark( fExposureTime )
+            PrintTableContent
+		}
+		p ""
+
+		p "End of the full scan:", date()
+        det_wait      
+		FilePluginWait
+        offset=ccdget_SeqNumber
+        p "First image sequence number:", FirstImgSeq
+		p "Last image sequence number:", offset-1
+        p "Number of images taken in this scan:", (offset-FirstImgSeq) 
+        p ""
+
+		off( TomoScanFile )
+		close( TomoScanFile )
+        close( tomoparfile )
+	}
+
+    #EndOfScan()
+    beep_dac
+}'
+
+def PrintTableHeader 'printf("\n%6s  %6s  %6s  %24s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s\n",\
+    "num", "nSeq", "exp", "Date", "fOmega", "Omega", "ICint", "IC-B1", "IC-B2", "IC-B3", "IC-B4", "IC-B5",\
+    "IC-B6", "IC-B7", "IC-C3", "bposC", "SRcurrent")'
+
+#def PrintTableHeader 'printf("\n%6s  %6s  %6s  %24s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s  %8s\n",\
+#    "num", "nSeq", "exp", "Date", "fOmega", "Omega", "ICint", "IC-E1", "IC-E2", "IC-E3", "IC-E4", "IC-E5",\
+#    "IC-E6", "bpEus", "bpEds", "LN2temp", "SRcurrent", "encoderX")'
+
+def PrintTableContent '
+    on(tomoparfile)
+
+    printf("%6d  %6d  %6g  %24s  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g\n",\
+    i+1, (i+offset), fExposureTime, date(), omega, A[sOmegaMotor], S["0"], S["1"],\
+    S["2"], S["3"], S["4"], S["5"], S["6"], S["7"], S["11"], S["20"], S["16"]); 
+
+# with Federal
+#    printf("%6d  %6d  %6g  %24s  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g\n",\
+#    i+1, (i+offset), fExposureTime, date(), omega, A[sOmegaMotor], S["0"], S["1"],\
+#    S["2"], S["3"], S["4"], S["5"], S["6"], S["10"], S["11"], S["12"], S["14"], S["18"]); 
+
+  #fprintf(tomoparfile,"%6d  %6d  %6g  %24s  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g  %8g\n", i+1, (i+offset), fExposureTime, date(), omega, A[sOmegaMotor], S["0"], S["1"], S["2"], S["3"], S["5"], S["6"], S["10"], S["11"]);
+    off(tomoparfile)
+
+'
+
+# Hutch independent:
+def SampleMoveInOut(sShiftMotor, fSampleShift, sOmegaMotor, fOmegaPos) '{
+	# Moves the sample out of the beam at angle position fOmegaPos
+	# by a shift fSampleShift with the motor sShiftMotor.
+
+    local tolerance
+    tolerance = 0.002 # positional tolerance on the OmegaMotor
+
+	if ( sShiftMotor == 0 || sOmegaMotor == 0) {
+		p ""
+		p "Usage: SampleMoveInOutB(sShiftMotor, fSampleShift, sOmegaMotor, fOmegaPos)"
+		p "  Moves the sample with motor sShiftMotor by fSampleShift at"
+		p "  angle position of fOmegaPos on motor sOmegaMotor"
+		p ""
+	} else {
+        #_check0 sShiftMotor
+        #_check0 sOmegaMotor
+        get_angles
+        #p "position before rotation:", A[sShiftMotor], A[sOmegaMotor]
+        A[sOmegaMotor] = fOmegaPos
+        move_em    
+		waitmove
+         
+        get_angles
+        #p "position before shift:", A[sShiftMotor], A[sOmegaMotor]
+        if (A[sOmegaMotor] <= fOmegaPos+tolerance || A[sOmegaMotor] >= fOmegaPos-tolerance) {
+          A[sShiftMotor] = A[sShiftMotor] + (fSampleShift)
+          move_em
+	      waitmove
+        } else {
+          p "The Omega motion has not been completed on motor ", motor_mne(sOmegaMotor),", the current Omega:", A[sOmegaMotor]
+          p "The sample shift motion has been cancelled."
+          exit
+        } 
+        get_angles
+		p "Sample on", motor_mne(sShiftMotor), "is moved by", fSampleShift, "mm, new position: ", A[sShiftMotor]
+		p "New omega position:", A[sOmegaMotor]
+	}
+}'
+
+def FilePluginWait '{
+    local waittime dtime
+    waittime=0
+    dtime=0.02
+    
+    while(epics_get(sprintf("%sWriteFile_RBV",ADFILEPV))!="Done") {
+       sleep(dtime)
+       waittime+=dtime
+       if (waittime >= 30.0) {
+            p "ERROR: Waited for the detector file saving plugin more than 30 sec."
+       }
+    }
+}'
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################################################################
+
+
+
+def TomoVolScanC(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+
+     for (isamY = 0; isamY < 1; isamY++) {
+  
+       for (istage = 0; istage < 2; istage++) {
+         wm samXX samX samZ samY phi
+         TomoScanB(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+         p "samXX=", A[samXX]
+         mvr samXX 1.2 ; waitmove  
+         p "samXX=", A[samXX]
+       } 
+       mvr samXX -2*1.2 ; waitmove
+       p "samY=", A[samY]
+       mvr samY 1.0 ; waitmove
+       p "samY=", A[samY]
+     }
+     mvr samY -1*1.0 ; waitmove
+    }
+    beep_dac; beep_dac
+}'
+
+###########################################################################################################
+
+
+def TomoVolScan_Ystep_E(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, startY, stepY, numY, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoVolScan_Ystep_E(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, startY, stepY, numY, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the ????? for moving out the sample!!!!"
+		p ""
+	} else {
+    
+     
+     umv samYE startY
+     for (isamY = 0; isamY < numY; isamY++) {
+     
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+       p "samYE=", A[samYE]
+       umvr samYE stepY ; waitmove
+       p "samYE=", A[samYE]
+     }
+     umv samYE startY; waitmove
+    }
+    beep_dac; beep_dac
+}'
+
+
+
+
+def TomoVolScan_UO2_527(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+     
+     umv samYb 5.0
+     for (isamY = 0; isamY < 1; isamY++) {
+     
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+       p "samYb=", A[samYb]
+       umvr samYb 1.0 ; waitmove
+       p "samYb=", A[samYb]
+     }
+     umv samYb 5.0; waitmove
+    }
+    beep_dac; beep_dac
+}'
+
+
+def TomoVolScan_UO2_524(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+     
+     umv samYb 1.34
+     for (isamY = 0; isamY < 1; isamY++) {
+     
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+       p "samYb=", A[samYb]
+       umvr samYb 1.0 ; waitmove
+       p "samYb=", A[samYb]
+     }
+     umv samYb 1.34; waitmove
+    }
+    beep_dac; beep_dac
+}'
+
+
+def TomoVolScan_dU_S1(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+     
+     umv samYb 3.84
+     for (isamY = 0; isamY < 1; isamY++) {
+     
+       TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+       p "samYb=", A[samYb]
+       umvr samYb 1.0 ; waitmove
+       p "samYb=", A[samYb]
+     }
+     umv samYb 3.84; waitmove
+    }
+    beep_dac; beep_dac
+}'
+
+
+def TomoVolScan_XC38(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix) '{
+    
+    local omega isamY istage
+	if (bScanType == 0 || (fOmegaBegin == 0 && fOmegaStop == 0 && sPrefix == 0)) {
+		p ""
+		p "Usage: TomoScan(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)"
+		p "           bScanType: Still Images, if 1; Sweeped Images, if 2."
+		p "       This will use the stageXX for moving out the sample!!!!"
+		p ""
+	} else {
+     
+     umv samXX -1.87
+     for (isamY = 0; isamY < 1; isamY++) {
+  
+       for (istage = 0; istage < 3; istage++) {
+         wm samXX samX samZ samY phi
+         TomoScanB(bScanType, fOmegaBegin, fOmegaStop, fOmegaStep, fExposureTime, sPrefix)
+         p "samXX=", A[samXX]
+         mvr samXX 1.87 ; waitmove  
+         p "samXX=", A[samXX]
+       } 
+       mvr samXX -3*1.87 ; waitmove
+       p "samY=", A[samY]
+       mvr samY 0.0 ; waitmove
+       p "samY=", A[samY]
+     }
+     mvr samY -1*0.0 ; waitmove
+    }
+    umv samXX 0
+    umv phi 92.5
+    det_wait
+    TakeStillImage( fExposureTime )
+    p "The 180deg pair image is saved at:" A[phi]
+    beep_dac; beep_dac
+}'
+
+def TomoRadScanC(sPrefix,inumx, inumy) '{
+    
+    local omega isamY istage
+
+     for (isamY = 0; isamY < inumy; isamY++) {
+  
+       for (istage = 0; istage < inumx; istage++) {
+         wm stageXX samX samZ samY phi
+         TomoScanB(1, -90.0, -89.99, 0.01, 0.5, sPrefix)
+         p "stageXX=", A[stageXX]
+         mvr stageXX 1.9 ; waitmove  
+         p "stageXX=", A[stageXX]
+       } 
+       mvr stageXX -inumx*1.9 ; waitmove
+       p "samY=", A[samY]
+       mvr samY 1.6 ; waitmove
+       p "samY=", A[samY]
+     }
+     mvr samY -inumy*1.6 ; waitmove
+}'
+
+
+def faber_oct12_Tomo_96h '{
+
+   p "CHECK FOR THE LIGHTS IN THE C_HUTCH"
+
+   faber_oct12_img_mode
+   use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+   umv imgX 0
+
+   umv mtsY 1.31
+   umv samX 0.0
+   umv samZ 0.0
+   
+   TomoScan(1, -90, 90, 0.2, 0.54, "Tomo/Tomo_96h")
+   
+   beep_dac
+   
+}'   
+
+def faber_oct12_Tomo_1min '{
+
+   p " "
+   p "CHECK FOR THE LIGHTS IN THE C_HUTCH"
+   p "CHECK THE LEAD SHIELDING before the GE detectors"
+   p " "
+   
+   faber_oct12_img_mode
+   use_ad_retiga "QIMAGE1:cam1:" "QIMAGE1:TIFF1:"
+   umv imgX 0
+
+   umv mtsY 1.31
+   umv samX 0.0
+   umv samZ 0.0
+   
+   TomoScan(1, -90, 90, 0.2, 0.52, "Tomo/Tomo_1min")
+   
+   beep_dac
+   
+}'   
+
+

@@ -1,0 +1,17 @@
+fcn(x) = b + dif*erf((x-pos)/wid)
+
+b               = 0.791444
+dif             = 0.483886
+pos             = 51.9948
+wid             = 0.0334408
+
+
+title = 'Initial parameters'
+p 'E_scan.dat' u 1:2 notitle, fcn(x) title 'Initial parameters' w l
+pause -1
+
+title = 'Fitted parameters'
+fit fcn(x) "E_scan.dat" via b,dif,pos,wid
+
+p 'E_scan.dat' u 1:2 notitle,fcn(x) title 'Fitted parameters' w l
+  

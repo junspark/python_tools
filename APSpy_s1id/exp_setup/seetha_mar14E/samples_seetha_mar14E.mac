@@ -1,0 +1,114 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###########################################################################
+##  Detector swap
+##########################################################################
+
+def SwitchToRetiga '{
+
+   get_angles
+
+   # Positioning the stage back    
+   #umv mtsXE 0
+
+   # Tomo Detector in
+   umv DetZ 0.0
+   umv DetX 0.0
+
+   # Blocking the GE
+   umv GEAtnXE 0.0
+   
+   # Attenuator
+   Atten 1 1 1 1   # all out   
+   getAtten
+   p "Attenuators: ", att1, att2, att3, att4
+   umv foil 0
+      
+   # Steel block out
+   #umv samXC 19
+    
+   # Beam definition slits
+   umv KTUE 0.7 ; umv KBUE -0.7
+   umv KOUE 1.4 ; umv KIUE -1.4
+   # Guard slits
+   umv KTDE 0.8 ; umv KBDE -0.8
+   umv KODE 1.45 ; umv KIDE -1.45
+
+   epics_put("1ide1:Kohzu_E_upHsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_upVsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_dnHsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_dnVsync.PROC", 1, 10)
+   
+   seetha_mar14E_Retiga
+   
+   # Watch what we got
+   #cont_acq 0.1 2
+   
+}'
+
+def SwitchToGE '{
+
+   get_angles
+   # Positioning the stage back    
+   #umv mtsXE 0
+
+   # Tomo Detector out
+   umv DetZ 0.0
+   umv DetX -51.4
+
+   # Unblocking the GE
+   umv GEAtnXE 280.0
+   #umv FFblock 340.0
+   
+   # Attenuator
+   Atten 1 1 1 1    
+   getAtten
+   p "Attenuators: ", att1, att2, att3, att4
+   umv foil 0
+   
+   # Steel block in
+   #umv samXC 11
+    
+   # Beam definition slits
+   umv KTUE 0.15 ; umv KBUE -0.15
+   umv KOUE 0.015 ; umv KIUE -0.015
+   # Guard slits
+   umv KTDE 0.2 ; umv KBDE -0.2
+   umv KODE 0.065 ; umv KIDE -0.065
+   
+   epics_put("1ide1:Kohzu_E_upHsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_upVsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_dnHsync.PROC", 1, 10)
+   epics_put("1ide1:Kohzu_E_dnVsync.PROC", 1, 10)
+
+   seetha_mar14E_hydra1
+   
+   HydraFileSizeCheck=1
+   DataDirectory="/home/beams/S1IDUSER/mnt/WAXS/seetha_mar14/GE2/"
+   
+   ShouldChangeHydraMode=1
+   GapAdjustmentTicks=1
+   FS_Sweep_control
+   shutter_sweep
+}'
+
+
