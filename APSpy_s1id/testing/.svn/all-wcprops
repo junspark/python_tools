@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/bcdaext/!svn/ver/1432/APSpy/branches/1id_afrl/src/testing
+END
+test_syn_macro.py
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/bcdaext/!svn/ver/1432/APSpy/branches/1id_afrl/src/testing/test_syn_macro.py
+END
+test_spec_macro.py
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/bcdaext/!svn/ver/1432/APSpy/branches/1id_afrl/src/testing/test_spec_macro.py
+END
+test_syn_session.py
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/bcdaext/!svn/ver/1432/APSpy/branches/1id_afrl/src/testing/test_syn_session.py
+END
+test_spec_session.py
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/bcdaext/!svn/ver/1432/APSpy/branches/1id_afrl/src/testing/test_spec_session.py
+END

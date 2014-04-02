@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/bcdaext/!svn/ver/1435/APSpy/branches/1id_afrl/src/exp_setup
+END
+AFRL_201310.csv
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/bcdaext/!svn/ver/1436/APSpy/branches/1id_afrl/src/exp_setup/AFRL_201310.csv
+END
+energymonitortest.data
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/bcdaext/!svn/ver/1435/APSpy/branches/1id_afrl/src/exp_setup/energymonitortest.data
+END
+motorsettings.data
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/bcdaext/!svn/ver/1435/APSpy/branches/1id_afrl/src/exp_setup/motorsettings.data
+END
+AFRL_201310.mtrsetup.py.new
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/bcdaext/!svn/ver/1436/APSpy/branches/1id_afrl/src/exp_setup/AFRL_201310.mtrsetup.py.new
+END

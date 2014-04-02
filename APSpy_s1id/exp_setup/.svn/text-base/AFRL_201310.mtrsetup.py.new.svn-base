@@ -1,0 +1,36 @@
+# created Fri Sep 13 09:21:25 2013
+import sys
+sys.path.append("/home/1-id/s1iduser/park_Sep13/APSpy_1id_afrl/src/APSpy")
+import APSpy.spec as spec
+spec.EnableEPICS()
+spec.DefineScaler('1id:scaler1',16)
+spec.DefineMtr('foilB', '1idb:m55', 'foil wheel (deg)') 	 # 2
+spec.DefineMtr('mtsYE1', '1ide1:m1', 'mtsYE1 (mm)') 	 # 3
+spec.DefineMtr('mtsYE2', '1ide1:m2', 'mtsYE2 (mm)') 	 # 4
+spec.DefineMtr('mtsYE3', '1ide1:m3', 'mtsYE3 (mm)') 	 # 5
+spec.DefineMtr('nfTiltXE', '1ide1:m5', 'nfTiltXE (deg)') 	 # 6
+spec.DefineMtr('nfTiltYE', '1ide1:m6', 'nfTiltYE (deg)') 	 # 7
+spec.DefineMtr('mtsXE', '1ide1:m9', 'mtsXE-below phi (mm)') 	 # 8
+spec.DefineMtr('samYE', '1ide1:m10', 'samYE-fine Y (mm)') 	 # 9
+spec.DefineMtr('nfColYE', '1ide1:m11', 'nfColYE (mm)') 	 # 10
+spec.DefineMtr('nfFocus', '1ide1:m12', 'nfFocus (mm)') 	 # 11
+spec.DefineMtr('AeroXE', '1ide1:m13', 'AeroXE (mm)') 	 # 12
+spec.DefineMtr('AeroZE', '1ide1:m14', 'AeroZE (mm)') 	 # 13
+spec.DefineMtr('ImgXE', '1ide1:m16', 'ImgXE (mm)') 	 # 14
+spec.DefineMtr('L1YE', '1ide1:m28', 'L1YE (mm)') 	 # 15
+spec.DefineMtr('L2YE', '1ide1:m29', 'L2YE (mm)') 	 # 16
+spec.DefineMtr('L1THE', '1ide1:m30', 'L1THE (deg)') 	 # 17
+spec.DefineMtr('L1CHIE', '1ide1:m31', 'L1CHIE (deg)') 	 # 18
+spec.DefineMtr('L2THE', '1ide1:m32', 'L2THE (deg)') 	 # 19
+spec.DefineMtr('L2CHIE', '1ide1:m33', 'L2CHIE (deg)') 	 # 20
+spec.DefineMtr('stopXE', '1ide1:m37', 'stopXE (mm)') 	 # 21
+spec.DefineMtr('ImgCHIE', '1ide1:m38', 'ImgCHIE (deg)') 	 # 22
+spec.DefineMtr('nfBBYE', '1ide1:m39', 'nfBBYE (mm)') 	 # 23
+spec.DefineMtr('geXE', '1ide1:m42', 'geXE (mm)') 	 # 24
+spec.DefineMtr('nfBBPHIE', '1ide1:m57', 'nfBBPHIE (deg)') 	 # 25
+spec.DefineMtr('nfYE', '1ide1:m59', 'nfYE (mm)') 	 # 26
+spec.DefineMtr('samXE', '1ide1:m61', 'samXE (mm)') 	 # 27
+spec.DefineMtr('samZE', '1ide1:m62', 'samZE (mm)') 	 # 28
+spec.DefineMtr('samPHIE', '1ide1:m63', 'samPHIE (deg)') 	 # 29
+spec.DefineMtr('dumXE', '1ide1:m7', 'dummy XE (mm)') 	 # 30
+spec.DefineMtr('dumPhiE', '1ide1:m8', 'dummy PhiE (mm)') 	 # 31
