@@ -30,21 +30,20 @@ These macros reference 1-ID PV's or are customized for 1-ID in some other manner
 # $Id: macros_1id.py 1281 2013-04-24 23:41:03Z jemian $
 ########### SVN repository information ###################
 
-
-EPICS = False
-import spec
-import macros as mac
-try:
-    import epics as ep  #from epics import PV
-    EPICS = True
-except:
-    #print 'Note, PyEPICS was not found' # already printed in spec module
-    pass
-
 import sys
 import os.path
 import time
 import datetime as dt
+
+import APSpy.spec
+import APSpy.macros as mac
+
+EPICS = False
+try:
+    import epics as ep  #from epics import PV
+    EPICS = True
+except:
+    pass
 
 if EPICS:
     PV = ep.PV
@@ -230,11 +229,6 @@ def SaveMotorStatus(out=None):
             mtrnum = mtrstr[idx1:idx2]
         except Exception:
             break
-
-#        print ioc
-#        print mtrnum
-#        print mtrcomment
-#        print mtrsym
 
         PVroot = ioc + ':m' + mtrnum + '.'
         try:
@@ -459,9 +453,9 @@ def SendAlert(OSC):
 # ACROMAG ATTENUATORS
 # FROM ./macros_PK/Atten.mac
 ###########################################################################
-def SetAcromagAttenuator(OnOffFlag):
+def SetAttenuator(OnOffFlag):
     ''' 
-    Acromag Attenuator macro
+    Set the state of acromag attenuators
     
     :param bool array OnOffFlag: [4 x 1] array of on / off flag.
     "0: Attenuator in"
@@ -476,10 +470,11 @@ def SetAcromagAttenuator(OnOffFlag):
         ep.caput(pvname, ii)
     return
 
-def GetAcromagAttenuator():
+def GetAttenuator():
     ''' 
-    Acromag Attenuator macro
-    
+    Get the state of acromag attenuators
+
+    :param bool array OnOffFlag: [4 x 1] array of on / off flag.
     "0: Attenuator in"
     "1: Attenuator out"
     '''
@@ -492,6 +487,7 @@ def GetAcromagAttenuator():
         OnOffFlag[ct] = int(ep.caget(pvname))
         ct = ct + 1
     return OnOffFlag
+    
 ###########################################################################
 # BEAM POSITION MONITOR
 ########################################################################### 
@@ -577,24 +573,6 @@ def EnergyMonitor(pfname=None, elename=None):
     # MOVE FOIL OUT
     spec.umv('foilB', 0)
     return
-
-## TODO
-#def printdoublearray '{
-#    # Prints out the first n array elements in full presicion in reverse order.
-#    if($#!=2) {
-#        p "Prints out the first n array elements in full precision (double) in reverse order."
-#        p "No check for the validity of indices."
-#        p "Usage: $0 [array_name] [numelems]"
-#        exit
-#    }
-#    
-#    local ielem
-#    printf("{ ")
-#    for (ielem=(($2)-1); ielem>=0; ielem--) {
-#        printf("%15.8f  ", $1[ielem])
-#    }
-#    printf("}\n")
-#}'
 
 ######################################################################
 # WRITING PAR FILES

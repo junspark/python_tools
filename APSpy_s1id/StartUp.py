@@ -19,36 +19,68 @@ import time
 
 import datetime as dt
 import matplotlib.pyplot as plt
-
 import epics as ep
-import APSpy.AD as AD
-import APSpy.macros as mac
-import APSpy.spec as spec
-import APSpy.rst_table as rst_table
 
-import APSpy.macros_1id as mac1id
-import APSpy.fpga_1id as fpga1id                # qdo ./macros_PK/FPGA_2013Aug11/FPGA_signals.mac 
-import APSpy.AD_1id as AD1id                    # qdo ./macros_PK/hydra_2013Aug11/use_hydra.mac
+#################################################
+### THIS IS THE INSTALL FOR S1ID SPECIFIC FUNCTIONALITIES
+### POINTS AT THE FOLDER WHERE THE PYTHON SOURCE FILES ARE
+#################################################
+sys.path.insert(0, '/home/beams/S1IDUSER/new_data/1id_python/APSpy_s1id')
 
-import APSpy.hookup_1id as hookup1id            # qdo ./macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/hookup_macros.mac
-import APSpy.sweep_core_1id as sweepcore1id
-import APSpy.gate_1id as gate1id
-import APSpy.counters_1id as counters1id
-import APSpy.motor_1id as motor1id
-import APSpy.scanrecord_1id as scanrecord1id
+import AD as AD
+import macros as mac
+import spec as spec
+import rst_table as rst_table
 
-import APSpy.dic_1id as dic1id                  # qdo ./macros_PK/DIC_macros.mac
+spec.EnableEPICS()      # TEMP - WHERE THIS HAPPENS NEED TO BE DETERMINED
+
+import macros_1id as mac1id
+import fpga_1id as fpga1id                # qdo ./macros_PK/FPGA_2013Aug11/FPGA_signals.mac
+
+
+import AD_1id as AD1id                    # qdo ./macros_PK/hydra_2013Aug11/use_hydra.mac
+import hookup_1id as hookup1id    # qdo ./macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/hookup_macros.mac
+
+
+#################################################
+# DEFINE DETECTOR
+#################################################
+hydra = (AD.GE1, AD.GE3, AD.GE4)
+sys.exit()
+
+
+import sweep_core_1id as sweepcore1id
+import gate_1id as gate1id
+import counters_1id as counters1id
+import motor_1id as motor1id
+import scanrecord_1id as scanrecord1id
+
+import dic_1id as dic1id                  # qdo ./macros_PK/DIC_macros.mac
 
 AlertList = 'jp118@cornell.edu, parkjs@aps.anl.gov'
+sys.exit()
 
 ## SetupOptionList HOLDS ALL FASTSWEEP SETUP PARAMETERS - THIS IS LIKE OSC VARIABLE IN THE SPEC VERSION
 SetupOptionList = {}
 # CCD_FILE_EXT
 # CCD_DATA_DIR
+SetupOptionList['HutchLetter'] = 'C'                                    # HUTCH IDENTIFIER B, C, E
+SetupOptionList['Detectors'] = hydra                                    # HYDRA
+SetupOptionList['TrigMode'] = 0                                         # HYDRA Trigger mode for hydra_initialize 
+SetupOptionList['CCDPV'] = hydra[0].controlprefix                       # CCDPV
+SetupOptionList['ADFilePV'] = hydra[0].controlprefix                    # ADFILEPV
+SetupOptionList['EpicsDelay'] = 0.02                                    # EPICS_DELAY
+SetupOptionList['CallBackTime'] = 10.0                                  # CB_TIME
+SetupOptionList['OscThreshold'] = 1000                                  # osc_threshold (ct/sec)
+SetupOptionList['OscMonitor'] = 'ic6b'                                  # osc_MON
+SetupOptionList['SweepMode'] = 'sweep'                                  # sweep_mode
+SetupOptionList['DetDelay'] = 0.5                                       # detDelay
 SetupOptionList['ParFile'] = 'PUP_AFRL_Aug13_FF.par'                    # parfile
 SetupOptionList['FastParFile'] = 'fastpar_PUP_AFRL_Aug13_FF.par'        # fastparfile
+
+
+
 SetupOptionList['HydraNum'] = 'NUMBER NEEDED'                           # hydraNum
-SetupOptionList['DetList'] = [AD.GE2]                                   # hydra ## THIS IS MEANT TO BE LIST OF DETECTORS (SAME TYPE FOR NOW .. MIX OF DET LATER)
 SetupOptionList['NumArrayElements'] = 2000                              # array_NUSE # Number of array elements in the arrayCalcTools
 SetupOptionList['ParamCheck'] = 1                                       # ParamCheck
 SetupOptionList['MonScalerPV'] = 'PV NAME NEEDED'                       # Mon_ScalerPV
@@ -66,9 +98,9 @@ SetupOptionList['GateSignalPV'] = 'PV NAME NEEDED'                      # GATE_s
 SetupOptionList['ScalerTrigPV'] = 'PV NAME NEEDED'                      # ScalerTrigPV
 SetupOptionList['ScalerTrigDetPulsePV'] = 'PV NAME NEEDED'              # ScalerTrigDetPulsePV
 SetupOptionList['FpgaPV'] = 'PV NAME NEEDED'                            # FPGAPV
-SetupOptionList['PsoPV'] = 'PV NAME NEEDED'                             # PSOPV
+SetupOptionList['PSOPV'] = 'PV NAME NEEDED'                             # PSOPV
 SetupOptionList['DetReadyPV'] = 'PV NAME NEEDED'                        # DetRdyPV
-SetupOptionList['IdFpgaPV'] = 'PV NAME NEEDED'                          # idFPGAPV 
+SetupOptionList['IDFPGAPV'] = 'PV NAME NEEDED'                          # idFPGAPV 
 SetupOptionList['DetPulseToADPV'] = 'PV NAME NEEDED'                    # DetPulseToADPV
 SetupOptionList['FrameCounterPV'] = 'PV NAME NEEDED'                    # FrameCounterPV
 SetupOptionList['FrameCounterTriggerPV'] = 'PV NAME NEEDED'             # FrameCounterTriggerPV
@@ -76,8 +108,7 @@ SetupOptionList['DetPulsePV'] = 'PV NAME NEEDED'                        # DetPul
 SetupOptionList['TimeStampPV'] = 'PV NAME NEEDED'                       # TimeStampPV
 SetupOptionList['TimeStampArrayPV'] = 'PV NAME NEEDED'                  # TimeStampArrayPV
 SetupOptionList['FrameSignalPV'] = 'PV NAME NEEDED'                     # FrameSignalPV
-SetupOptionList['CcdPV'] = 'PV NAME NEEDED'                             # CCDPV - OSC['CcdPV'] ALSO KNOWN AS AD.GE2.imageprefix
-SetupOptionList['ADFilePV'] = 'PV NAME NEEDED'                          # ADFILEPV
+
 SetupOptionList['IntegerTicksArrayPV'] = 'PV NAME NEEDED'               # IntegrTicks_ArrayPV
 SetupOptionList['SoftIOCPV'] = 'PV NAME NEEDED'                         # SOFTIOC_PV
 SetupOptionList['IntegerICName'] = 'DATA NEEDED'                        # IntegrICName
@@ -99,23 +130,19 @@ SetupOptionList['CloseSteps'] = 1                                       # close_
 SetupOptionList['NormalAccelerationTime'] = 1                           # normal_atime
 SetupOptionList['NormaBaseSpeed'] = 1                                   # normal_base (steps/sec)
 SetupOptionList['NormalSpeed'] = 1                                      # normal_speed (steps/sec)
-SetupOptionList['OscThreshold'] = 1000                                  # osc_threshold (ct/sec)
-SetupOptionList['EpicsDelay'] = 10                                      # EPICS_DELAY
 SetupOptionList['DefaultGapTime'] = 0.03                                # DEFAULT_GAP_TIME - default gap time in sec between the frames
 SetupOptionList['GapTime'] = 0.03                                       # gap_time - default gap time in sec between the frames
-SetupOptionList['FpgaType'] = 'VALUE NEEDED'                            # NEW: FPGAType for SetGapAdjustmentTicks : 0 for TIME DRV FPGA, 1 for POS DRV FPGA
+SetupOptionList['FPGAType'] = 'VALUE NEEDED'                            # NEW: FPGAType for SetGapAdjustmentTicks : 0 for TIME DRV FPGA, 1 for POS DRV FPGA
 # SetupOptionList['GapAdjustmentTicks'] = 'NUMBER NEEDED'                 # GapAdjustmentTicks => SET IN SetGapAdjustmentTicks
 # SetupOptionList['DecodingRate'] = 'NUMBER NEEDED'                       # DecodingRate => SET IN SetGapAdjustmentTicks
 SetupOptionList['ShutterOpenDelay'] = 0                                 # shutter_open_delay
 SetupOptionList['ShutterCloseDelay'] = 0                                # shutter_close_delay
-SetupOptionList['DetDelay'] = 0.5                                       # detDelay
+
 SetupOptionList['CushionTime'] = 0.0                                    # cushion_time
 SetupOptionList['ShouldRotateBack'] = 0                                 # Should the rotation stage go back immediately after finishing the fastweep (0:NO)
 SetupOptionList['MaxSavingTime'] = 100                                  # Maximum saving time for hydra in seconds that we should wait after the scan before we abort everything and start over. 100 secs typically good for 300 frames
-SetupOptionList['CallBackTime'] = 10.0                                  # CB_TIME
 SetupOptionList['UseSoftIOC'] = 0                                       # SOFTIOC_USE
 SetupOptionList['IsSweepScan'] = 1                                      # IS_SWEEPSCAN
-SetupOptionList['SweepMode'] = 'SWEEP TYPE'                             # sweep_mode
 # SetupOptionList['FirstFrameNumber'] = 0                                 # first_frame_number'
 SetupOptionList['nFrames'] = 'NEED NUMBER'                              # nframes, number of frames
 SetupOptionList['BeamUpWaitTime'] = 50                                  # beam_up_wait_time

@@ -35,15 +35,16 @@ The functions available in this module are listed below.
 
 
 ########### SVN repository information ###################
-# $Date: 2013-09-04 15:17:08 -0500 (Wed, 04 Sep 2013) $
-# $Author: parkjs $
-# $Revision: 1433 $
-# $URL: https://subversion.xray.aps.anl.gov/bcdaext/APSpy/branches/1id_afrl/src/APSpy/GE.py $
-# $Id: GE.py 1433 2013-09-04 20:17:08Z parkjs $
+# $Date: 2013-04-24 18:41:03 -0500 (Wed, 24 Apr 2013) $
+# $Author: jemian $
+# $Revision: 1281 $
+# $URL: https://subversion.xray.aps.anl.gov/bcdaext/APSpy/trunk/src/APSpy/GE.py $
+# $Id: GE.py 1281 2013-04-24 23:41:03Z jemian $
 ########### SVN repository information ###################
 
 
 import numpy
+import numpy as np
 import os
 
 # Globals
@@ -91,7 +92,7 @@ def getGEimage(filename,frame):
         raise Exception("Frame number "+str(frame)+" is out of range for file "+filename)
     fp = open(filename,'rb')
     fp.seek(HEADER + (frame-1) * 2 * IMGSIZE**2) # 2 bytes * # pixels
-    img = numpy.fromfile(fp,dtype=numpy.uint16,count=IMGSIZE*IMGSIZE).reshape(IMGSIZE,IMGSIZE)
+    img = np.fromfile(fp,dtype=np.uint16,count=IMGSIZE*IMGSIZE).reshape(IMGSIZE,IMGSIZE)
     fp.close()
     return img
 
@@ -136,8 +137,8 @@ def getGE_ROI(filename,frame,region):
 
     '''
     xmid,ymid,xwid,ywid = region
-    return numpy.memmap(filename,
-                     dtype=numpy.uint16,
+    return np.memmap(filename,
+                     dtype=np.uint16,
                      offset=HEADER + (frame-1) * 2 * IMGSIZE**2, 
                      shape=(IMGSIZE,IMGSIZE)
                      )[ymid-ywid:ymid+ywid,xmid-xwid:xmid+xwid]
@@ -345,8 +346,8 @@ def sumGE_ROIs(filename,frame,regionlist):
     ROIsumList = []
     for roi in regionlist:
         ystart, yend, xstart, xend = roi.get_bounds()
-        ROI = numpy.memmap(filename,
-                        dtype=numpy.uint16,
+        ROI = np.memmap(filename,
+                        dtype=np.uint16,
                         offset=HEADER + (frame-1) * 2 * IMGSIZE**2, 
                         shape=(IMGSIZE,IMGSIZE)
                         )[ystart:yend, xstart:xend]
@@ -399,7 +400,7 @@ def sumAllGE_ROIs(filename,regionlist,processes=1):
     current Python interpreter.
     
     >>> import GE
-    >>> import numpy as numpy
+    >>> import numpy as np
     >>> import time
     >>> imgfile = '/tmp/AZ91_01306'
     >>> regionlist = [ROI_rect(1335,1525,50,50),ROI_rect(1435,1525,50,50),
@@ -410,7 +411,7 @@ def sumAllGE_ROIs(filename,regionlist,processes=1):
     ...    st = time.time()
     ...    l[proc] = GE.sumAllGE_ROIs(imgfile,regionlist, proc)
     ...    print 'sec per frame, processors=',proc,(time.time()-st)/float(nframe)
-    ...    assert(numpy.allclose(l[0],l[proc]))
+    ...    assert(np.allclose(l[0],l[proc]))
 
     The example above integrates 4 ROIs and compares running with all computations
     in the current Python thread (processes=0 and 1) 
@@ -423,11 +424,11 @@ def sumAllGE_ROIs(filename,regionlist,processes=1):
     nframes = Count_Frames(filename)
     #reslts = npzeros
     if processes <= 1:
-        return numpy.array([sumGE_ROIs(filename,frame,regionlist) for frame in range(1,nframes+1)])
+        return np.array([sumGE_ROIs(filename,frame,regionlist) for frame in range(1,nframes+1)])
     import multiprocessing
     arglist = [(filename,frame,regionlist) for frame in range(1,nframes+1)]
     mpPool = multiprocessing.Pool(processes)
-    return numpy.array(mpPool.map(sumGE_ROIs_wrapper,arglist))
+    return np.array(mpPool.map(sumGE_ROIs_wrapper,arglist))
 
 def PlotROIsums(datarray, tablbl='ROIs', title='', captions=None, size=(700,700), imgwin=None):
     '''Plots a series of ROIs
@@ -515,7 +516,7 @@ def _test3(imgfile,frame):
         st = time.time()
         l[proc] = sumAllGE_ROIs(imgfile,regionlist, proc)
         print 'sec per frame, processors=',proc,(time.time()-st)/float(nframe)
-        assert(numpy.allclose(l[0],l[proc]))
+        assert(np.allclose(l[0],l[proc]))
     return l[0]
 
 def _test4(imgfile,frame):
