@@ -1,6 +1,0 @@
-
-def beampos '{
-local dum
-dum = $1
-
-}'
