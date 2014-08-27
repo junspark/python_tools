@@ -417,7 +417,7 @@ def GetDetectorType(hydra):
 ######################################################################
 # CHECK FILE SIZES
 ######################################################################
-def CheckFileOutput(OSC):
+def CheckFileSize(OSC):
     LastFileNameHydra = AD.AD_get(OSC['Detectors'], 'lastfilename')
     for ii in range(0, len(LastFileNameHydra)):
         LastFileNameHydra[ii] = LastFileNameHydra[ii].replace("'\'", '/')
