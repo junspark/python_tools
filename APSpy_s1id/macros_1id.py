@@ -573,7 +573,7 @@ def EnergyMonitor(pfname=None, elename=None):
     # MOVE FOIL OUT
     spec.umv('foilB', 0)
     return
-
+              
 ######################################################################
 # WRITING PAR FILES
 # write_parfile_general.mac

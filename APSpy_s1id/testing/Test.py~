@@ -1,0 +1,7 @@
+import csv 
+with open(LogName, 'rb') as f:
+    reader = csv.reader(f)
+    for row in reader:
+        if reader.line_num > 1:
+            float(row[84])
+            float(row[85])

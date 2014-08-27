@@ -34,31 +34,16 @@ import rst_table as rst_table
 
 spec.EnableEPICS()      # TEMP - WHERE THIS HAPPENS NEED TO BE DETERMINED
 
-import macros_1id as mac1id
-import fpga_1id as fpga1id                # qdo ./macros_PK/FPGA_2013Aug11/FPGA_signals.mac
-
-
-import AD_1id as AD1id                    # qdo ./macros_PK/hydra_2013Aug11/use_hydra.mac
-import hookup_1id as hookup1id    # qdo ./macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/hookup_macros.mac
-
 
 #################################################
 # DEFINE DETECTOR
 #################################################
-hydra = (AD.GE1, AD.GE3, AD.GE4)
-sys.exit()
+hydra = [AD.GE2, AD.GE1]
 
-
-import sweep_core_1id as sweepcore1id
-import gate_1id as gate1id
-import counters_1id as counters1id
-import motor_1id as motor1id
-import scanrecord_1id as scanrecord1id
-
-import dic_1id as dic1id                  # qdo ./macros_PK/DIC_macros.mac
-
-AlertList = 'jp118@cornell.edu, parkjs@aps.anl.gov'
-sys.exit()
+import macros_1id as mac1id
+import fpga_1id as fpga1id                # qdo ./macros_PK/FPGA_2013Aug11/FPGA_signals.mac
+import AD_1id as AD1id                    # qdo ./macros_PK/hydra_2013Aug11/use_hydra.mac
+import sweep_core_1id as sweepcore1id 
 
 ## SetupOptionList HOLDS ALL FASTSWEEP SETUP PARAMETERS - THIS IS LIKE OSC VARIABLE IN THE SPEC VERSION
 SetupOptionList = {}
@@ -77,6 +62,33 @@ SetupOptionList['SweepMode'] = 'sweep'                                  # sweep_
 SetupOptionList['DetDelay'] = 0.5                                       # detDelay
 SetupOptionList['ParFile'] = 'PUP_AFRL_Aug13_FF.par'                    # parfile
 SetupOptionList['FastParFile'] = 'fastpar_PUP_AFRL_Aug13_FF.par'        # fastparfile
+
+SetupOptionList['FirstFrameNumber'] = 0                                 # first_frame_number'
+SetupOptionList['LastFrameNumber'] = 0                                  # New last frame number
+SetupOptionList['OscillationMode'] = 'NEED NUMBER'                      # NEW: Flag for Oscillation()
+SetupOptionList['ExpTime'] = 0                                          # exposure_time
+SetupOptionList['NumFrames'] = 1                                        # nframes, number of frames
+SetupOptionList['DefaultGapTime'] = 0.03                                # DEFAULT_GAP_TIME - default gap time in sec between the frames
+SetupOptionList['DelayTime'] = 0.03                                     # Delay time
+SetupOptionList['ScanTime'] = ( SetupOptionList['ExpTime'] + SetupOptionList['DefaultGapTime'] ) * SetupOptionList['NumFrames']   # scantime
+SetupOptionList['RepeatScan'] = 1                                       # ShouldRepeat
+
+sys.exit()
+
+
+
+
+
+import hookup_1id as hookup1id    # qdo ./macros_PK/fastsweep_BCEhutch_preci_prrot_aero_GE_Retiga_2013Aug11/hookup_macros.mac
+import gate_1id as gate1id
+import counters_1id as counters1id
+import motor_1id as motor1id
+import scanrecord_1id as scanrecord1id
+
+import dic_1id as dic1id                  # qdo ./macros_PK/DIC_macros.mac
+
+AlertList = 'jp118@cornell.edu, parkjs@aps.anl.gov'
+sys.exit()
 
 
 
@@ -130,8 +142,6 @@ SetupOptionList['CloseSteps'] = 1                                       # close_
 SetupOptionList['NormalAccelerationTime'] = 1                           # normal_atime
 SetupOptionList['NormaBaseSpeed'] = 1                                   # normal_base (steps/sec)
 SetupOptionList['NormalSpeed'] = 1                                      # normal_speed (steps/sec)
-SetupOptionList['DefaultGapTime'] = 0.03                                # DEFAULT_GAP_TIME - default gap time in sec between the frames
-SetupOptionList['GapTime'] = 0.03                                       # gap_time - default gap time in sec between the frames
 SetupOptionList['FPGAType'] = 'VALUE NEEDED'                            # NEW: FPGAType for SetGapAdjustmentTicks : 0 for TIME DRV FPGA, 1 for POS DRV FPGA
 # SetupOptionList['GapAdjustmentTicks'] = 'NUMBER NEEDED'                 # GapAdjustmentTicks => SET IN SetGapAdjustmentTicks
 # SetupOptionList['DecodingRate'] = 'NUMBER NEEDED'                       # DecodingRate => SET IN SetGapAdjustmentTicks
@@ -143,17 +153,13 @@ SetupOptionList['ShouldRotateBack'] = 0                                 # Should
 SetupOptionList['MaxSavingTime'] = 100                                  # Maximum saving time for hydra in seconds that we should wait after the scan before we abort everything and start over. 100 secs typically good for 300 frames
 SetupOptionList['UseSoftIOC'] = 0                                       # SOFTIOC_USE
 SetupOptionList['IsSweepScan'] = 1                                      # IS_SWEEPSCAN
-# SetupOptionList['FirstFrameNumber'] = 0                                 # first_frame_number'
-SetupOptionList['nFrames'] = 'NEED NUMBER'                              # nframes, number of frames
 SetupOptionList['BeamUpWaitTime'] = 50                                  # beam_up_wait_time
-# SetupOptionList['ExpTime'] = 'NEED NUMBER'                              # exposure_time
+# 
 # SetupOptionList['ExtraTime'] = 1                                        # extra_time
 SetupOptionList['ImagePrefix'] = 'NEED NAME'                            # imgprefix
-SetupOptionList['ScanTime'] = 'NEED NUMBER'                             # scantime
+
 SetupOptionList['DataFolder'] = 'NAME NEEDED'                           # DataDirectory
 SetupOptionList['FileSizeCheck'] = 'NEED NUMBER'                        # HydraFileSizeCheck
-SetupOptionList['RepeatScan'] = 0                                       # ShouldRepeat
-SetupOptionList['OscillationMode'] = 'NEED NUMBER'                      # NEW: Flag for Oscillation()
 SetupOptionList['TriggerMode'] = 0                                      # NEW: HWTRIGGER=0, SWTRIGGER=1
 SetupOptionList['DetectorArmMode'] = 'None'                             # NEW: Flag for ArmDetector()
 # SetupOptionList['DetectorDisarmMode'] = 'None'                          # NEW: Flag for DisarmDetector()

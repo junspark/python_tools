@@ -1,8 +1,141 @@
-#import datetime as dt
-#import epics as ep
+import datetime as dt
+import epics as ep
+import AD as AD
 
-#import AD_1id as AD1id
-#import fpga_1id as fpga1id
+import fpga_1id as fpga1id
+import AD_1id as AD1id
+
+def FastSweep (OSC, MtrName=None, StartPos=None, EndPos=None, nFrames=None, ExpTime=None, UserGapTime=None, UserDelayTime=None):
+    ## CHECK IF INPUT PARAMETERS MAKE SENSE
+    if nFrames < 1 or not isinstance(nFrames, int):
+        print "Number of frames >= 1 & integer"
+        sys.exit()
+    
+    if ExpTime < 0:
+        print "Exposure time > 0"
+    
+    OSC['ExpTime'] = ExpTime
+    OSC['NumFrames'] = nFrames
+    OSC['SweepMode'] = 'FastSweep'      # OSC["sweep_mode"] = "fastsweep"
+    OSC['FirstFrameNumber'] = AD.AD_get(OSC['Detectors'], 'filenumber')    # OSC["first_frame_number"] = detget_seqNumber
+    print 'First frame of the fastsweep scan: ' + str(OSC['FirstFrameNumber'][0])
+    
+    fpga1id.FS_SweepControl()       # FS_Sweep_control
+    OSC['OscillationMode'] = 0      # this chooses _oscill_fastsweep in Oscillation // CHECK THIS FUNCIONALITY
+    
+    # cdef("cleanup_once", "\n fastsweep_cleanup;", "sweep_fastsweep", "0x20")  # CHECK THIS FUNCIONALITY
+    
+    if UserGapTime is not None and UserGapTime > 0:
+        OSC['DefaultGapTime'] = UserGapTime
+        
+    if UserDelayTime is not None and UserDelayTime > 0:
+        OSC['DelayTime'] = UserDelayTime
+    
+    OSC['ScanTime'] =  ( OSC['ExpTime'] + OSC['DefaultGapTime'] ) * OSC['NumFrames']
+    
+    for ScanRepeatCounters in range(0, 10):
+        OSC["RepeatScan"] = 1
+        ## Sweep(OSC, MtrName, StartPos, EndPos, 1, OSC['ScanTime']) # IMPLEMENT THIS
+        
+        print 'FastSweep finished'
+        print 'Checking output file'
+        
+        OSC = AD1id.CheckFileOutput(OSC)
+        print OSC
+        
+        if OSC["RepeatScan"] is 0:
+            print 'fastsweep successful'
+            break
+        else:
+            print 'Resetting file number to first frame number'
+            
+            for ii in range(0, len(OSC['FirstFrameNumber'])):
+                AD.AD_set(OSC['Detectors'][ii], 'filenumber', OSC['FirstFrameNumber'][ii])
+            
+
+#def Sweep(OSC = None, MtrName = None, StartPos = None, EndPos = None, NumSteps = None, ExpTime = None):   
+#    '''
+#    sweep from sweep_core_mod.mac
+#    '''
+#    # OSC['ImagePrefix'] 
+#    #OSC["imgprefix"] = detget_imgprefix
+
+#    IsSweepScan = OSC['IsSweepScan']
+
+#    ### CHECK THIS
+#    #shutter_sweep
+#    Step = (EndPos - StartPos) / NumSteps
+
+#    if NumSteps == 0:
+#        NumSteps = 1
+
+#    ### CHECK THIS
+#    #_stamp[0]=0
+#    #_ctime = 0;
+#    #_stype=1|(1<<8)
+
+#    OscCalc(OSC = None, MtrName = None, Range = None, ExpTime = None)
+#    ### CHECK THIS
+#    # cdef("cleanup_once","\nsweep_cleanup;","sweep","0x20")
+
+#    SoftIOCStartScan(OSC, ScanType = 0)     # softioc_startscan sweep  $1 _first _last
+
+#    ### CHECK THIS
+#    # HEADING = sprintf("sweep %s %g %g %g %g","$1",$2,$3,$4,$5)
+#    # X_L = motor_mne($1)
+#    # Y_L = cnt_name(DET)
+#    # _sx = _first; _fx = _last
+
+#    ### CHECK THIS    
+#    # sweep_fprnt_label
+
+#    ### CHECK THIS
+#    # scan_head
+#    print '------This is before pre sweep -----------------'
+
+#    ### CHECK THIS
+#    # user defined hooks (beampos etc)
+#    # user_pre_sweep
+
+#    ### CHECK THIS
+#    #def _scan_on \'
+#    #    {
+#    #    p " other _scan_on:: sec 1 "
+#    #    p "_snum: " _snum " NPTS " NPTS
+#    #        for (; NPTS < _snum; NPTS++) {
+#    #            _start = _first+NPTS*_step;
+#    #            _stop  = _first+(NPTS+1)*_step;
+
+#    #           p " start stop " _start  _stop;
+#    #                _oscill $1 _start _stop _time
+#    #           p " user_mid_sweep " _start _stop;                
+#    #           user_mid_sweep
+#    #           p " sweep print value " _start _stop
+#    #           sweep_fprnt_value
+#    #           p " before scan loop " _start _stop
+#    #           scan_loop
+#    #           scan_data(NPTS, _start)
+#    #           scan_plot
+#    #           }
+#    #        }
+#    #	    scan_tail
+#    #	\'
+#    #    _scan_on
+#    #            p "frankie is here after scan_on "
+
+#    ### CHECK THIS
+#    # sweep_cleanup
+#    SweepCleanUp()
+#    return  
+#def FastSweep(OSC, MtrName=None, StartPos=None, EndPos=None, nFrames=None, ExpTime=None, UserGapTime=None, UserDelayTime=None):    
+
+#    print 'Sweep ' + MtrName + ' ' + str(StartPos) + ' ' + str(EndPos) + ' 1 ' + str( OSC['ScanTime'] )
+#    Sweep(OSC, MtrName, StartPos, EndPos, NumSteps = 1, OSC['ScanTime'])
+
+#    ## TODO FILE I/O CHECK
+#    
+#    FastSweepEnd(OSC)
+#    return
 
 #def CheckBeam(OSC, MonitorCounts):
 #    '''
@@ -237,81 +370,6 @@
 #        
 #        OscResetPars(OSC)
 #    return
-
-#def Sweep(OSC = None, MtrName = None, StartPos = None, EndPos = None, NumSteps = None, ExpTime = None):   
-#    '''
-#    sweep from sweep_core_mod.mac
-#    '''
-#    # OSC['ImagePrefix'] 
-#    #OSC["imgprefix"] = detget_imgprefix
-
-#    IsSweepScan = OSC['IsSweepScan']
-
-#    ### CHECK THIS
-#    #shutter_sweep
-#    Step = (EndPos - StartPos) / NumSteps
-
-#    if NumSteps == 0:
-#        NumSteps = 1
-
-#    ### CHECK THIS
-#    #_stamp[0]=0
-#    #_ctime = 0;
-#    #_stype=1|(1<<8)
-
-#    OscCalc(OSC = None, MtrName = None, Range = None, ExpTime = None)
-#    ### CHECK THIS
-#    # cdef("cleanup_once","\nsweep_cleanup;","sweep","0x20")
-
-#    SoftIOCStartScan(OSC, ScanType = 0)     # softioc_startscan sweep  $1 _first _last
-
-#    ### CHECK THIS
-#    # HEADING = sprintf("sweep %s %g %g %g %g","$1",$2,$3,$4,$5)
-#    # X_L = motor_mne($1)
-#    # Y_L = cnt_name(DET)
-#    # _sx = _first; _fx = _last
-
-#    ### CHECK THIS    
-#    # sweep_fprnt_label
-
-#    ### CHECK THIS
-#    # scan_head
-#    print '------This is before pre sweep -----------------'
-
-#    ### CHECK THIS
-#    # user defined hooks (beampos etc)
-#    # user_pre_sweep
-
-#    ### CHECK THIS
-#    #def _scan_on \'
-#    #    {
-#    #    p " other _scan_on:: sec 1 "
-#    #    p "_snum: " _snum " NPTS " NPTS
-#    #        for (; NPTS < _snum; NPTS++) {
-#    #            _start = _first+NPTS*_step;
-#    #            _stop  = _first+(NPTS+1)*_step;
-
-#    #           p " start stop " _start  _stop;
-#    #                _oscill $1 _start _stop _time
-#    #           p " user_mid_sweep " _start _stop;                
-#    #           user_mid_sweep
-#    #           p " sweep print value " _start _stop
-#    #           sweep_fprnt_value
-#    #           p " before scan loop " _start _stop
-#    #           scan_loop
-#    #           scan_data(NPTS, _start)
-#    #           scan_plot
-#    #           }
-#    #        }
-#    #	    scan_tail
-#    #	\'
-#    #    _scan_on
-#    #            p "frankie is here after scan_on "
-
-#    ### CHECK THIS
-#    # sweep_cleanup
-#    SweepCleanUp()
-#    return  
 
 #def SuperSweep(OSC, MtrOut=None, StartOut=None, EndOut=None, NumStepOut=None, MtrIn=None, MtrInType = None, StartIn=None, EndIn=None, NumStepIn=None, ExpTime=None):
 #    ### CHECK THIS
@@ -953,73 +1011,6 @@
 #    SetupDTHDetRdyFPGA(OSC)
 #    
 #    return OSC
-
-#def FastSweep(OSC, MtrName=None, StartPos=None, EndPos=None, nFrames=None, ExpTime=None, UserGapTime=None, UserDelayTime=None):
-#    '''
-#    FastSweep
-#    Usage: fastsweep motor start end nframes exp_time
-#    '''
-#    ## TODO - IF INPUT INVALID GO DIRECTLY TO fastsweep_end
-#    # if ($# != 5) {
-#    #     p "Usage: $0 motor start end nframes exp_time"
-#    #     fastsweep_end
-#    #     exit
-#    # }
-#    
-#    if MtrName is None:
-#        MtrName = raw_input('Enter motor name: ')
-#        # TODO - CHECK IF MOTOR EXISTS IN MOTOR DB
-#        
-#    if StartPos is None:
-#        StartPos = raw_input('Enter start position: ')
-#        StartPos = float(StartPos)
-
-#    if EndPos is None:
-#        EndPos = raw_input('Enter end position: ')
-#        EndPos = float(EndPos)
-
-#    if nFrames is None:
-#        nFrames = raw_input('Enter number of frames: ')
-#        nFrames = int(nFrames)
-
-#    if ExpTime is None:
-#        ExpTime = raw_input('Enter exposure time: ')
-#        ExpTime = float(ExpTime)
-
-#    if (MtrName is 'prrot') and (StartPos >= EndPos):
-#        print 'THE prrot CAN BE USED ONLY IN POSITIVE DIRECTION'
-#        return
-#    
-#    OSC['SweepMode'] = 'FastSweep'                                      # OSC["sweep_mode"] = "fastsweep"
-#    OSC['FirstFrameNumber'] = AD1id.GetFileNumber(OSC['DetList'])       # OSC["first_frame_number"] = detget_seqNumber
-#    
-#    fpga1id.FS_SweepControl()               # FS_Sweep_control
-#    
-#    ## TODO - IF MULTIPLE DET IN DETLIST, THIS NEEDS TO BE CHANGED
-#    print 'First frame of the fastsweep scan: ' + str(OSC['FirstFrameNumber'][0])
-#    
-#    OSC['OscillationMode'] = 0      # this chooses _oscill_fastsweep in Oscillation
-#    
-#    ## CHECK THIS
-#    # cdef("cleanup_once", "\n fastsweep_cleanup;", "sweep_fastsweep", "0x20")
-
-#    
-#    # The exp time must be corrected according to the gaps between frames
-#    if UserGapTime is not None:
-#        OSC['GapTime'] = UserGapTime                # users can change this value
-#    if UserDelayTime is not None:
-#        OSC['DelayTime'] = UserDelayTime            # users can change this value
-
-#    # Update OSC['ScanTime']
-#    OSC['ScanTime']= (  ExpTime + OSC['GapTime'] ) * nFrames
-
-#    print 'Sweep ' + MtrName + ' ' + str(StartPos) + ' ' + str(EndPos) + ' 1 ' + str( OSC['ScanTime'] )
-#    Sweep(OSC, MtrName, StartPos, EndPos, NumSteps = 1, OSC['ScanTime'])
-
-#    ## TODO FILE I/O CHECK
-#    
-#    FastSweepEnd(OSC)
-#    return
 
 #def FastSweepParamCheck(OSC):       # fastsweep_paramcheck
 #    '''
