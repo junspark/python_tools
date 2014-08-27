@@ -1,0 +1,245 @@
+### TODO ###
+### NEED TO RUN /APSshare/epd/rh6-x86_64/bin/ipython 
+### DEFINE SCALARS
+### SHUTTER CONTROL IN 1BMB
+### PAR FILE LOGS
+### REAL TIME FITTING
+import os
+import sys
+import numpy
+import scipy
+import math
+import logging
+import time
+import rlcompleter
+import readline
+
+import datetime as dt
+import epics as PyEpics
+import matplotlib.pyplot as plt
+import APSpy.spec as spec
+import APSpy.macros as mac
+import APSpy.rst_table as rst_table
+
+from scipy.special import erf
+from scipy.optimize import curve_fit
+from pprint import pprint
+from mpl_toolkits.mplot3d import axes3d
+
+#### ENABLE TAB COMPLETION
+readline.parse_and_bind('tab: complete')
+
+#################################################
+### THIS IS THE INSTALL FOR NOW
+### POINTS AT THE FOLDER WHERE THE PYTHON SOURCE FILES ARE
+### THIS WILL BE IMPROVED
+#################################################
+sys.path.insert(0, '/home/beams/S1IDUSER/APSpy/src')
+
+alldone = PyEpics.PV('1edd:alldone')
+
+### SHOULDNT THIS BE PART OF THE STANDARD LIB?
+def ImportMotorSymbols():
+    exec( spec.DefineMotorSymbols( spec.mtrDB, make_global=True ) )
+
+def waitmove():
+    while not alldone.get():
+        spec.sleep(1)
+    logging.info("keep waiting for motor(s) to stop? " + str(alldone.get() != 1) )
+
+spec.EnableEPICS()
+
+###################################################
+### USER INPUT
+###################################################
+## PATH AND FILE NAME OF THE PAR FILE
+logfile_pname = '/home/beams/S1BMUSER/Desktop/Data/parkjs/APSpy_1bm_dev'
+logfile_fname = 'template_log.pypar'
+logfile_pfname = os.path.join(logfile_pname, logfile_fname);
+
+dv_crd_file = True
+dv_crd_pname = '/home/beams/S1BMUSER/Desktop/Data/parkjs/APSpy_1bm_dev'
+dv_crd_fname = 'dv_crd_example.dvcrd'
+dv_crd_pfname = os.path.join(dv_crd_pname, dv_crd_fname)
+
+sys.exit()
+### REFERENCE POSITION
+dv_crd_file = False
+x0 = -19.535
+y0 = -56.412
+z0 = -4.095
+dx = 2.7
+x_steps = 27
+
+dy = 45
+y_steps = 33
+
+dz = 0
+z_steps = 1
+
+## EXPOSURE TIME
+tframe = 60
+
+###################################################
+### DEFINE DV COORDINATES
+###################################################
+if dv_crd_file is True:
+	print '###################################################'
+	print 'Using predefined diffraction volume coordinates file'
+	print dv_crd_pfname
+    print '###################################################'
+elif dv_crd_file is False:
+	print '###################################################'
+    print 'Generating diffraction volume grid using reference position and step size information'
+    print '###################################################'
+
+sys.exit()
+
+
+### GENERATE DV GRID 
+x_ini = x0 - dx/2
+x_fin = x0 + dx/2
+x_grid = numpy.linspace(x_ini, x_fin, x_steps)
+
+y_ini = y0
+y_fin = y0 + dy
+y_grid = numpy.linspace(y_ini, y_fin, y_steps)
+
+z_ini = z0
+z_fin = z0 + dz
+
+z_grid = numpy.linspace(z_ini, z_fin, z_steps)
+
+xx = numpy.zeros(x_steps*y_steps*z_steps)
+yy = numpy.zeros(x_steps*y_steps*z_steps)
+zz = numpy.zeros(x_steps*y_steps*z_steps)
+
+ct = 0
+for i in range(x_steps):
+	for j in range(y_steps):
+	    for k in range(z_steps):
+	        xx[ct] = x_grid[i]
+	        yy[ct] = y_grid[j]
+	        zz[ct] = z_grid[k]
+	        ct = ct + 1
+
+fig1 = plt.figure()
+ax1 = fig1.add_subplot(111, projection='3d')
+
+ax1.plot(xx, yy, zz, 'o', zdir='z', label='zs=0, zdir=z')
+ax1.view_init(45, 45)
+plt.show()
+
+###################################################    
+### DEF MOTORS
+###################################################
+# spec.DefineMtr('VPtop', '1edd:m3', 'VPtop (mm)')
+# spec.DefineMtr('VPbot', '1edd:m4', 'VPbot (mm)')
+# spec.DefineMtr('VPob',  '1edd:m5', 'VPob (mm)')
+# spec.DefineMtr('VPib',  '1edd:m6', 'VPib (mm)')
+spec.DefineMtr('samX',  '1edd:m11', 'samX (mm)')
+spec.DefineMtr('samY',  '1edd:m14', 'samY (mm)')
+spec.DefineMtr('samZ',  '1edd:m10', 'samZ (mm)')
+
+ImportMotorSymbols()
+spec.ListMtrs()
+
+#### SOME SCALARS
+# spec.DefineScaler('1id:scaler1',16)
+shutter_state = PyEpics.PV('PA:01BM:A_SHTRS_CLOSED')
+shutter_control = PyEpics.PV('1bma:rShtrA:Open.PROC')
+ring_state = PyEpics.PV('S:SRcurrentAI')
+
+###################################################    
+### MCA EXPOSURE PARAMETERS
+###################################################
+horz_prefix = 'dp_vortex_xrd75:mca1'
+horz_EraseStart = PyEpics.PV(horz_prefix+'EraseStart')
+horz_status = PyEpics.PV(horz_prefix+'.ACQG')
+horz_val = PyEpics.PV(horz_prefix+'.VAL')
+horz_bg = PyEpics.PV(horz_prefix+'.BG')
+
+vert_prefix = 'dp_vortex_xrd73:mca1'
+vert_EraseStart = PyEpics.PV(vert_prefix+'EraseStart')
+vert_status = PyEpics.PV(vert_prefix+'.ACQG')
+vert_val = PyEpics.PV(vert_prefix+'.VAL')
+vert_bg = PyEpics.PV(vert_prefix+'.BG')
+
+mac.init_logging()
+mac.add_logging_PV('Iring',"S:SRcurrentAI")
+mac.add_logging_PV('elapsed time',"1edd:3820:scaler1.T")
+mac.add_logging_PV('IC0-front',"1edd:3820:scaler1_cts1.B")  
+mac.add_logging_PV('IC1-back',"1edd:3820:scaler1_cts1.C")
+mac.add_logging_PV('NULL',"1edd:3820:scaler1_cts1.D")
+mac.add_logging_motor(samX)
+mac.add_logging_motor(samY)
+mac.add_logging_motor(samZ)
+
+###################################################    
+### PERFORM SCANS
+###################################################
+mac.write_logging_header(logfile_pfname)
+PyEpics.caput(horz_prefix + '.PRTM', tframe)
+PyEpics.caput(vert_prefix + '.PRTM', tframe)
+for i in range(x_steps*y_steps*z_steps):
+    print '****************************'
+    print 'scanning at ' 
+    print xx[i], yy[i], zz[i]
+    targets = [(samX, xx[i]), (samY, yy[i]), (samZ, zz[i])]
+    
+    ## check motors have gotten to positions & wait until motion finished
+    spec.mmv(targets,wait=False)
+    spec.ummv(targets)
+    
+    ### SAFETY 
+    spec.sleep(0.2)
+    
+    ### CHECK FOR RING STATUS
+    while ring_state.get() < 10:
+        print 'waiting for ring'
+        spec.sleep(10)
+    
+    ### OPEN SHUTTER IF CLOSED
+    if shutter_state.get() == 1:
+        shutter_control.put(0)
+        spec.sleep(10)
+    
+    # TAKE DATA
+    horz_EraseStart.put(1)
+    vert_EraseStart.put(1)
+    
+    # WRITE LOG FILE
+    mac.write_logging_parameters(logfile_pfname)
+    
+    # WAIT TILL FINISHED
+    scan_done = 0
+    while scan_done == 0:
+        ### 1 = RUNNING, 0 = DONE
+        if (horz_status.get() == 0) and (vert_status.get() == 0):
+            scan_done = 1
+        spec.sleep(0.5)
+    
+    #SAVE DATA FILES    
+    fname_horz_val = "horz_det.ptnum_" + str(i) + ".x_" + str(spec.wm(spec.samX)) + ".y_" + str(spec.wm(spec.samY)) + ".z_" + str(spec.wm(spec.samZ)) + '.val.data'
+    fname_vert_val = "vert_det.ptnum_" + str(i) + ".x_" + str(spec.wm(spec.samX)) + ".y_" + str(spec.wm(spec.samY)) + ".z_" + str(spec.wm(spec.samZ)) + '.val.data'
+    
+    fname_horz_bg = "horz_det.ptnum_" + str(i) + ".x_" + str(spec.wm(spec.samX)) + ".y_" + str(spec.wm(spec.samY)) + ".z_" + str(spec.wm(spec.samZ)) + '.bg.data'
+    fname_vert_bg = "vert_det.ptnum_" + str(i) + ".x_" + str(spec.wm(spec.samX)) + ".y_" + str(spec.wm(spec.samY)) + ".z_" + str(spec.wm(spec.samZ)) + '.bg.data'
+    
+    hval = horz_val.get()
+    hbg = horz_bg.get()
+    
+    numpy.savetxt(fname_horz_val, hval, fmt="%d")
+    numpy.savetxt(fname_horz_bg, hbg, fmt="%d")
+    
+    vval = vert_val.get()
+    vbg = vert_bg.get()
+    
+    numpy.savetxt(fname_vert_val, hval, fmt="%d")
+    numpy.savetxt(fname_vert_bg, hbg, fmt="%d")
+    
+    ### SAFETY 
+    spec.sleep(1)
+    print '****************************'
+
+sys.exit()
