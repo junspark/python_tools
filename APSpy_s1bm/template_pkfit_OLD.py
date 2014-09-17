@@ -9,26 +9,25 @@ import os
 import sys
 import numpy
 import scipy
-#import math
-#import logging
+import math
+import logging
 import time
-#import rlcompleter
-#import readline
-#import csv
+import rlcompleter
+import readline
+import csv
 
-#import datetime as dt
+import datetime as dt
 import matplotlib.pyplot as plt
 
-#from scipy.optimize import curve_fit
-from lmfit import minimize, Parameters, Parameter, report_fit
-#from scipy.optimize import minimize
-#from pprint import pprint
+from scipy.optimize import curve_fit
+from scipy.optimize import minimize
+from pprint import pprint
 from mpl_toolkits.mplot3d import axes3d
 
 #################################################
 ### PEAK FUNCTIONS
 #################################################
-def pkBackground(x, p):
+def pkBackground(x, *p):
     '''
     pkBackground
     
@@ -41,7 +40,7 @@ def pkBackground(x, p):
     ybkg = numpy.polyval(p, x)
     return ybkg
 
-def pkGaussian(x, p):
+def pkGaussian(x, *p):
     '''
     c0    : constant 4*log(2)
     A     : intensity
@@ -55,7 +54,7 @@ def pkGaussian(x, p):
     xPeak = p[2]
     
     pbkg = p[3:]
-    ybkg = pkBackground(x, pbkg)
+    ybkg = pkBackground(x, *pbkg)
     
     delx = (x - xPeak)/Gamma
     yG = A*(c0**0.5/Gamma/numpy.pi**0.5)*numpy.exp(-c0*delx**2)
@@ -63,7 +62,7 @@ def pkGaussian(x, p):
     ypk = ybkg + yG
     return ypk
 
-def pkLorentzian(x, p):
+def pkLorentzian(x, *p):
     '''
     f = A*(c1^.5/Gamma/pi)./(1 + c1*x^2);
     c0 : constant 4
@@ -78,7 +77,7 @@ def pkLorentzian(x, p):
     xPeak = p[2]
     
     pbkg = p[3:]
-    ybkg = pkBackground(x, pbkg)
+    ybkg = pkBackground(x, *pbkg)
     
     delx = (x - xPeak)/Gamma
     yL = (A*c1**0.5/Gamma/numpy.pi)*(1 / (1 + c1*delx*delx))
@@ -86,28 +85,45 @@ def pkLorentzian(x, p):
     ypk = ybkg + yL
     return ypk
 
-# define objective function: returns the array to be minimized
-def pkfunc(params, x, data):
+def pkPseudoVoight(x, *p):
     '''
-    model decaying sine wave, subtract data
-    '''    
-    A = params['A'].value
-    Gamma = params['Gamma'].value
-    n = params['n'].value
-    xPeak = params['xPeak'].value
-    pbkg = numpy.array([params['bkg1'].value, params['bkg2'].value])
+    f = n * G + (1 - n) * L
+    A     : intensity
+    x     : (tth-tth_peak)/Gamma
+    Gamma : FWHM
+    n     : mixing parameter
     
+    NEEDS CONSTRAINED OPTIMIZATION
+    '''
+    
+    A = p[0]
+    Gamma = p[1]
+    n = p[2]
+    xPeak = p[3]
+    
+    pbkg = p[4:]
+    ybkg = pkBackground(x, *pbkg)
+        
     pG = numpy.array([A, Gamma, xPeak])
     pL = numpy.array([A, Gamma, xPeak])
-
-    ybkg = pkBackground(x, pbkg)
-    yG = pkGaussian(x, pG)
-    yL = pkLorentzian(x, pL)
-
+    
+    print n
+    
+    yG = pkGaussian(x, *pG)
+    yL = pkLorentzian(x, *pL)
+    
     ypk = ybkg + n * yG + (1 - n) * yL
+           
+    return ypk
 
-    res = ypk - data
-    return res
+# def pkFunction(p, xdata, ydata):
+#     pbkg = p[4:]
+#     
+#     
+#     pkPseudoVoight(xdata, *p)
+#     
+#     
+#     return resnorm
               
 ###################################################
 ### USER INPUT
@@ -121,7 +137,7 @@ testing_flag = True
 
 ###################################################
 ### PATH NAME OF THE DATA FILES
-datafile_pname = './data/'
+datafile_pname = '/home/beams/S1IDUSER/new_data/1id_python/APSpy_s1bm/data/'
 
 ###################################################
 ### OUTPUT PATH AND FILE NAME OF THE PKFIT FILES
@@ -136,14 +152,14 @@ vbg_pkfit_pfname = os.path.join(datafile_pname, vbg_pkfit_fname);
 
 ###################################################
 ### PATH AND FILE NAME OF THE PAR FILE - NOT USED AT THIS POINT
-logfile_pname = './'
+logfile_pname = '/home/beams/S1IDUSER/new_data/1id_python/APSpy_s1bm/'
 logfile_fname = 'template_log.pypar'
 logfile_pfname = os.path.join(logfile_pname, logfile_fname);
 
 ###################################################
 ### DIFFRACTION VOLUME COORDINATES
 dv_crd_file = True
-dv_crd_pname = './'
+dv_crd_pname = '/home/beams/S1IDUSER/new_data/1id_python/APSpy_s1bm/'
 dv_crd_fname = 'dv_crd_example.dvcrd'
 dv_crd_pfname = os.path.join(dv_crd_pname, dv_crd_fname)
 
@@ -167,7 +183,7 @@ dv_crd_pfname = os.path.join(dv_crd_pname, dv_crd_fname)
 ###################################################
 numpk = 3
 pkpos = numpy.array([110., 230., 410.])
-Gamma0 = numpy.array([3.0, 3.0, 3.0])
+Gamma0 = numpy.array([5., 5., 5.])
         
 pkLB = pkpos - 45
 pkUB = pkpos + 45
@@ -230,11 +246,9 @@ elif dv_crd_file is False:
 ###################################################
 plt.close('all')
 plt.ion()
-fig1 = plt.figure(figsize=plt.figaspect(0.25))
-
-### INITIALIZE LIST OF FAILED FIT 
-dv_pk_h = []
-dv_pk_v = []
+fig1 = plt.figure(figsize=plt.figaspect(1))
+fig2 = plt.figure(figsize=plt.figaspect(0.5))
+plt.show()
 for i in range(ct):
     print '###################################################'
     print 'peak fitting at ' 
@@ -263,36 +277,64 @@ for i in range(ct):
     print '###################################################'
     hval = numpy.loadtxt(horz_val_pfname, dtype = int)
     vval = numpy.loadtxt(vert_val_pfname, dtype = int)
+    hbg = numpy.loadtxt(horz_bg_pfname, dtype = int)
+    vbg = numpy.loadtxt(vert_bg_pfname, dtype = int)
     spectrum_x = numpy.linspace(1, len(hval), len(hval))
-
-    ax0 = fig1.add_subplot(1, 3, 1, projection='3d')
-    ax0.plot(xx, yy, zz, 'bo', zdir='z')
-    ax0.hold(True)
-    if i == 0:
-        ax0.plot([xx[0]], [yy[0]], [zz[0]], 'yo')
-    else:
-        ax0.plot([xx[i]], [yy[i]], [zz[i]], 'yo')
-        ax0.plot(xx[0:i], yy[0:i], zz[0:i], 'ro')
-    ax0.set_xlabel('sam X (mm)')
-    ax0.set_ylabel('sam Y (mm)')
-    ax0.set_zlabel('sam Z (mm)')
-    ax0.view_init(45, 45)
-    ax0.hold(False)
     
-    ax1 = fig1.add_subplot(1, 3, 2)
-    ax1.plot(spectrum_x, hval, 'bo', spectrum_x, vval, 'b^')
+    fig1.suptitle('diffraction volume grid # ' + str(i+1) + '/' + str(len(hval)))
+    ax = fig1.add_subplot(2, 1, 2, projection='3d')
+    ax.plot(xx, yy, zz, 'bo', zdir='z')
+    ax.hold(True)
+    if i == 0:
+        ax.plot([xx[0]], [yy[0]], [zz[0]], 'yo')
+    else:
+        ax.plot([xx[i]], [yy[i]], [zz[i]], 'yo')
+        ax.plot(xx[0:i], yy[0:i], zz[0:i], 'ro')
+    ax.set_xlabel('sam X (mm)')
+    ax.set_ylabel('sam Y (mm)')
+    ax.set_zlabel('sam Z (mm)')
+    ax.view_init(45, 45)
+    ax.hold(False)
+    
+    ax = fig1.add_subplot(2, 1, 1)
+    ax.plot(spectrum_x, hval, 'bo', spectrum_x, vval, 'b^', spectrum_x, hbg, 'go', spectrum_x, vbg, 'g^')
+    ax.set_xlabel('channel number (-)')
+    ax.set_ylabel('intensity (arb. units)')
+    ax.grid(True)
+    ax.hold(False)
+    fig1.show()
+    
+    ax1 = fig2.add_subplot(2, 2, 1);
+    ax1.plot(spectrum_x, hval, 'bo')
     ax1.set_xlabel('channel number (-)')
     ax1.set_ylabel('intensity (arb. units)')
+    ax1.set_title('h-val')
     ax1.grid(True)
     ax1.hold(True)
     
-    ax2 = fig1.add_subplot(1, 3, 3)
+    ax2 = fig2.add_subplot(2, 2, 2);
     ax2.plot(spectrum_x, vval, 'b^')
     ax2.set_xlabel('channel number (-)')
     ax2.set_ylabel('intensity (arb. units)')
     ax2.set_title('h-val')
     ax2.grid(True)
     ax2.hold(True)
+    
+    ax3 = fig2.add_subplot(2, 2, 3);
+    ax3.plot(spectrum_x, hbg, 'go')
+    ax3.set_xlabel('channel number (-)')
+    ax3.set_ylabel('intensity (arb. units)')
+    ax3.set_title('h-val')
+    ax3.grid(True)
+    ax3.hold(True)
+    
+    ax4 = fig2.add_subplot(2, 2, 4);
+    ax4.plot(spectrum_x, vbg, 'g^')
+    ax4.set_xlabel('channel number (-)')
+    ax4.set_ylabel('intensity (arb. units)')
+    ax4.set_title('h-val')
+    ax4.grid(True)
+    ax4.hold(True)
     
     ### FITTING
     for j in range(numpk):
@@ -305,66 +347,61 @@ for i in range(ct):
         xj = spectrum_x[idxLB & idxUB]
         hvalj = hval[idxLB & idxUB]
         vvalj = vval[idxLB & idxUB]
+        hbgj = hbg[idxLB & idxUB]
+        vbgj = vbg[idxLB & idxUB]
 
-        # create a set of Parameters
-        phvalj = Parameters()
-        phvalj.add('A', value = max(hvalj)*Gamma0[j], min = 0.0)
-        phvalj.add('Gamma', value = Gamma0[j], min = 0.0)
-        phvalj.add('n', value = 0.5, min = 0.0, max = 1.0)
-        phvalj.add('xPeak', value = pkpos[j])
-        phvalj.add('bkg1', value = 0.0)
-        phvalj.add('bkg2', value = numpy.mean(hvalj))
-        
-        # create a set of Parameters
-        pvvalj = Parameters()
-        pvvalj.add('A', value = max(vvalj)*Gamma0[j], min = 0.0)
-        pvvalj.add('Gamma', value = Gamma0[j], min = 0.0)
-        pvvalj.add('n', value = 0.5, min = 0.0, max = 1.0)
-        pvvalj.add('xPeak', value = pkpos[j])
-        pvvalj.add('bkg1', value = 0.0)
-        pvvalj.add('bkg2', value = numpy.mean(vvalj))
-        
         ### CURVE FIT
-        result_hvalj = minimize(pkfunc, phvalj, args=(xj, hvalj))
-        hvalj_fit = hvalj + result_hvalj.residual
-        report_fit(phvalj)
-
-        result_vvalj = minimize(pkfunc, pvvalj, args=(xj, vvalj))
-        vvalj_fit = vvalj + result_vvalj.residual
-        report_fit(pvvalj)
+        A0 = max(hvalj)*Gamma0[j]
+        p0 = numpy.array([A0, Gamma0[j], pkpos[j], 0.0, numpy.mean(hvalj)])
+        
+        phvalj, cov = curve_fit(pkLorentzian, xj, hvalj, p0=p0)
+        hvalj_fit0 = pkLorentzian(xj, *p0)
+        hvalj_fit = pkLorentzian(xj, *phvalj)
+        
+        pvvalj, cov = curve_fit(pkLorentzian, xj, vvalj, p0=p0)
+        vvalj_fit0 = pkLorentzian(xj, *p0)
+        vvalj_fit = pkLorentzian(xj, *pvvalj)
+        
+        phbgj, cov = curve_fit(pkLorentzian, xj, hbgj, p0=p0)
+        hbgj_fit0 = pkLorentzian(xj, *p0)
+        hbgj_fit = pkLorentzian(xj, *phbgj)
+        
+        pvbgj, cov = curve_fit(pkLorentzian, xj, vbgj, p0=p0)
+        vbgj_fit0 = pkLorentzian(xj, *p0)
+        vbgj_fit = pkLorentzian(xj, *pvbgj)
         
         ### SAVE CURVE FIT RESULTS
         with open(hval_pkfit_pfname, 'a') as f_handle:
-            outdata = numpy.array([i, round(xx[i],3), round(yy[i],3), round(zz[i],3), result_hvalj.values['A'], result_hvalj.values['Gamma'], result_hvalj.values['n'], result_hvalj.values['xPeak'], result_hvalj.values['bkg1'], result_hvalj.values['bkg2'], result_hvalj.success])
-            
-            f_handle.write('%d %f %f %f %f %f %f %f %f %f %d\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8], outdata[9], outdata[10]))
+            outdata = numpy.append([i, round(xx[i],3), round(yy[i],3), round(zz[i],3)], phvalj, axis=2)
+            f_handle.write('%d %f %f %f %f %f %f %f %f\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8]))
             
         with open(vval_pkfit_pfname, 'a') as f_handle:
-            outdata = numpy.array([i, round(xx[i],3), round(yy[i],3), round(zz[i],3), result_vvalj.values['A'], result_vvalj.values['Gamma'], result_vvalj.values['n'], result_vvalj.values['xPeak'], result_vvalj.values['bkg1'], result_vvalj.values['bkg2'], result_vvalj.success])
-            
-            f_handle.write('%d %f %f %f %f %f %f %f %f %f %d\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8], outdata[9], outdata[10]))
-
-        if result_hvalj.success:
-            ax1.plot(xj, hvalj, 'ro', xj, hvalj_fit, 'k-')
-        else:
-            ax1.plot(xj, hvalj, 'ro', xj, hvalj_fit, 'r:')
-            dv_pk_h = dv_pk_h.append([i, j])
-
-        if result_vvalj.success:
-            ax2.plot(xj, vvalj, 'r^', xj, vvalj_fit, 'k-')
-        else:
-            ax2.plot(xj, vvalj, 'r^', xj, vvalj_fit, 'r:')
-            dv_pk_v = dv_pk_v.append([i, j])
+            outdata = numpy.append([i, round(xx[i],3), round(yy[i],3), round(zz[i],3)], pvvalj, axis=2)
+            f_handle.write('%d %f %f %f %f %f %f %f %f\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8]))
         
+        with open(hbg_pkfit_pfname, 'a') as f_handle:
+            outdata = numpy.append([i, round(xx[i],3), round(yy[i],3), round(zz[i],3)], phbgj, axis=2)
+            f_handle.write('%d %f %f %f %f %f %f %f %f\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8]))
+            
+        with open(vbg_pkfit_pfname, 'a') as f_handle:
+            outdata = numpy.append([i, round(xx[i],3), round(yy[i],3), round(zz[i],3)], pvbgj, axis=2)
+            f_handle.write('%d %f %f %f %f %f %f %f %f\n' % (outdata[0], outdata[1], outdata[2], outdata[3], outdata[4], outdata[5], outdata[6], outdata[7], outdata[8]))
+
+        ax1.plot(xj, hvalj, 'ro', xj, hvalj_fit0, 'r-', xj, hvalj_fit, 'k-')
+        ax2.plot(xj, vvalj, 'r^', xj, vvalj_fit0, 'r-', xj, vvalj_fit, 'k-')
+        ax3.plot(xj, hbgj, 'ro', xj, hbgj_fit0, 'r-', xj, hbgj_fit, 'k-')
+        ax4.plot(xj, vbgj, 'r^', xj, vbgj_fit0, 'r-', xj, vbgj_fit, 'k-')
+        
+    fig2.show()
     ax1.hold(False)
     ax2.hold(False)
-    fig1.show()
+    ax3.hold(False)
+    ax4.hold(False)
+    plt.draw()
+        
     ### SAFETY 
     time.sleep(1)
 
-plt.ioff()
-
-if len(dv_pk_h) == 0 and  len(dv_pk_v) == 0:
-    print 'END OF FITTING - SEEMS LIKE FITTING WORKED FOR ALL PEAKS AND DVs'
-else:
-    print 'END OF FITTING - FITTING DID NOT WORK FOR SOME PEAKS AND DVs'
+print 'END OF FITTING - HOPE THE FITTING WORKED!!'
+plt.ioff()    
+sys.exit()
