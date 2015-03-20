@@ -263,6 +263,15 @@ vert_bg = PyEpics.PV(vert_prefix+'.BG')
 ###################################################    
 ### END OF MCA DETECTOR SETUP
 ###################################################
+dummy_num_pv = '1edd:userStringCalc10.L';
+dummy_str_pv = '1edd:userStringCalc10.LL';
+PyEpics.caput(dummy_num_pv, -999.0, 3.0, 'wait=True')
+PyEpics.caput(dummy_str_pv, 'nan', 3.0, 'wait=True')
+
+h_det_fname_pv = '1edd:userStringCalc10.AA';
+h_det_fnum_pv = '1edd:userStringCalc10.AA';
+h_det_prtm = horz_prefix+'.PRTM'
+
 
 ###################################################    
 ### INITATE LOGGING
@@ -272,61 +281,64 @@ if testing_flag is True:
     mac.add_logging_PV('Epoch Time', '1bmb:GTIM_TIME')
     mac.add_logging_PV('Elapsed Time','1edd:3820:scaler1.T')
     mac.add_logging_PV('Iring','S:SRcurrentAI')
-    mac.add_logging_PV('Undulator value', '1bmb:userCalc10.A')
-    mac.add_logging_PV('Energy Nominal', '1bmb:userCalc10.A')
-    mac.add_logging_PV('Energy Calibrated', '1bmb:userCalc10.A')
-    mac.add_logging_PV('Foil Position', '1bmb:userCalc10.A')
-    mac.add_logging_PV('Attenuator Position', '1bmb:userCalc10.A')
+    mac.add_logging_PV('Undulator value', dummy_num_pv)
+    mac.add_logging_PV('Energy Nominal', dummy_num_pv)
+    mac.add_logging_PV('Energy Calibrated', dummy_num_pv)
+    mac.add_logging_PV('Foil Position', dummy_num_pv)
+    mac.add_logging_PV('Attenuator Position', dummy_num_pv)
     
-    mac.add_logging_PV('H det fname', '1edd:userStringSeq10.STR1')  ### NEED A PV
-    mac.add_logging_PV('H det fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('H det frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('H det fname', h_det_fname_pv)
+    mac.add_logging_PV('H det fnumber', h_det_fnum_pv)
+    mac.add_logging_PV('H det frames per file', dummy_num_pv)
+    
+    
     mac.add_logging_PV('H det time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    
     
     mac.add_logging_PV('V det fname', '1edd:userStringSeq10.STR2')  ### NEED A PV
     mac.add_logging_PV('V det fnumber', '1bmb:userCalc10.A')        ### NEED A PV
     mac.add_logging_PV('V det frames per file', '1bmb:userCalc10.A')    ### NEED A PV
     mac.add_logging_PV('V det time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det1 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det1 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det1 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det1 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det3 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det3 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det3 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det3 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det2 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det2 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det2 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det2 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det4 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det4 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det4 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det4 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det3 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det3 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det3 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det3 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det5 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det5 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det5 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det5 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det4 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det4 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det4 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det4 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det6 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det6 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det6 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det6 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det5 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det5 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det5 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det5 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det7 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det7 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det7 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det7 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det6 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det6 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det6 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det6 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det8 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det8 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det8 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det8 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det7 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det7 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det7 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det7 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det9 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det9 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det9 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det9 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
-    mac.add_logging_PV('dummy det8 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
-    mac.add_logging_PV('dummy det8 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
-    mac.add_logging_PV('dummy det8 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
-    mac.add_logging_PV('dummy det8 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
+    mac.add_logging_PV('det10 fname', '1edd:userStringSeq10.STR2') ### NEED A PV
+    mac.add_logging_PV('det10 fnumber', '1bmb:userCalc10.A')        ### NEED A PV
+    mac.add_logging_PV('det10 frames per file', '1bmb:userCalc10.A')    ### NEED A PV
+    mac.add_logging_PV('det10 time per frame', '1bmb:userCalc10.A')     ### NEED A PV
     
     mac.add_logging_PV('IC0-front','1edd:3820:scaler1_cts1.B')
     mac.add_logging_PV('IC0-setting', '1bmb:userCalc10.A')     ### NEEDS TO BE COMPUTED IN USER CALC THEN PUT IN
