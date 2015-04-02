@@ -1,3 +1,5 @@
+alldone = PyEpics.PV('1edd:alldone')
+
 ### SCALARS
 scaler_name = '1edd:3820:scaler1'
 spec.DefineScaler(scaler_name,3)
