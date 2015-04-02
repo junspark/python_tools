@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import APSpy.spec as spec
 import APSpy.macros as mac
 import APSpy.rst_table as rst_table
+import utilities as utils
 
 from scipy.special import erf
 from scipy.optimize import curve_fit
@@ -52,22 +53,6 @@ def waitmove():
         spec.sleep(1)
     logging.info("keep waiting for motor(s) to stop? " + str(alldone.get() != 1) )
 
-def pkGaussian(x, *p):
-    # c0    : constant 4*log(2)
-    # A     : intensity
-    # x     : (tth-tth_peak)/Gamma
-    # Gamma : FWHM
-    c0 = 4*numpy.log(2)
-    A, Gamma, xPeak, n0, n1 = p
-    
-    delx = (x - xPeak)/Gamma
-    
-    ybkg = numpy.polyval([n0, n1], x)
-    yG = A*(c0**0.5/Gamma/numpy.pi**0.5)*numpy.exp(-c0*delx**2)
-    ypk = ybkg + yG
-    
-    return ypk
-
 spec.EnableEPICS()
 
 ###################################################
@@ -77,7 +62,7 @@ spec.EnableEPICS()
 ###################################################
 ### SCRIPT TESTING MODE FLAG
 ###################################################
-testing_flag = True
+testing_flag = False
 
 ###################################################
 ### PATH NAME OF THE DATA FILES
@@ -215,32 +200,15 @@ if testing_flag is True:
     spec.DefineMtr('samY',  '1ide1:m94', 'samY (mm)')
     spec.DefineMtr('samZ',  '1ide1:m95', 'samZ (mm)')
 elif testing_flag is False:
-    spec.DefineMtr('VPtop', '1edd:m3', 'VPtop (mm)')    ## COLOR CODED
-    spec.DefineMtr('VPbot', '1edd:m4', 'VPbot (mm)')    ## COLOR CODED
-    spec.DefineMtr('VPob',  '1edd:m5', 'VPob (mm)')    ## COLOR CODED
-    spec.DefineMtr('VPib',  '1edd:m6', 'VPib (mm)')    ## COLOR CODED
-    spec.DefineMtr('VPth',  '1edd:m16', 'VPtheta (deg)')        ## ELCO CABLE 1
-    spec.DefineMtr('HPtop', '1edd:m8', 'HPtop (mm)')        ## PRINTER CABLE 14
-    spec.DefineMtr('HPbot', '1edd:m7', 'HPbot (mm)')        ## PRINTER CABLE 17
-    spec.DefineMtr('HPob',  '1edd:m2', 'HPob (mm)')        ## PRINTER CABLE 15
-    spec.DefineMtr('HPib',  '1edd:m1', 'HPib (mm)')        ## PRINTER CABLE 16
-    spec.DefineMtr('HPth',  '1edd:m9', 'HPtheta (deg)')     ## ELCO CABLE 7
-    spec.DefineMtr('samX',  '1edd:m11', 'samX (mm)')        ## ELCO CABLE 3
-    spec.DefineMtr('samY',  '1idc:m72', 'samY (mm)')        ## MOVOACT FROM C HUTCH ==> CHECK WHICH MOTOR IS ACTUALLY MOVING
-    spec.DefineMtr('samY2',  '1edd:m14', 'samY2 (mm)')        ## ELCO CABLE 6
-    spec.DefineMtr('samZ',  '1edd:m10', 'samZ (mm)')        ## ELCO CABLE 2
+    execfile('configs/1bmb_config.py')
 
 ImportMotorSymbols()
 spec.ListMtrs()
-# sys.exit()
-
-### SCALARS
-spec.DefineScaler('1edd:3820:scaler1',3)
 
 ### INTERSTING PVs
-shutter_state = PyEpics.PV('PA:01BM:STA_A_FES_OPEN_PL.VAL')
-shutter_control = PyEpics.PV('1bma:rShtrA:Open.PROC')
 ring_current = PyEpics.PV('S:SRcurrentAI')
+
+# sys.exit()
 
 ###################################################    
 ### END OF DEFINE MOTORS & SCALARS
@@ -249,14 +217,6 @@ ring_current = PyEpics.PV('S:SRcurrentAI')
 ###################################################    
 ### MCA DETECTOR SETUP
 ###################################################
-## DATE FILE NAMES / NUMBERS ARE STORED INTO THE FOLLOWING PV
-## AS THE DATA ARE COLLECTED
-h_det_fname_pv = '1edd:userStringCalc10.AA';
-h_det_fnum_pv = '1edd:userStringCalc10.A';
-
-v_det_fname_pv = '1edd:userStringCalc10.BB';
-v_det_fnum_pv = '1edd:userStringCalc10.B';
-
 if testing_flag is True:
     PyEpics.caput(h_det_fname_pv, 'dummy_h_det', 3.0, 'wait=True')
     PyEpics.caput(h_det_fnum_pv, 1.0, 3.0, 'wait=True')
@@ -264,13 +224,11 @@ if testing_flag is True:
     PyEpics.caput(v_det_fname_pv, 'dummy_v_det', 3.0, 'wait=True')
     PyEpics.caput(v_det_fnum_pv, 1.0, 3.0, 'wait=True')
 elif testing_flag is False:
-    horz_prefix = 'dp_vortex_xrd76:mca1'
     horz_EraseStart = PyEpics.PV(horz_prefix+'EraseStart')
     horz_status = PyEpics.PV(horz_prefix+'.ACQG')
     horz_val = PyEpics.PV(horz_prefix+'.VAL')
     horz_exptime = PyEpics.PV(horz_prefix+'.PRTM')
     
-    vert_prefix = 'dp_vortex_xrd73:mca1'
     vert_EraseStart = PyEpics.PV(vert_prefix+'EraseStart')
     vert_status = PyEpics.PV(vert_prefix+'.ACQG')
     vert_val = PyEpics.PV(vert_prefix+'.VAL')
@@ -281,19 +239,8 @@ elif testing_flag is False:
 ###################################################
 
 ###################################################
-### PV HOLDING DUMMY VARIABLES FOR METADATA PADDING
+### SET DUMMY PVS FOR METADATA PADDING
 ###################################################
-dummy_num_pv = '1edd:userStringCalc10.H';
-dummy_str_pv = '1edd:userStringCalc10.HH'
-dummy_h1_num_pv = '1edd:userStringCalc10.I';
-dummy_h1_str_pv = '1edd:userStringCalc10.II';
-dummy_v1_num_pv = '1edd:userStringCalc10.J';
-dummy_v1_str_pv = '1edd:userStringCalc10.JJ';
-dummy_h2_num_pv = '1edd:userStringCalc10.K';
-dummy_h2_str_pv = '1edd:userStringCalc10.KK';
-dummy_v2_num_pv = '1edd:userStringCalc10.L';
-dummy_v2_str_pv = '1edd:userStringCalc10.LL';
-
 PyEpics.caput(dummy_num_pv, -999.0, 3.0, 'wait=True')
 PyEpics.caput(dummy_str_pv, 'nan', 3.0, 'wait=True')
 PyEpics.caput(dummy_h1_num_pv, -999.0, 3.0, 'wait=True')
@@ -306,14 +253,13 @@ PyEpics.caput(dummy_v2_num_pv, tframe, 3.0, 'wait=True')
 PyEpics.caput(dummy_v2_str_pv, 'nan', 3.0, 'wait=True')
 ###################################################
 
-sys.exit()
-
+# sys.exit()
 
 ###################################################    
 ### INITATE LOGGING
 ###################################################
+mac.init_logging()
 if testing_flag is True:
-    mac.init_logging()
     mac.add_logging_PV('Epoch Time', '1bmb:GTIM_TIME')
     mac.add_logging_PV('Elapsed Time','1edd:3820:scaler1.T')
     mac.add_logging_PV('Iring','S:SRcurrentAI')
@@ -402,9 +348,6 @@ if testing_flag is True:
     
     mac.add_logging_PV('IC9', dummy_num_pv)
     mac.add_logging_PV('IC9-setting', dummy_num_pv)
-    
-    mac.add_logging_PV('IC10', dummy_num_pv)
-    mac.add_logging_PV('IC10-setting', dummy_num_pv)
     
     mac.add_logging_PV('samX', dummy_num_pv)  # MOTORS mac.add_logging_motor(samX) ### NEED A PV OR MOTOR
     mac.add_logging_PV('samY', dummy_num_pv)  # MOTORS mac.add_logging_motor(samX) ### NEED A PV OR MOTOR
@@ -544,45 +487,223 @@ if testing_flag is True:
     mac.add_logging_PV('ev10', dummy_num_pv)
 elif testing_flag is False:
     mac.init_logging()
-    mac.add_logging_PV('Epoch Time', '1bmb:GTIM_TIME')
-    mac.add_logging_PV('Elapsed Time','1edd:3820:scaler1.T')
-    mac.add_logging_PV('Iring','S:SRcurrentAI')
-    mac.add_logging_PV('SR Lifetime', 'BL01:srLifetime')
+    mac.add_logging_PV('Epoch Time', epoch_time_pv)
+    mac.add_logging_PV('Elapsed Time', '%s.T' % scaler_name)
+    mac.add_logging_PVobj('Iring', ring_current)
+    mac.add_logging_PV('Undulator value', dummy_num_pv)
+    mac.add_logging_PV('Energy Nominal', dummy_num_pv)
+    mac.add_logging_PV('Energy Calibrated', dummy_num_pv)
+    mac.add_logging_PV('Foil Position', dummy_num_pv)
+    mac.add_logging_PV('Attenuator Position', dummy_num_pv)
     
+    mac.add_logging_PV('H det fname', h_det_fname_pv)
+    mac.add_logging_PV('H det fnumber', h_det_fnum_pv)
+    mac.add_logging_PV('H det frames per file', dummy_num_pv)
+    mac.add_logging_PV('H live elap time', '%s.ELTM' % horz_prefix)
     
-    mac.add_logging_PV('IC0-front','1edd:3820:scaler1_cts1.B')  
-    mac.add_logging_PV('IC1-back','1edd:3820:scaler1_cts1.C')
-    mac.add_logging_PV('NULL','1edd:3820:scaler1_cts1.D')
-    mac.add_logging_PV('HP inst dead time','dp_vortex_xrd76:mca1.IDTIM')
-    mac.add_logging_PV('HP ave dead time','dp_vortex_xrd76:mca1.DTIM')
-    mac.add_logging_PV('HP real elap time','dp_vortex_xrd76:mca1.ERTM')
-    mac.add_logging_PV('HP live elap time','dp_vortex_xrd76:mca1.ELTM')
+    mac.add_logging_PV('V det fname', v_det_fname_pv)
+    mac.add_logging_PV('V det fnumber', v_det_fnum_pv)
+    mac.add_logging_PV('V det frames per file', dummy_num_pv)
+    mac.add_logging_PV('V live elap time', '%s.ELTM' % vert_prefix)
     
-    mac.add_logging_PV('VP inst dead time','dp_vortex_xrd73:mca1.IDTIM')
-    mac.add_logging_PV('VP ave dead time','dp_vortex_xrd73:mca1.DTIM')
-    mac.add_logging_PV('VP real elap time','dp_vortex_xrd73:mca1.ERTM')
-    mac.add_logging_PV('VP live elap time','dp_vortex_xrd73:mca1.ELTM')
+    mac.add_logging_PV('det3 fname', dummy_str_pv)
+    mac.add_logging_PV('det3 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det3 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det3 time per frame', dummy_num_pv)
     
-    mac.add_logging_PV('iteration number', '1edd:userCalc10.A')
-    mac.add_logging_PV('position number', '1edd:userCalc10.B')
-    mac.add_logging_PV('file id number', '1edd:userCalc10.C')
-    mac.add_logging_PV('horz val file name', '1edd:userStringSeq10.STR1')
-    mac.add_logging_PV('vert val file name', '1edd:userStringSeq10.STR2')
+    mac.add_logging_PV('det4 fname', dummy_str_pv)
+    mac.add_logging_PV('det4 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det4 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det4 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det5 fname', dummy_str_pv)
+    mac.add_logging_PV('det5 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det5 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det5 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det6 fname', dummy_str_pv)
+    mac.add_logging_PV('det6 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det6 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det6 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det7 fname', dummy_str_pv)
+    mac.add_logging_PV('det7 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det7 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det7 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det8 fname', dummy_str_pv)
+    mac.add_logging_PV('det8 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det8 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det8 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det9 fname', dummy_str_pv)
+    mac.add_logging_PV('det9 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det9 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det9 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('det10 fname', dummy_str_pv)
+    mac.add_logging_PV('det10 fnumber', dummy_num_pv)
+    mac.add_logging_PV('det10 frames per file', dummy_num_pv)
+    mac.add_logging_PV('det10 time per frame', dummy_num_pv)
+    
+    mac.add_logging_PV('IC0-front', '%s_cts1.B' % scaler_name)
+    mac.add_logging_PV('IC0-setting', ic0_preamp_sens_nA_pv)
+    
+    mac.add_logging_PV('IC1-back', '%s_cts1.C' % scaler_name)
+    mac.add_logging_PV('IC1-setting', ic1_preamp_sens_nA_pv)
+    
+    mac.add_logging_PV('NULL', '%s_cts1.D' % scaler_name)
+    mac.add_logging_PV('NULL-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC3', dummy_num_pv)
+    mac.add_logging_PV('IC3-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC4', dummy_num_pv)
+    mac.add_logging_PV('IC4-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC5', dummy_num_pv)
+    mac.add_logging_PV('IC5-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC6', dummy_num_pv)
+    mac.add_logging_PV('IC6-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC7', dummy_num_pv)
+    mac.add_logging_PV('IC7-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC8', dummy_num_pv)
+    mac.add_logging_PV('IC8-setting', dummy_num_pv)
+    
+    mac.add_logging_PV('IC9', dummy_num_pv)
+    mac.add_logging_PV('IC9-setting', dummy_num_pv)
+    
     mac.add_logging_motor(samX)
     mac.add_logging_motor(samY)
-    mac.add_logging_motor(samY2)
     mac.add_logging_motor(samZ)
+    
+    mac.add_logging_PV('RX', dummy_num_pv)
+    mac.add_logging_PV('RY', dummy_num_pv)
+    mac.add_logging_PV('RZ', dummy_num_pv)
+    
+    mac.add_logging_PV('samX2', dummy_num_pv)
+    mac.add_logging_motor(samY2)
+    mac.add_logging_PV('samZ2', dummy_num_pv)
+    
+    mac.add_logging_PV('samZ3', dummy_num_pv)
+    
+    mac.add_logging_PV('HPx', dummy_num_pv)
+    mac.add_logging_motor(HPth)
+    mac.add_logging_PV('H det pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('VPx', dummy_num_pv)
+    mac.add_logging_motor(VPth)
+    mac.add_logging_PV('V det pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det3 pos1', dummy_num_pv)
+    mac.add_logging_PV('det3 pos2', dummy_num_pv)
+    mac.add_logging_PV('det3 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det4 pos1', dummy_num_pv)
+    mac.add_logging_PV('det4 pos2', dummy_num_pv)
+    mac.add_logging_PV('det4 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det5 pos1', dummy_num_pv)
+    mac.add_logging_PV('det5 pos2', dummy_num_pv)
+    mac.add_logging_PV('det5 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det6 pos1', dummy_num_pv)
+    mac.add_logging_PV('det6 pos2', dummy_num_pv)
+    mac.add_logging_PV('det6 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det7 pos1', dummy_num_pv)
+    mac.add_logging_PV('det7 pos2', dummy_num_pv)
+    mac.add_logging_PV('det7 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det8 pos1', dummy_num_pv)
+    mac.add_logging_PV('det8 pos2', dummy_num_pv)
+    mac.add_logging_PV('det8 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det9 pos1', dummy_num_pv)
+    mac.add_logging_PV('det9 pos2', dummy_num_pv)
+    mac.add_logging_PV('det9 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('det10 pos1', dummy_num_pv)
+    mac.add_logging_PV('det10 pos2', dummy_num_pv)
+    mac.add_logging_PV('det10 pos3', dummy_num_pv)
+    
+    mac.add_logging_PV('hex pos1', dummy_num_pv)
+    mac.add_logging_PV('hex pos2', dummy_num_pv)
+    mac.add_logging_PV('hex pos3', dummy_num_pv)
+    mac.add_logging_PV('hex pos4', dummy_num_pv)
+    mac.add_logging_PV('hex pos5', dummy_num_pv)
+    mac.add_logging_PV('hex pos6', dummy_num_pv)
+    mac.add_logging_PV('hex pos7', dummy_num_pv)
+    
     mac.add_logging_motor(HPbot)
     mac.add_logging_motor(HPtop)
     mac.add_logging_motor(HPib)
     mac.add_logging_motor(HPob)
-    mac.add_logging_motor(HPth)
+    
     mac.add_logging_motor(VPbot)
     mac.add_logging_motor(VPtop)
     mac.add_logging_motor(VPib)
     mac.add_logging_motor(VPob)
-    mac.add_logging_motor(VPth)
-
+    
+    mac.add_logging_PV('slit3 pos1', dummy_num_pv)
+    mac.add_logging_PV('slit3 pos2', dummy_num_pv)
+    mac.add_logging_PV('slit3 pos3', dummy_num_pv)
+    mac.add_logging_PV('slit3 pos4', dummy_num_pv)
+    
+    mac.add_logging_PV('slit4 pos1', dummy_num_pv)
+    mac.add_logging_PV('slit4 pos2', dummy_num_pv)
+    mac.add_logging_PV('slit4 pos3', dummy_num_pv)
+    mac.add_logging_PV('slit4 pos4', dummy_num_pv)
+    
+    mac.add_logging_PV('slit5 pos1', dummy_num_pv)
+    mac.add_logging_PV('slit5 pos2', dummy_num_pv)
+    mac.add_logging_PV('slit5 pos3', dummy_num_pv)
+    mac.add_logging_PV('slit5 pos4', dummy_num_pv)
+    
+    mac.add_logging_PV('slit6 pos1', dummy_num_pv)
+    mac.add_logging_PV('slit6 pos2', dummy_num_pv)
+    mac.add_logging_PV('slit6 pos3', dummy_num_pv)
+    mac.add_logging_PV('slit6 pos4', dummy_num_pv)
+    
+    mac.add_logging_PV('lens1 pos1', dummy_num_pv)
+    mac.add_logging_PV('lens1 pos2', dummy_num_pv)
+    
+    mac.add_logging_PV('lens2 pos1', dummy_num_pv)
+    mac.add_logging_PV('lens2 pos2', dummy_num_pv)
+    
+    mac.add_logging_PV('lens3 pos1', dummy_num_pv)
+    mac.add_logging_PV('lens3 pos2', dummy_num_pv)
+    
+    mac.add_logging_PV('lens4 pos1', dummy_num_pv)
+    mac.add_logging_PV('lens4 pos2', dummy_num_pv)
+    
+    mac.add_logging_PV('enc1', dummy_num_pv)
+    mac.add_logging_PV('enc2', dummy_num_pv)
+    mac.add_logging_PV('enc3', dummy_num_pv)
+    mac.add_logging_PV('enc4', dummy_num_pv)
+    mac.add_logging_PV('enc5', dummy_num_pv)
+    mac.add_logging_PV('enc6', dummy_num_pv)
+    mac.add_logging_PV('enc7', dummy_num_pv)
+    mac.add_logging_PV('enc8', dummy_num_pv)
+    mac.add_logging_PV('enc9', dummy_num_pv)
+    mac.add_logging_PV('enc10', dummy_num_pv)
+    
+    mac.add_logging_PV('HP inst dead time', '%s.IDTIM' % horz_prefix)
+    mac.add_logging_PV('HP ave dead time', '%s.DTIM' % horz_prefix)
+    mac.add_logging_PV('HP real elap time', '%s.ERTM' % horz_prefix)
+    mac.add_logging_PV('VP inst dead time', '%s.IDTIM' % vert_prefix)
+    mac.add_logging_PV('VP ave dead time', '%s.DTIM' % vert_prefix)
+    mac.add_logging_PV('VP real elap time', '%s.ERTM' % vert_prefix)
+    mac.add_logging_PV('iteration number', iter_number_pv)
+    mac.add_logging_PV('position number', pos_number_pv)
+    mac.add_logging_PV('file id number', fid_number_pv)
+    mac.add_logging_PV('ev10', dummy_num_pv)
+    
+    sys.exit()
+    
 ###################################################    
 ### END OF INITATE LOGGING
 ###################################################
@@ -612,11 +733,25 @@ for t in range(NumIterations):
     ax = fig1.add_subplot(1, 1, 1, projection='3d')
     ax.view_init(45, 45)
     plt.show(block=False)
+    
     for i in range(ct):
         FileIDNumber = ct * t + i
-        PyEpics.caput('1edd:userCalc10.A', t, 3.0, 'wait=True')
-        PyEpics.caput('1edd:userCalc10.B', i, 3.0, 'wait=True')
-        PyEpics.caput('1edd:userCalc10.C', FileIDNumber, 3.0, 'wait=True')
+        
+        ### INPUT INFORMATION INTO PVS
+        PyEpics.caput(iter_number_pv, t, 3.0, 'wait=True')
+        PyEpics.caput(pos_number_pv, i, 3.0, 'wait=True')
+        PyEpics.caput(fid_number_pv, FileIDNumber, 3.0, 'wait=True')
+        
+        ### COMPUTE PREAMP SETTINGS AND INPUT INTO PV
+        s = PyEpics.caget(ic0_preamp_sens_pv)
+        u = PyEpics.caget(ic0_preamp_unit_pv)
+        s_nA = utils.PreampUnitConversion(str(s), str(u))
+        PyEpics.caput(ic0_preamp_sens_nA_pv, s_nA, 3.0, 'wait=True')
+        
+        s = PyEpics.caget(ic1_preamp_sens_pv)
+        u = PyEpics.caget(ic1_preamp_unit_pv)
+        s_nA = utils.PreampUnitConversion(str(s), str(u))
+        PyEpics.caput(ic1_preamp_sens_nA_pv, s_nA, 3.0, 'wait=True')
         
         tic = time.time()
         print '###################################################'
@@ -649,8 +784,8 @@ for t in range(NumIterations):
         horz_val_fname = 'horz_det_iter_%d_ptnum_%d_fid_%d_val.data' % (t, i, FileIDNumber)
         vert_val_fname = 'vert_det_iter_%d_ptnum_%d_fid_%d_val.data' % (t, i, FileIDNumber)
         
-        PyEpics.caput('1edd:userStringSeq10.STR1', horz_val_fname, 3.0, 'wait=True')
-        PyEpics.caput('1edd:userStringSeq10.STR2', vert_val_fname, 3.0, 'wait=True')
+        PyEpics.caput(h_det_fname_pv, horz_val_fname, 3.0, 'wait=True')
+        PyEpics.caput(v_det_fname_pv, vert_val_fname, 3.0, 'wait=True')
         
         horz_val_pfname = os.path.join(datafile_pname, horz_val_fname);
         vert_val_pfname = os.path.join(datafile_pname, vert_val_fname);
