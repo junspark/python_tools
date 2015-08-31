@@ -1,29 +1,37 @@
 ### alldone = PyEpics.PV('1edd:alldone') ### IS THERE SOMETHING EQUIVALENT?
+alldone = PyEpics.PV('1edd:alldone')
 
-### SCALARS
+### SCALARS - NEED TO CHECK THESE
 scaler_name = '6bma2:scaler1'
 spec.DefineScaler(scaler_name,3)
 
-### MOTORS
-# spec.DefineMtr('VPtop', '1edd:m3', 'VPtop (mm)')    ## COLOR CODED
-# spec.DefineMtr('VPbot', '1edd:m4', 'VPbot (mm)')    ## COLOR CODED
-# spec.DefineMtr('VPob',  '1edd:m5', 'VPob (mm)')    ## COLOR CODED
-# spec.DefineMtr('VPib',  '1edd:m6', 'VPib (mm)')    ## COLOR CODED
-# spec.DefineMtr('VPth',  '1edd:m16', 'VPtheta (deg)')        ## ELCO CABLE 1
-# spec.DefineMtr('HPtop', '1edd:m8', 'HPtop (mm)')        ## PRINTER CABLE 14
-# spec.DefineMtr('HPbot', '1edd:m7', 'HPbot (mm)')        ## PRINTER CABLE 17
-# spec.DefineMtr('HPob',  '1edd:m2', 'HPob (mm)')        ## PRINTER CABLE 15
-# spec.DefineMtr('HPib',  '1edd:m1', 'HPib (mm)')        ## PRINTER CABLE 16
-# spec.DefineMtr('HPth',  '1edd:m9', 'HPtheta (deg)')     ## ELCO CABLE 7
-# spec.DefineMtr('samX',  '1edd:m11', 'samX (mm)')        ## ELCO CABLE 3
-# spec.DefineMtr('samY',  '1idc:m72', 'samY (mm)')        ## MOVOACT FROM C HUTCH ==> CHECK WHICH MOTOR IS ACTUALLY MOVING
-# spec.DefineMtr('samY2',  '1edd:m14', 'samY2 (mm)')        ## ELCO CABLE 6
-# spec.DefineMtr('samZ',  '1edd:m10', 'samZ (mm)')        ## ELCO CABLE 2
+## MOTORS
+spec.DefineMtr('sl1r', '6bma1:m1', 'sl1r (mm)')
+spec.DefineMtr('sl1l', '6bma1:m2', 'sl1l (mm)')
+spec.DefineMtr('sl1t', '6bma1:m3', 'sl1t (mm)')
+spec.DefineMtr('sl1b', '6bma1:m4', 'sl1b (mm)')
+spec.DefineMtr('sl2r', '6bma1:m5', 'sl2r (mm)')
+spec.DefineMtr('sl2l', '6bma1:m6', 'sl2l (mm)')
+spec.DefineMtr('sl2t', '6bma1:m7', 'sl2t (mm)')
+spec.DefineMtr('sl2b', '6bma1:m8', 'sl2b (mm)')
+spec.DefineMtr('sl3r', '6bma1:m9', 'sl3r (mm)')
+spec.DefineMtr('sl3l', '6bma1:m10', 'sl3l (mm)')
+spec.DefineMtr('sl3t', '6bma1:m11', 'sl3t (mm)')
+spec.DefineMtr('sl3b', '6bma1:m12', 'sl3b (mm)')
+spec.DefineMtr('sl4r', '6bma1:m13', 'sl4r (mm)')
+spec.DefineMtr('sl4l', '6bma1:m14', 'sl4l (mm)')
+spec.DefineMtr('sl4t', '6bma1:m15', 'sl4t (mm)')
+spec.DefineMtr('sl4b', '6bma1:m16', 'sl4b (mm)')
+spec.DefineMtr('xr', '6bma1:m17', 'xr (mm)')
+spec.DefineMtr('yr', '6bma1:m18', 'yr (mm)')
+spec.DefineMtr('zr', '6bma1:m19', 'zr (mm)')
+spec.DefineMtr('ytth', '6bma1:m20', 'ytth (deg)')
+spec.DefineMtr('rotx', '6bma1:m21', 'rotx (deg)')
+spec.DefineMtr('rotz', '6bma1:m22', 'rotz (deg)')
 
 ### BEAMLINE SPECIFIC PV NAMES
 epoch_time_pv ='6bma1:GTIM_TIME'
 shutter_state = PyEpics.PV('PA:06BM:STA_A_FES_OPEN_PL.VAL')
-# shutter_control = PyEpics.PV('1bma:rShtrA:Open.PROC')
 
 ### PV HOLDING DUMMY VARIABLES FOR METADATA PADDING
 dummy_num_pv = '6bma2:userStringCalc10.H';
@@ -61,7 +69,3 @@ ic0_preamp_sens_nA_pv = '6bma2:userCalc10.D';
 # ic1_preamp_sens_pv = '1edd:A2sens_num.VAL';
 # ic1_preamp_unit_pv = '1edd:A2sens_unit.VAL';
 ic1_preamp_sens_nA_pv = '6bma2:userCalc10.E';
-
-
-
-
