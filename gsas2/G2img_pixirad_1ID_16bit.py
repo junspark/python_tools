@@ -60,7 +60,7 @@ class TIF_ReaderClass(G2obj.ImportImage):
             if ParentFrame:
                 self.SciPy = True
                 self.Comments = ['no metadata']
-                self.Data = {'wavelength': 0.172973, 'pixelSize': [62., 62.], 'distance': 6450.0}
+                self.Data = {'wavelength': 0.172973, 'pixelSize': [55., 55.], 'distance': 6450.0}
                 try:
                     self.Data['size'] = list(self.Image.shape)
                 except:
