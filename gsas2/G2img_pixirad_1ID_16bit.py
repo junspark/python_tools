@@ -60,7 +60,7 @@ class TIF_ReaderClass(G2obj.ImportImage):
             if ParentFrame:
                 self.SciPy = True
                 self.Comments = ['no metadata']
-                self.Data = {'wavelength': 0.172973, 'pixelSize': [55., 55.], 'distance': 6450.0}
+                self.Data = {'wavelength': 0.172973, 'pixelSize': [62., 62.], 'distance': 6450.0}
                 try:
                     self.Data['size'] = list(self.Image.shape)
                 except:
@@ -169,7 +169,7 @@ def GetTifData(filename):
     if IFD[258][2][0] == 16:                                                    #summed files are 16 bit to hold the required amount of data
         if sizexy == [1024, 402] or sizexy == [402, 1024]:                      #confirms that it has the proper size
             tifType = '1ID summed 16bit Pixirad'
-            pixy = [55.,55.]                                                      #sets the pixel size
+            pixy = [62.,62.]                                                      #sets the pixel size
             print ('Read 1ID normalized 16bit Pixirad tiff file: '+filename)
             File.seek(0)                                                        #goto first pixel
             image = np.array(np.frombuffer(File.read(2*Npix),dtype=np.int16),dtype=np.int32)  #result must be 32 bit like all the others
