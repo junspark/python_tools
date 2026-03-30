@@ -1,4 +1,4 @@
-name: hrm-piezo
+name: hrm-monitor
 channels:
   - conda-forge
   - defaults
