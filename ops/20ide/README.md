@@ -250,6 +250,7 @@ Once running, you can pause or resume without terminating the process:
 ```
 
 The same `p/r` reminder line is printed again during the loop so controls remain visible.
+The reminder is color-highlighted (green) in the terminal for visibility during long runs.
 
 ### Color coding during tweak
 
