@@ -132,55 +132,55 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 \
 
 ## Subcommand: `tweak`
 
-Adjusts the setpoint of one piezo to bring its monitor PV within tolerance of a target.
+Runs the same continuous display loop as `monitor`, but when a piezo monitor PV
+is out of tolerance it automatically attempts a bounded tweak cycle for that piezo.
 
 ### Required arguments
 
 | Argument | Description |
 |---|---|
-| `--target T` | Target value for the monitor PV |
+| `--target T1,T2` | Comma-separated targets for Piezo1 and Piezo2 |
 
 ### Optional arguments
 
 | Argument | Default | Description |
 |---|---|---|
-| `--section` | `1` | Piezo section to tweak: `1` or `2` |
-| `--step` | `0.01` | Setpoint step size per iteration |
-| `--max-change` | `0.05` | Max cumulative absolute displacement from start position |
 | `--tolerance` | `5.0` | Acceptable error as % of target |
-| `--settle` | `0.5` | Seconds to wait after each step |
-| `--pos-min P1,P2` | auto | Min allowed drive position for Piezo1,Piezo2 (comma-separated) |
-| `--pos-max P1,P2` | auto | Max allowed drive position for Piezo1,Piezo2 (comma-separated) |
+| `--interval` | `1.0` | Display refresh interval in seconds |
+| `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
+| `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
 | `--config` | same dir | Path to PV config file |
+| `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
-### Drive position limits (`--pos-min` / `--pos-max`)
+### Drive position limits (`--pos-range`)
 
 These guard rails prevent the piezo from being driven beyond a safe range.
 
-- **If provided:** the script uses the value for the selected section (e.g. `--section 1` uses the first of the two comma-separated values).
-- **If omitted:** the script reads the current position PV and automatically sets:
+- On every tweak run, the script reads the current position PV for each piezo.
+- It then computes an allowed range from `--pos-range`:
   ```
-  pos_min = current_position - 0.1
-  pos_max = current_position + 0.1
+  pos_min = current_position - pos_range
+  pos_max = current_position + pos_range
   ```
 
-Both limits are always displayed during the checking phase (bold yellow) so you can verify them before tweaking begins.
+These computed ranges are shown before the loop starts so you can verify them before enabling tweaks.
 
 ### Checking phase
 
-Before any PV is written, the script prints a full parameter summary and pauses:
+Before the loop starts, the script prints the tweak settings and pauses:
 
 ```
-  Monitor PV  : 20aT1:TM:Current3:MeanValue_RBV
-  Setpoint PV : 20idPI518:PIE518:1:p1_sendPOS
-  Current     : 98.5
-  Target      : 100.0
-  Tolerance   : 5.0%
-  Max change  : 0.0500
-  Step        : 0.0100
-  Settle time : 0.5s
-  Pos min     : 0.150000  (auto: current ±0.1)
-  Pos max     : 0.350000  (auto: current ±0.1)
+  Tracking 8 PVs across 2 section(s)
+  Interval  : 1.0s
+  Piezo1 target : 10300  (±5.0%  green / red)
+  Piezo2 target : 6500   (±5.0%  green / red)
+
+  Tweak mode ON
+  Settle time : 1.0s (fixed)
+  Step size   : 0.01
+  Max steps   : 5 per cycle
+  Piezo1 pos range : [0.150000, 0.350000]  (auto)
+  Piezo2 pos range : [0.120000, 0.320000]  (auto)
 
   Press Enter to start tweaking, or Ctrl-C to abort...
 ```
@@ -189,49 +189,45 @@ Before any PV is written, the script prints a full parameter summary and pauses:
 
 | Color | Meaning |
 |---|---|
-| Bold yellow | "TWEAKING IN PROGRESS" banner |
+| Bold yellow | Tweak mode header and per-piezo position ranges |
 | Cyan | Probe step and direction decision |
 | Yellow | Each active step being written to the setpoint |
 | Bold green | Target reached successfully |
-| Red | Safety stop (pos limit, max-change) or error no longer improving |
+| Red | Safety stop: position range exceeded, error not improving, or max steps reached |
 
 ### Tweak algorithm
 
-1. **Tolerance check** — if already within tolerance, exit immediately (no PV writes).
-2. **Probe step** — move setpoint +0.01 and read monitor PV.
-   - If monitor moves closer to target → continue in `+` direction.
-   - If monitor moves further → undo step, continue in `−` direction.
-3. **Iterative stepping** — keep stepping in the chosen direction until:
-   - Monitor PV is within tolerance of target ✓
-   - Error stops decreasing (plateau) ✗
-   - Cumulative displacement exceeds `--max-change` ✗
-   - Next position would exceed `pos-min` / `pos-max` ✗
-4. **Summary** — prints final position, monitor value, and error %.
+1. **Display pass** — print all PVs for both piezos with green/red target coloring.
+2. **Out-of-range detection** — identify any piezo whose monitor PV is outside tolerance.
+3. **Probe step** — for each out-of-range piezo, try a `+0.01` step first; if that is outside the allowed range, try `-0.01`.
+4. **Direction choice** — continue in the direction that improves the monitor error.
+5. **Bounded stepping** — keep stepping until one of these occurs:
+   - Monitor PV reaches tolerance ✓
+   - Error stops improving ✗
+   - Next position would exceed the computed position range ✗
+   - `--max-steps` is exhausted ✗
+6. **Resume monitoring** — after each tweak cycle, return to the continuous display loop.
 
 ### Use cases
 
 ```bash
-# Case 1: Tweak Piezo1 to target 100.0 (pos limits auto-set from current position)
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
+# Case 1: Enable auto-tweak monitoring for both piezos
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500
 
-# Case 2: Tweak Piezo2 to target 80.0
-python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0
+# Case 2: Slower display refresh
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --interval 2.0
 
-# Case 3: Explicit drive position limits for both piezos (uses Piezo1 limits for section 1)
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
-    --pos-min -0.5,-0.5 --pos-max 0.5,0.5
+# Case 3: Allow a wider tweak envelope around current positions
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --pos-range 0.2
 
-# Case 4: Finer steps with tighter tolerance
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
-    --step 0.005 --tolerance 2.0
+# Case 4: Tighter tolerance before a piezo is considered in-range
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --tolerance 2.0
 
-# Case 5: Larger allowed range and longer settle time
-python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0 \
-    --max-change 0.1 --settle 1.0
+# Case 5: Limit how many correction steps happen per cycle
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --max-steps 3
 
-# Case 6: Allow more displacement with explicit safe limits
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
-    --max-change 0.05 --pos-min 0.1,0.1 --pos-max 0.4,0.4
+# Case 6: Test behavior without EPICS hardware
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --dry-run
 ```
 
 ---
@@ -240,16 +236,16 @@ python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
 
 ```bash
 # Step 1: Confirm PVs are live and check baseline values
-python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
+python run_bkg_hrm_piezo_tweak.py monitor --target 10300,6500
 
-# Step 2: If Piezo1 is off, tweak it (pos limits auto-set)
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
+# Step 2: Turn on auto-tweak mode with bounded correction steps
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500
 
-# Step 3: If Piezo2 is off, tweak it
-python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0
+# Step 3: If needed, widen allowed position range or increase max steps
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --pos-range 0.2 --max-steps 8
 
-# Step 4: Confirm both are back in range
-python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
+# Step 4: Return to display-only monitoring
+python run_bkg_hrm_piezo_tweak.py monitor --target 10300,6500
 ```
 
 ---
@@ -262,9 +258,10 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
 | `Cannot read monitor PV` | EPICS disconnected or wrong PV name | Check network / config file |
 | `Config file not found` | Wrong path | Use `--config /full/path/to/file` |
 | `Section N not found` | Fewer sections than requested | Check blank-line-separated blocks in config |
-| `Probe position outside allowed range` | Auto pos limit too tight | Provide explicit `--pos-min` / `--pos-max` |
-| `Max change reached` | Target unreachable within `--max-change` | Increase `--max-change` or check target value |
-| `Error no longer decreasing` | Plateau — target may be unreachable | Try different `--step` or `--settle` time |
+| `cannot step in either direction within [...]` | Position range too tight for the fixed step size | Increase `--pos-range` |
+| `position [...] outside [...]` | Next step would leave the allowed range | Increase `--pos-range` |
+| `max steps (...) reached` | Target was not reached within one tweak cycle | Increase `--max-steps` or let additional cycles run |
+| `error not improving` | Plateau — target may be unreachable or step direction saturated | Check target value or widen `--pos-range` |
 
 ---
 
@@ -272,5 +269,5 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
 
 | Code | Meaning |
 |---|---|
-| `0` | Success (tweak reached target, or monitor exited cleanly) |
-| `1` | Failure (target not reached, config error, or safety stop) |
+| `0` | Normal process exit |
+| `1` | Startup/config/EPICS input error |
