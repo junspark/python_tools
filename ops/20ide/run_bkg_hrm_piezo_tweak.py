@@ -126,7 +126,13 @@ def monitor_loop(sections, interval=1.0, targets=None, tolerance=0.05):
         for i, t in enumerate(targets, 1):
             print(f"  Piezo{i} target : {t:.6g}  (±{tolerance*100:.1f}%  "
                   f"{_GREEN}green = in range{_RESET} / {_RED}red = out of range{_RESET})")
-    print(f"  Press Ctrl-C to stop.\n")
+    print()
+    try:
+        input("  Press Enter to start monitoring, or Ctrl-C to abort... ")
+    except KeyboardInterrupt:
+        print("\n  Aborted.")
+        return
+    print(f"\n  Monitoring started. Press Ctrl-C to stop.\n")
 
     try:
         while True:
