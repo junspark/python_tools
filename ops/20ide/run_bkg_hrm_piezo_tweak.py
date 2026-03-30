@@ -555,6 +555,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                         _log(log_fh, f"> {msg}")
                 print()
 
+            print(f"  {_BOLD}'p'{_RESET} pause  |  {_BOLD}'r'{_RESET} resume\n")
             time.sleep(interval)
 
     except KeyboardInterrupt:

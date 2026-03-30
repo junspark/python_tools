@@ -249,6 +249,8 @@ Once running, you can pause or resume without terminating the process:
   Started. Press Ctrl-C to stop  |  'p' = pause  |  'r' = resume
 ```
 
+The same `p/r` reminder line is printed again during the loop so controls remain visible.
+
 ### Color coding during tweak
 
 | Color | Meaning |
