@@ -112,26 +112,28 @@ def _color(val_str, val, target, tolerance):
     return f"{code}{val_str}{_RESET}"
 
 
-def monitor_loop(sections, interval=1.0, target=None, tolerance=0.05):
+def monitor_loop(sections, interval=1.0, targets=None, tolerance=0.05):
     """
     Continuously print all PVs from all sections until the user presses Ctrl-C.
     Monitor PV values are printed green (within tolerance of target) or red
     (outside tolerance) when --target is supplied.
+    targets is a list of per-section target values (one per section).
     """
     n_pvs = sum(len(s) for s in sections)
     print(f"\n  Tracking {n_pvs} PVs across {len(sections)} section(s)")
     print(f"  Interval  : {interval}s")
-    if target is not None:
-        print(f"  Target    : {target:.6g}  (±{tolerance*100:.1f}%  "
-              f"{_GREEN}green = in range{_RESET} / {_RED}red = out of range{_RESET})")
+    if targets is not None:
+        for i, t in enumerate(targets, 1):
+            print(f"  Piezo{i} target : {t:.6g}  (±{tolerance*100:.1f}%  "
+                  f"{_GREEN}green = in range{_RESET} / {_RED}red = out of range{_RESET})")
     print(f"  Press Ctrl-C to stop.\n")
 
     try:
         while True:
             print(f"--- {time.strftime('%H:%M:%S')} ---")
             for i, sec in enumerate(sections, 1):
-                label = f"Piezo{i}"
-                print(f"  [{label}]")
+                target = targets[i - 1] if (targets and i - 1 < len(targets)) else None
+                print(f"  [Piezo{i}]")
                 for key in _PV_KEYS:
                     if key not in sec:
                         continue
@@ -321,8 +323,8 @@ def main():
                        help='Path to PV config file')
     p_mon.add_argument('--interval', type=float, default=1.0,
                        help='Polling interval in seconds')
-    p_mon.add_argument('--target', type=float, default=None,
-                       help='Target value: monitor PVs are colored green/red')
+    p_mon.add_argument('--target', type=str, required=True,
+                       help='Comma-separated targets for Piezo1,Piezo2 (e.g. 100.0,80.0)')
     p_mon.add_argument('--tolerance', type=float, default=5.0,
                        help='Tolerance in %% around target for green/red coloring')
     p_mon.add_argument('--dry-run', action='store_true',
@@ -353,9 +355,18 @@ def main():
         if not args.dry_run and not _EPICS_AVAILABLE:
             print("ERROR: pyepics not installed. Use --dry-run to test without EPICS.")
             sys.exit(1)
+        try:
+            targets = [float(v.strip()) for v in args.target.split(',')]
+        except ValueError:
+            print("ERROR: --target must be two comma-separated numbers, e.g. --target 100.0,80.0")
+            sys.exit(1)
+        if len(targets) != 2:
+            print(f"ERROR: --target requires exactly 2 values (got {len(targets)}), "
+                  f"e.g. --target 100.0,80.0")
+            sys.exit(1)
         sections = _load_all_sections(args.config)
         monitor_loop(sections, interval=args.interval,
-                     target=args.target, tolerance=args.tolerance / 100.0)
+                     targets=targets, tolerance=args.tolerance / 100.0)
 
     elif args.command == 'tweak':
         sec = _load_section(args)
