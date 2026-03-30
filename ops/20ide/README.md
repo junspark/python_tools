@@ -149,6 +149,7 @@ is out of tolerance it automatically attempts a bounded tweak cycle for that pie
 | `--interval` | `1.0` | Display refresh interval in seconds |
 | `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
 | `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
+| `--confirm` | off | Prompt for user approval before each caput |
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
@@ -228,6 +229,9 @@ python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --max-steps 3
 
 # Case 6: Test behavior without EPICS hardware
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --dry-run
+
+# Case 7: Require manual confirmation before each caput
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --confirm
 ```
 
 ---

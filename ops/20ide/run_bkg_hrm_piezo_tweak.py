@@ -25,6 +25,7 @@ Tweak-only additional arguments
 --------------------------------
   --pos-range  R      Allowed drive range = current_pos ± R  (default 0.1)
   --max-steps  N      Max setpoint steps per tweak cycle     (default 5)
+  --confirm           Prompt for approval before each caput  (default off)
   (settle time is fixed at 1 s)
 
 Usage examples
@@ -130,7 +131,19 @@ def _color(val_str, val, target, tolerance):
 # Per-cycle tweak helper
 # ---------------------------------------------------------------------------
 
-def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps):
+def _confirm_step(set_pv, value):
+    """Prompt user to confirm a setpoint write.  Returns False if aborted."""
+    try:
+        input(f"    Apply: set {set_pv} = {value:.6f}?  "
+              f"Press Enter to confirm, Ctrl-C to abort... ")
+        return True
+    except KeyboardInterrupt:
+        print(f"\n{_RED}    Aborted by user.{_RESET}")
+        return False
+
+
+def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
+               confirm=False):
     """
     Tweak one piezo until its monitor PV is within tolerance of target.
 
@@ -169,6 +182,8 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps):
               f"[{pos_min:.4f}, {pos_max:.4f}]. Aborting.{_RESET}")
         return False
 
+    if confirm and not _confirm_step(set_pv, probe_pos):
+        return False
     _caput(set_pv, probe_pos, wait=True)
     time.sleep(TWEAK_SETTLE)
     probe_val = _caget(mon_pv, timeout=5)
@@ -188,6 +203,8 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps):
     else:
         # Revert and go opposite direction
         direction = -1 if probe_pos > start_pos else +1
+        if confirm and not _confirm_step(set_pv, start_pos):
+            return False
         _caput(set_pv, start_pos, wait=True)
         time.sleep(TWEAK_SETTLE)
         current_pos = start_pos
@@ -212,6 +229,8 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps):
                   f"[{pos_min:.4f}, {pos_max:.4f}]. Aborting.{_RESET}")
             return False
 
+        if confirm and not _confirm_step(set_pv, next_pos):
+            return False
         _caput(set_pv, next_pos, wait=True)
         time.sleep(TWEAK_SETTLE)
         current_val = _caget(mon_pv, timeout=5)
@@ -240,7 +259,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps):
 # ---------------------------------------------------------------------------
 
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
-             tweak_mode=False, pos_limits=None, max_steps=5):
+             tweak_mode=False, pos_limits=None, max_steps=5, confirm=False):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
 
@@ -261,6 +280,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
         print(f"  Settle time : {TWEAK_SETTLE}s (fixed)")
         print(f"  Step size   : {TWEAK_STEP}")
         print(f"  Max steps   : {max_steps} per cycle")
+        print(f"  Confirm     : {'ON (will prompt before each caput)' if confirm else 'OFF'}")
         for i, (lo, hi) in enumerate(pos_limits, 1):
             src = "auto" if (hi - lo) == 0.2 else "user"
             print(f"  {_BOLD}{_YELLOW}Piezo{i} pos range : [{lo:.6f}, {hi:.6f}]"
@@ -304,7 +324,8 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                 for i in sorted(out_of_range):   # ascending: 1 before 2
                     lo, hi = pos_limits[i - 1]
                     success = _tweak_one(i, sections[i - 1], targets[i - 1],
-                                         tolerance, lo, hi, max_steps)
+                                         tolerance, lo, hi, max_steps,
+                                         confirm=confirm)
                     if not success:
                         print(f"{_BOLD}{_RED}  Tweak cycle aborted after "
                               f"Piezo{i} guard rail. Resuming monitoring.{_RESET}")
@@ -392,6 +413,8 @@ def main():
                        help='Allowed drive range = current_pos ± pos-range per piezo')
     p_twk.add_argument('--max-steps', type=int, default=5,
                        help='Max setpoint steps per tweak cycle per piezo')
+    p_twk.add_argument('--confirm', action='store_true',
+                       help='Prompt for user approval before each caput')
 
     args = parser.parse_args()
 
@@ -429,7 +452,8 @@ def main():
                  tolerance=args.tolerance / 100.0,
                  tweak_mode=True,
                  pos_limits=pos_limits,
-                 max_steps=args.max_steps)
+                 max_steps=args.max_steps,
+                 confirm=args.confirm)
 
 
 if __name__ == '__main__':
