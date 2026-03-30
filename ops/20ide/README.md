@@ -6,7 +6,7 @@ Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 
 | File | Purpose |
 |---|---|
-| `bkg_hrm_piezo_tweak.py` | Config: maps EPICS PV names to each piezo section |
+| `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section and optional ring-current PV |
 | `run_bkg_hrm_piezo_tweak.py` | CLI tool: `monitor` and `tweak` subcommands |
 | `environment.yml` | Conda environment definition |
 
@@ -29,10 +29,12 @@ pip install pyepics
 
 ### 2. Verify the config file
 
-`bkg_hrm_piezo_tweak.py` defines two sections (one per piezo), separated by blank lines.
+`hrm_piezo_pvs.txt` defines two sections (one per piezo), separated by blank lines.
 Each line has the form `PV_NAME  %%% COMMENT`:
 
 ```
+S-DCCT:CurrentM   %%% STORAGE RING CURRENT PV
+
 20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
 20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
 20idPI518:PIE518:1:p1_position   %%% PIEZO1 POSITION PV
@@ -61,6 +63,7 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 | Argument | Default | Description |
 |---|---|---|
 | `--interval` | `1.0` | Polling interval in seconds |
+| `--ref-current` | off | Reference storage ring current in mA for monitor normalization |
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
@@ -70,6 +73,18 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 |---|---|
 | Green | Monitor PV is within 5% of its target (fixed) |
 | Red | Monitor PV is outside 5% of its target (fixed) |
+
+### Optional storage-ring normalization
+
+If the config file includes a `RING CURRENT PV` entry and you pass `--ref-current`,
+monitor values are normalized each cycle as:
+
+```
+normalized = raw_monitor_value * (ref_current / ring_current)
+```
+
+If `--ref-current` is not provided, or the ring current PV is unavailable, the raw
+monitor values are used unchanged.
 
 ### Checking phase
 
@@ -90,15 +105,15 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
 # Case 2: Slower polling interval
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --interval 2.0
 
-# Case 3: Tighter tolerance (2% instead of default 5%)
-python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --tolerance 2.0
+# Case 3: Normalize monitor values to a reference SR current
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --ref-current 100
 
 # Case 4: Dry run (no EPICS — uses simulated random-walk values)
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --dry-run
 
 # Case 5: Custom config file
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 \
-    --config /path/to/bkg_hrm_piezo_tweak.py
+  --config /path/to/hrm_piezo_pvs.txt
 ```
 
 ### Example output
@@ -146,6 +161,7 @@ is out of tolerance it automatically attempts a bounded tweak cycle for that pie
 |---|---|---|
 | `--tolerance` | `5.0` | % tolerance: tweak trigger and green/red threshold |
 | `--interval` | `1.0` | Display refresh interval in seconds |
+| `--ref-current` | off | Reference storage ring current in mA for monitor normalization |
 | `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
 | `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
 | `--confirm` | off | Prompt for user approval before each caput |
@@ -172,6 +188,8 @@ Before the loop starts, the script prints the tweak settings and pauses:
 ```
   Tracking 8 PVs across 2 section(s)
   Interval  : 1.0s
+  SR current PV  : S-DCCT:CurrentM
+  Ref current    : 100 mA  (monitor values normalized to this)
   Piezo1 target : 10300  (±5.0%  green / red)
   Piezo2 target : 6500   (±5.0%  green / red)
 
@@ -198,6 +216,7 @@ Before the loop starts, the script prints the tweak settings and pauses:
 ### Tweak algorithm
 
 1. **Display pass** — print all PVs for both piezos with green/red target coloring.
+  - If `--ref-current` is enabled, compare against per-cycle normalized targets.
 2. **Out-of-range detection** — identify any piezo whose monitor PV is outside tolerance.
 3. **Probe step** — for each out-of-range piezo, try a `+0.01` step first; if that is outside the allowed range, try `-0.01`.
 4. **Direction choice** — continue in the direction that improves the monitor error.
@@ -218,19 +237,22 @@ python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500
 # Case 2: Slower display refresh
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --interval 2.0
 
-# Case 3: Allow a wider tweak envelope around current positions
+# Case 3: Normalize against storage ring current
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --ref-current 100
+
+# Case 4: Allow a wider tweak envelope around current positions
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --pos-range 0.2
 
-# Case 4: Tighter tolerance before a piezo is considered in-range
+# Case 5: Tighter tolerance before a piezo is considered in-range
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --tolerance 2.0
 
-# Case 5: Limit how many correction steps happen per cycle
+# Case 6: Limit how many correction steps happen per cycle
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --max-steps 3
 
-# Case 6: Test behavior without EPICS hardware
+# Case 7: Test behavior without EPICS hardware
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --dry-run
 
-# Case 7: Require manual confirmation before each caput
+# Case 8: Require manual confirmation before each caput
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --confirm
 ```
 
@@ -259,6 +281,7 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 10300,6500
 | Error | Cause | Fix |
 |---|---|---|
 | `pyepics not installed` | Package missing | `pip install pyepics` or use `--dry-run` |
+| `SR current PV found in config but --ref-current not given` | Normalization was available but not enabled | Pass `--ref-current <mA>` if you want SR-current normalization |
 | `Cannot read monitor PV` | EPICS disconnected or wrong PV name | Check network / config file |
 | `Config file not found` | Wrong path | Use `--config /full/path/to/file` |
 | `Section N not found` | Fewer sections than requested | Check blank-line-separated blocks in config |

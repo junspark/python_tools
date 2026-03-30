@@ -2,7 +2,7 @@
 """
 HRM Background Piezo Monitor & Tweaker
 
-Reads PV names from bkg_hrm_piezo_tweak.py.
+Reads PV names from hrm_piezo_pvs.txt.
 
 Both subcommands run the same continuous display loop (all 8 PVs, green/red
 coloring against per-piezo targets).  The only difference is that 'tweak'
@@ -15,10 +15,11 @@ tweak     Same display loop, but auto-adjusts setpoints when out of tolerance.
 
 Shared arguments (both subcommands)
 ------------------------------------
-  --target   T1,T2    Per-piezo target values (required)
-  --interval  s       Display refresh interval               (default 1 s)
-  --config    path    PV config file
-  --dry-run           Simulate PV values without EPICS
+  --target      T1,T2   Per-piezo target values (required)
+  --ref-current mA      Reference SR current for normalization (optional)
+  --interval    s       Display refresh interval               (default 1 s)
+  --config      path    PV config file
+  --dry-run             Simulate PV values without EPICS
 
 Tweak-only arguments
 --------------------
@@ -69,6 +70,22 @@ def _caput(pv, value, wait=False):
         return epics.caput(pv, value, wait=wait)
     _dry_run_store[pv] = value
 
+def _read_normalized(mon_pv, sr_pv=None, ref_current=None):
+    """Read monitor PV and normalize by storage ring current if configured.
+
+    normalized = raw_value * (ref_current / ring_current)
+
+    Returns raw value unchanged if sr_pv / ref_current not configured,
+    or if the ring current PV is disconnected / zero.
+    """
+    val = _caget(mon_pv, timeout=5)
+    if val is None or sr_pv is None or ref_current is None:
+        return val
+    ring_current = _caget(sr_pv, timeout=5)
+    if ring_current is None or ring_current <= 0:
+        return val
+    return val * (ref_current / ring_current)
+
 # ---------------------------------------------------------------------------
 # Config parser
 # ---------------------------------------------------------------------------
@@ -76,9 +93,13 @@ def _caput(pv, value, wait=False):
 def parse_config(config_file):
     """
     Parse config file (lines: PV_NAME  %%% COMMENT, sections separated by
-    blank lines).  Returns a list of dicts with keys:
-        'monitor', 'voltage', 'position', 'setpoint'
+    blank lines).
+
+    Returns (sr_pv, sections) where:
+      sr_pv    : storage ring current PV name, or None if absent
+      sections : list of dicts with keys 'monitor', 'voltage', 'position', 'setpoint'
     """
+    sr_pv = None
     sections = []
     current = {}
     with open(config_file) as fh:
@@ -94,7 +115,9 @@ def parse_config(config_file):
             pv_name, _, comment = line.partition('%%%')
             pv_name = pv_name.strip()
             tag = comment.strip().upper()
-            if 'NAME TO MONITOR' in tag:
+            if 'RING CURRENT PV' in tag:
+                sr_pv = pv_name
+            elif 'NAME TO MONITOR' in tag:
                 current['monitor'] = pv_name
             elif 'VOLTAGE PV' in tag:
                 current['voltage'] = pv_name
@@ -104,7 +127,7 @@ def parse_config(config_file):
                 current['position'] = pv_name
     if current:
         sections.append(current)
-    return sections
+    return sr_pv, sections
 
 # ---------------------------------------------------------------------------
 # Display helpers
@@ -145,7 +168,7 @@ def _confirm_step(set_pv, value):
 
 
 def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
-               confirm=False):
+               confirm=False, sr_pv=None, ref_current=None):
     """
     Tweak one piezo until its monitor PV is within tolerance of target.
 
@@ -160,7 +183,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
     mon_pv = sec['monitor']
     set_pv = sec['setpoint']
 
-    current_val = _caget(mon_pv, timeout=5)
+    current_val = _read_normalized(mon_pv, sr_pv, ref_current)
     if current_val is None:
         print(f"{_RED}  [{label}] Cannot read monitor PV. Aborting.{_RESET}")
         return False
@@ -188,7 +211,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         return False
     _caput(set_pv, probe_pos, wait=True)
     time.sleep(TWEAK_SETTLE)
-    probe_val = _caget(mon_pv, timeout=5)
+    probe_val = _read_normalized(mon_pv, sr_pv, ref_current)
     if probe_val is None:
         return False
     probe_err = abs(probe_val - target)
@@ -210,7 +233,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         _caput(set_pv, start_pos, wait=True)
         time.sleep(TWEAK_SETTLE)
         current_pos = start_pos
-        current_val = _caget(mon_pv, timeout=5) or current_val
+        current_val = _read_normalized(mon_pv, sr_pv, ref_current) or current_val
         prev_err    = abs(current_val - target)
         step_n      = 0
         arrow = '+' if direction == 1 else '−'
@@ -238,7 +261,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
             return False
         _caput(set_pv, next_pos, wait=True)
         time.sleep(TWEAK_SETTLE)
-        current_val = _caget(mon_pv, timeout=5)
+        current_val = _read_normalized(mon_pv, sr_pv, ref_current)
         if current_val is None:
             return False
         current_err = abs(current_val - target)
@@ -255,7 +278,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
                 return False
             _caput(set_pv, best_pos, wait=True)
             time.sleep(TWEAK_SETTLE)
-            final_val = _caget(mon_pv, timeout=5)
+            final_val = _read_normalized(mon_pv, sr_pv, ref_current)
             if final_val is None:
                 return False
             final_rel_err = abs(final_val - target) / abs(target)
@@ -284,7 +307,8 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
 # ---------------------------------------------------------------------------
 
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
-             tweak_mode=False, pos_limits=None, max_steps=5, confirm=False):
+             tweak_mode=False, pos_limits=None, max_steps=5, confirm=False,
+             sr_pv=None, ref_current=None):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
 
@@ -296,6 +320,9 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
     n_pvs = sum(len(s) for s in sections)
     print(f"\n  Tracking {n_pvs} PVs across {len(sections)} section(s)")
     print(f"  Interval  : {interval}s")
+    if sr_pv and ref_current is not None:
+        print(f"  SR current PV  : {sr_pv}")
+        print(f"  Ref current    : {ref_current:.4g} mA  (monitor values normalized to this)")
     for i, t in enumerate(targets, 1):
         print(f"  Piezo{i} target : {t:.6g}  (±{tolerance*100:.1f}%  "
               f"{_GREEN}green{_RESET} / {_RED}red{_RESET})")
@@ -320,25 +347,48 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
         return
     print(f"\n  Started. Press Ctrl-C to stop.\n")
 
+    norm_active = (sr_pv is not None and ref_current is not None)
+
     try:
         while True:
-            print(f"--- {time.strftime('%H:%M:%S')} ---")
+            # Read ring current once per cycle
+            ring_current = _caget(sr_pv, timeout=5) if norm_active else None
+            norm_ok = norm_active and ring_current is not None and ring_current > 0
+
+            # Cycle header
+            if norm_active:
+                sr_str = f"{ring_current:.2f}" if ring_current is not None else "?"
+                print(f"--- {time.strftime('%H:%M:%S')} ---  "
+                      f"SR: {sr_str} mA / ref: {ref_current:.4g} mA")
+            else:
+                print(f"--- {time.strftime('%H:%M:%S')} ---")
+
             out_of_range = []
+            eff_targets  = []   # normalized targets for this cycle (one per piezo)
 
             for i, sec in enumerate(sections, 1):
                 target = targets[i - 1]
+                eff_target = (target * (ring_current / ref_current)
+                              if norm_ok else target)
+                eff_targets.append(eff_target)
+
                 print(f"  [Piezo{i}]")
                 for key in _PV_KEYS:
                     if key not in sec:
                         continue
                     pv  = sec[key]
                     val = _caget(pv, timeout=5)
-                    val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
                     if key == 'monitor':
-                        val_str = _color(val_str, val, target, tolerance)
+                        val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
+                        if norm_ok:
+                            val_str += (f"  target={target:.6g}"
+                                        f"  norm={eff_target:.6g}")
+                        val_str = _color(val_str, val, eff_target, tolerance)
                         if tweak_mode and val is not None:
-                            if abs(val - target) / abs(target) > tolerance:
+                            if abs(val - eff_target) / abs(eff_target) > tolerance:
                                 out_of_range.append(i)
+                    else:
+                        val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
                     print(f"    {key:8s} : {pv:<42s} = {val_str}")
                 print()
 
@@ -348,13 +398,13 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
             if tweak_mode and out_of_range:
                 for i in sorted(out_of_range):   # ascending: 1 before 2
                     lo, hi = pos_limits[i - 1]
-                    success = _tweak_one(i, sections[i - 1], targets[i - 1],
+                    success = _tweak_one(i, sections[i - 1], eff_targets[i - 1],
                                          tolerance, lo, hi, max_steps,
-                                         confirm=confirm)
+                                         confirm=confirm,
+                                         sr_pv=sr_pv, ref_current=ref_current)
                     if not success:
-                        print(f"{_BOLD}{_RED}  Tweak cycle aborted after "
-                              f"Piezo{i} guard rail. Resuming monitoring.{_RESET}")
-                        break
+                        print(f"{_BOLD}{_RED}  Piezo{i} tweak ended without reaching "
+                              f"target. Continuing.{_RESET}")
                 print()
 
             time.sleep(interval)
@@ -381,18 +431,18 @@ def _parse_pair(s, name):
 
 def _default_config():
     here = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(here, 'bkg_hrm_piezo_tweak.py')
+    return os.path.join(here, 'hrm_piezo_pvs.txt')
 
 
-def _load_sections(config):
+def _load_config(config):
     if not os.path.exists(config):
         print(f"ERROR: Config file not found: {config}")
         sys.exit(1)
-    sections = parse_config(config)
+    sr_pv, sections = parse_config(config)
     if not sections:
         print("ERROR: No valid sections found in config file.")
         sys.exit(1)
-    return sections
+    return sr_pv, sections
 
 
 def _parse_targets(s):
@@ -408,6 +458,9 @@ _MONITOR_TOLERANCE = 0.05   # fixed 5 % for green/red coloring in monitor mode
 def _add_shared_args(p):
     p.add_argument('--target', type=str, required=True,
                    help='Comma-separated targets for Piezo1,Piezo2 (e.g. 10300,6500)')
+    p.add_argument('--ref-current', type=float, default=None, metavar='mA',
+                   help='Reference storage ring current in mA for normalization '
+                        '(requires RING CURRENT PV in config)')
     p.add_argument('--interval', type=float, default=1.0,
                    help='Display refresh interval in seconds')
     p.add_argument('--config', default=_default_config(),
@@ -449,8 +502,13 @@ def main():
         print("ERROR: pyepics not installed. Use --dry-run to test without EPICS.")
         sys.exit(1)
 
-    targets  = _parse_targets(args.target)
-    sections = _load_sections(args.config)
+    targets       = _parse_targets(args.target)
+    sr_pv, sections = _load_config(args.config)
+    ref_current   = args.ref_current
+
+    if sr_pv and ref_current is None:
+        print("WARNING: SR current PV found in config but --ref-current not given. "
+              "Normalization disabled.")
 
     if len(sections) < len(targets):
         print(f"ERROR: Config has {len(sections)} section(s) but --target has "
@@ -460,7 +518,9 @@ def main():
     if args.command == 'monitor':
         run_loop(sections, targets,
                  interval=args.interval,
-                 tolerance=_MONITOR_TOLERANCE)
+                 tolerance=_MONITOR_TOLERANCE,
+                 sr_pv=sr_pv,
+                 ref_current=ref_current)
 
     elif args.command == 'tweak':
         # Read current position for each piezo and compute allowed range
@@ -480,7 +540,9 @@ def main():
                  tweak_mode=True,
                  pos_limits=pos_limits,
                  max_steps=args.max_steps,
-                 confirm=args.confirm)
+                 confirm=args.confirm,
+                 sr_pv=sr_pv,
+                 ref_current=ref_current)
 
 
 if __name__ == '__main__':
