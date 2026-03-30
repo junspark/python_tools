@@ -136,9 +136,10 @@ Reports final position, final monitor value, and final error percentage.
 
 ### Option A: conda environment (recommended)
 
-An `environment.yml` is provided for a reproducible setup:
+An `environment.yml` is provided at the repo root for a reproducible setup:
 
 ```bash
+# From the repo root
 conda env create -f environment.yml
 conda activate hrm-piezo
 ```
