@@ -43,8 +43,13 @@ Usage examples
 import argparse
 import os
 import random
+import select
+import signal
 import sys
+import termios
+import threading
 import time
+import tty
 
 try:
     import epics
@@ -75,6 +80,50 @@ def _log(fh, msg):
     if fh is not None:
         fh.write(msg + '\n')
         fh.flush()
+
+# ---------------------------------------------------------------------------
+# Pause / resume (keyboard listener)
+# ---------------------------------------------------------------------------
+
+_pause_event   = threading.Event()
+_pause_event.set()    # set = running; clear = paused
+_update_limits = threading.Event()  # set on resume to trigger pos_limits refresh
+
+
+def _start_keyboard_listener():
+    """
+    Start a daemon thread that watches stdin for 'p' (pause) and 'r' (resume).
+    Returns a stop-event; caller sets it to shut the thread down cleanly.
+    Terminal settings are restored when the thread exits.
+    """
+    fd  = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    stop = threading.Event()
+
+    def _run():
+        try:
+            tty.setcbreak(fd)
+            while not stop.is_set():
+                ready, _, _ = select.select([sys.stdin], [], [], 0.2)
+                if ready:
+                    ch = sys.stdin.read(1).lower()
+                    if ch == 'p' and _pause_event.is_set():
+                        _pause_event.clear()
+                        print(f"\n  {_BOLD}{_YELLOW}[PAUSED]  Press 'r' to resume...{_RESET}",
+                              flush=True)
+                    elif ch == 'r' and not _pause_event.is_set():
+                        _update_limits.set()
+                        _pause_event.set()
+                        print(f"\n  {_GREEN}[RESUMED]{_RESET}", flush=True)
+                    elif ch == '\x03':   # Ctrl-C
+                        os.kill(os.getpid(), signal.SIGINT)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+
+    t = threading.Thread(target=_run, daemon=True)
+    t.start()
+    return stop
+
 
 def _read_normalized(mon_pv, sr_pv=None, ref_current=None):
     """Read monitor PV and normalize by storage ring current if configured.
@@ -351,7 +400,8 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
 
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
              tweak_mode=False, pos_limits=None, max_steps=5, confirm=False,
-             sr_pv=None, ref_current=None, shutter_pv=None, log_fh=None):
+             sr_pv=None, ref_current=None, shutter_pv=None, log_fh=None,
+             pos_range=None):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
 
@@ -363,6 +413,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
     n_pvs = sum(len(s) for s in sections)
     print(f"\n  Tracking {n_pvs} PVs across {len(sections)} section(s)")
     print(f"  Interval  : {interval}s")
+    print(f"  Keys      : {_BOLD}'p'{_RESET} pause  |  {_BOLD}'r'{_RESET} resume")
     if sr_pv and ref_current is not None:
         print(f"  SR current PV  : {sr_pv}")
         print(f"  Ref current    : {ref_current:.4g} mA  (monitor values normalized to this)")
@@ -388,12 +439,39 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
     except KeyboardInterrupt:
         print("\n  Aborted.")
         return
-    print(f"\n  Started. Press Ctrl-C to stop.\n")
+    print(f"\n  Started. Press Ctrl-C to stop  |  "
+          f"{_BOLD}'p'{_RESET} = pause  |  {_BOLD}'r'{_RESET} = resume\n")
 
     norm_active = (sr_pv is not None and ref_current is not None)
 
+    _pause_event.set()   # ensure unpaused at start
+    listener_stop = _start_keyboard_listener()
+
     try:
         while True:
+            while not _pause_event.is_set():   # blocks here while paused
+                print(f"  {_BOLD}{_YELLOW}[PAUSED]  Press 'r' to resume...{_RESET}",
+                      flush=True)
+                _pause_event.wait(timeout=5.0)  # re-print reminder every 5 s
+
+            # On resume: refresh pos_limits from current position PV readings
+            if tweak_mode and pos_range is not None and _update_limits.is_set():
+                _update_limits.clear()
+                new_limits = []
+                for i, sec in enumerate(sections, 1):
+                    cur = _caget(sec['position'], timeout=5)
+                    if cur is not None:
+                        lo = round(cur - pos_range, 9)
+                        hi = round(cur + pos_range, 9)
+                        new_limits.append((lo, hi))
+                        msg = (f"[{time.strftime('%H:%M:%S')}] Resumed: "
+                               f"Piezo{i} pos range updated to [{lo:.6f}, {hi:.6f}]")
+                        print(f"  {_CYAN}{msg}{_RESET}")
+                        _log(log_fh, msg)
+                    else:
+                        new_limits.append(pos_limits[i - 1])  # keep old if unreadable
+                pos_limits[:] = new_limits   # update in place
+
             # Read ring current once per cycle
             ring_current = _caget(sr_pv, timeout=5) if norm_active else None
             norm_ok  = norm_active and ring_current is not None and ring_current > 0
@@ -482,6 +560,8 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
     except KeyboardInterrupt:
         print("\n  Stopped.")
         _log(log_fh, "\n---\nSession stopped by user.")
+    finally:
+        listener_stop.set()   # shut down keyboard listener thread
 
 # ---------------------------------------------------------------------------
 # Argument helpers
@@ -643,7 +723,8 @@ def main():
                      sr_pv=sr_pv,
                      ref_current=ref_current,
                      shutter_pv=shutter_pv,
-                     log_fh=log_fh)
+                     log_fh=log_fh,
+                     pos_range=args.pos_range)
     finally:
         if log_fh:
             log_fh.close()

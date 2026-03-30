@@ -69,6 +69,11 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
+Runtime keyboard controls (both subcommands):
+
+- `p`: pause loop activity
+- `r`: resume loop activity
+
 ### Color coding
 
 | Color | Meaning |
@@ -187,6 +192,10 @@ These guard rails prevent the piezo from being driven beyond a safe range.
 
 These computed ranges are shown before the loop starts so you can verify them before enabling tweaks.
 
+If you pause (`p`) and later resume (`r`) in `tweak` mode, the tool re-reads each
+piezo position PV and refreshes `pos_min` / `pos_max` from the current position
+and `--pos-range` before continuing.
+
 ### Automatic tweak skip conditions
 
 Even in `tweak` mode, the script will skip the write phase for a cycle when either condition is true:
@@ -234,6 +243,12 @@ Before the loop starts, the script prints the tweak settings and pauses:
   Press Enter to start tweaking, or Ctrl-C to abort...
 ```
 
+Once running, you can pause or resume without terminating the process:
+
+```
+  Started. Press Ctrl-C to stop  |  'p' = pause  |  'r' = resume
+```
+
 ### Color coding during tweak
 
 | Color | Meaning |
@@ -268,6 +283,8 @@ python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500
 
 # Case 2: Slower display refresh
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --interval 2.0
+
+# Case 2b: During a run, press 'p' to pause and 'r' to resume
 
 # Case 3: Normalize against storage ring current
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --ref-current 100
