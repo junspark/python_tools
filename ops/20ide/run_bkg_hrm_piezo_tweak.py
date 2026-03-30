@@ -451,18 +451,19 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
 
             # --- Tweak phase (skipped in monitor mode) ---
             # Always Piezo1 first, then Piezo2.
-            if tweak_mode and sr_low:
-                msg = (f"SR current ({ring_current:.2f} mA) is >10% below "
-                       f"ref ({ref_current:.4g} mA) — tweak skipped.")
+            skip_tweak = sr_low or shutter_on
+            if tweak_mode and skip_tweak:
+                reasons = []
+                if sr_low:
+                    reasons.append(f"SR current ({ring_current:.2f} mA) "
+                                   f">10% below ref ({ref_current:.4g} mA)")
+                if shutter_on:
+                    reasons.append("front end shutter is ON")
+                msg = "Tweak skipped: " + " and ".join(reasons) + "."
                 print(f"  {_BOLD}{_YELLOW}{msg}{_RESET}")
                 _log(log_fh, f"> {msg}")
 
-            if tweak_mode and shutter_on:
-                msg = f"Front end shutter is ON (beam blocked) — tweak skipped."
-                print(f"  {_BOLD}{_YELLOW}{msg}{_RESET}")
-                _log(log_fh, f"> {msg}")
-
-            if tweak_mode and out_of_range and not sr_low and not shutter_on:
+            if tweak_mode and out_of_range and not skip_tweak:
                 for i in sorted(out_of_range):   # ascending: 1 before 2
                     lo, hi = pos_limits[i - 1]
                     success = _tweak_one(i, sections[i - 1], eff_targets[i - 1],

@@ -1,4 +1,4 @@
-S-DCCT:CurrentM                  %%% STORANGE RING CURRENT PV
+S-DCCT:CurrentM                  %%% STORAGE RING CURRENT PV
 
 S20ID-PSS:FES:BeamBlockingM      %%% FRONT END SHUTTER STATUS
 
