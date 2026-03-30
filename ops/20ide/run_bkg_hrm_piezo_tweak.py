@@ -16,17 +16,19 @@ tweak     Same display loop, but auto-adjusts setpoints when out of tolerance.
 Shared arguments (both subcommands)
 ------------------------------------
   --target   T1,T2    Per-piezo target values (required)
-  --tolerance %       Green/red threshold and tweak trigger  (default 5 %)
   --interval  s       Display refresh interval               (default 1 s)
   --config    path    PV config file
   --dry-run           Simulate PV values without EPICS
 
-Tweak-only additional arguments
---------------------------------
+Tweak-only arguments
+--------------------
+  --tolerance %       Green/red threshold and tweak trigger  (default 5 %)
   --pos-range  R      Allowed drive range = current_pos ± R  (default 0.1)
   --max-steps  N      Max setpoint steps per tweak cycle     (default 5)
   --confirm           Prompt for approval before each caput  (default off)
   (settle time is fixed at 1 s)
+
+Monitor color coding uses a fixed 5 % tolerance (not configurable).
 
 Usage examples
 --------------
@@ -216,6 +218,9 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
               f"  → undo, try {arrow}{_RESET}")
 
     # --- Step loop ---
+    best_pos = current_pos   # position with lowest error seen so far
+    best_err = prev_err
+
     while step_n < max_steps:
         rel_err = abs(current_val - target) / abs(target)
         if rel_err <= tolerance:
@@ -243,8 +248,28 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
               f"  monitor={current_val:.6g}  err={current_err:.4g}{_RESET}")
 
         if current_err >= prev_err:
-            print(f"{_RED}    GUARD RAIL: error not improving. Aborting.{_RESET}")
+            # Peak passed — step back to the best position seen
+            print(f"{_CYAN}    Peak passed — stepping back to best pos={best_pos:.4f}"
+                  f"  (err={best_err:.4g}){_RESET}")
+            if confirm and not _confirm_step(set_pv, best_pos):
+                return False
+            _caput(set_pv, best_pos, wait=True)
+            time.sleep(TWEAK_SETTLE)
+            final_val = _caget(mon_pv, timeout=5)
+            if final_val is None:
+                return False
+            final_rel_err = abs(final_val - target) / abs(target)
+            if final_rel_err <= tolerance:
+                print(f"{_BOLD}{_GREEN}    {label} at best pos, within tolerance "
+                      f"(error={final_rel_err*100:.2f}%).{_RESET}")
+                return True
+            print(f"{_RED}    Best position still outside tolerance "
+                  f"(error={final_rel_err*100:.2f}%). Aborting.{_RESET}")
             return False
+
+        if current_err < best_err:
+            best_err = current_err
+            best_pos = next_pos
 
         prev_err    = current_err
         current_pos = next_pos
@@ -378,11 +403,11 @@ def _parse_targets(s):
 # Main
 # ---------------------------------------------------------------------------
 
+_MONITOR_TOLERANCE = 0.05   # fixed 5 % for green/red coloring in monitor mode
+
 def _add_shared_args(p):
     p.add_argument('--target', type=str, required=True,
                    help='Comma-separated targets for Piezo1,Piezo2 (e.g. 10300,6500)')
-    p.add_argument('--tolerance', type=float, default=5.0,
-                   help='%% tolerance: green/red threshold (and tweak trigger)')
     p.add_argument('--interval', type=float, default=1.0,
                    help='Display refresh interval in seconds')
     p.add_argument('--config', default=_default_config(),
@@ -409,6 +434,8 @@ def main():
                            help='Same as monitor, but auto-adjusts when out of tolerance.',
                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _add_shared_args(p_twk)
+    p_twk.add_argument('--tolerance', type=float, default=5.0,
+                       help='%% tolerance: tweak trigger and green/red threshold')
     p_twk.add_argument('--pos-range', type=float, default=0.1,
                        help='Allowed drive range = current_pos ± pos-range per piezo')
     p_twk.add_argument('--max-steps', type=int, default=5,
@@ -433,7 +460,7 @@ def main():
     if args.command == 'monitor':
         run_loop(sections, targets,
                  interval=args.interval,
-                 tolerance=args.tolerance / 100.0)
+                 tolerance=_MONITOR_TOLERANCE)
 
     elif args.command == 'tweak':
         # Read current position for each piezo and compute allowed range

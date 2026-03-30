@@ -61,7 +61,6 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 | Argument | Default | Description |
 |---|---|---|
 | `--interval` | `1.0` | Polling interval in seconds |
-| `--tolerance` | `5.0` | % tolerance around target for green/red coloring |
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
@@ -69,8 +68,8 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 
 | Color | Meaning |
 |---|---|
-| Green | Monitor PV is within `--tolerance` % of its target |
-| Red | Monitor PV is outside tolerance |
+| Green | Monitor PV is within 5% of its target (fixed) |
+| Red | Monitor PV is outside 5% of its target (fixed) |
 
 ### Checking phase
 
@@ -145,7 +144,7 @@ is out of tolerance it automatically attempts a bounded tweak cycle for that pie
 
 | Argument | Default | Description |
 |---|---|---|
-| `--tolerance` | `5.0` | Acceptable error as % of target |
+| `--tolerance` | `5.0` | % tolerance: tweak trigger and green/red threshold |
 | `--interval` | `1.0` | Display refresh interval in seconds |
 | `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
 | `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
@@ -204,7 +203,8 @@ Before the loop starts, the script prints the tweak settings and pauses:
 4. **Direction choice** — continue in the direction that improves the monitor error.
 5. **Bounded stepping** — keep stepping until one of these occurs:
    - Monitor PV reaches tolerance ✓
-   - Error stops improving ✗
+  - Error stops improving: step back to the best position seen in this cycle,
+    then stop if still out of tolerance ✗
    - Next position would exceed the computed position range ✗
    - `--max-steps` is exhausted ✗
 6. **Resume monitoring** — after each tweak cycle, return to the continuous display loop.
