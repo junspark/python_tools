@@ -12,6 +12,7 @@ tweak     Adjust the piezo setpoint to bring the monitor PV to a target.
 Usage:
     python run_bkg_hrm_piezo_tweak.py monitor                        # all 8 PVs, 1s interval
     python run_bkg_hrm_piezo_tweak.py monitor --interval 2.0
+    python run_bkg_hrm_piezo_tweak.py monitor --target 100.0         # green/red coloring
     python run_bkg_hrm_piezo_tweak.py tweak   --section 1 --target 100.0
     python run_bkg_hrm_piezo_tweak.py tweak   --section 2 --target 50.0 --settle 1.0
 """
@@ -98,14 +99,31 @@ def parse_config(config_file):
 # Ordered keys to display for each section
 _PV_KEYS = ['monitor', 'voltage', 'position', 'setpoint']
 
+_GREEN = '\033[92m'
+_RED   = '\033[91m'
+_RESET = '\033[0m'
 
-def monitor_loop(sections, interval=1.0):
+
+def _color(val_str, val, target, tolerance):
+    """Return val_str wrapped in green/red ANSI codes based on target proximity."""
+    if target is None or val is None:
+        return val_str
+    code = _GREEN if abs(val - target) / abs(target) <= tolerance else _RED
+    return f"{code}{val_str}{_RESET}"
+
+
+def monitor_loop(sections, interval=1.0, target=None, tolerance=0.05):
     """
     Continuously print all PVs from all sections until the user presses Ctrl-C.
+    Monitor PV values are printed green (within tolerance of target) or red
+    (outside tolerance) when --target is supplied.
     """
     n_pvs = sum(len(s) for s in sections)
     print(f"\n  Tracking {n_pvs} PVs across {len(sections)} section(s)")
-    print(f"  Interval : {interval}s")
+    print(f"  Interval  : {interval}s")
+    if target is not None:
+        print(f"  Target    : {target:.6g}  (±{tolerance*100:.1f}%  "
+              f"{_GREEN}green = in range{_RESET} / {_RED}red = out of range{_RESET})")
     print(f"  Press Ctrl-C to stop.\n")
 
     try:
@@ -118,6 +136,8 @@ def monitor_loop(sections, interval=1.0):
                     pv = sec[key]
                     val = _caget(pv, timeout=5)
                     val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
+                    if key == 'monitor':
+                        val_str = _color(val_str, val, target, tolerance)
                     print(f"  [S{i}] {key:8s} : {pv:<42s} = {val_str}")
             print()
             time.sleep(interval)
@@ -299,6 +319,10 @@ def main():
                        help='Path to PV config file')
     p_mon.add_argument('--interval', type=float, default=1.0,
                        help='Polling interval in seconds')
+    p_mon.add_argument('--target', type=float, default=None,
+                       help='Target value: monitor PVs are colored green/red')
+    p_mon.add_argument('--tolerance', type=float, default=5.0,
+                       help='Tolerance in %% around target for green/red coloring')
     p_mon.add_argument('--dry-run', action='store_true',
                        help='Use fake values instead of real EPICS PVs')
 
@@ -328,7 +352,8 @@ def main():
             print("ERROR: pyepics not installed. Use --dry-run to test without EPICS.")
             sys.exit(1)
         sections = _load_all_sections(args.config)
-        monitor_loop(sections, interval=args.interval)
+        monitor_loop(sections, interval=args.interval,
+                     target=args.target, tolerance=args.tolerance / 100.0)
 
     elif args.command == 'tweak':
         sec = _load_section(args)

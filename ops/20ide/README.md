@@ -115,6 +115,8 @@ Reports final position, final monitor value, and final error percentage.
 |-----------|------|---------|-------------|
 | `--config` | str | bkg_hrm_piezo_tweak.py | Path to config file |
 | `--interval` | float | 1.0 | Polling interval in seconds |
+| `--target` | float | None | Optional target value; enables green/red coloring of monitor PVs |
+| `--tolerance` | float | 5.0 | Tolerance in % around target for green/red coloring |
 | `--dry-run` | flag | False | Use simulated PVs (no EPICS required) |
 
 ### Tweak Options
@@ -173,6 +175,12 @@ python run_bkg_hrm_piezo_tweak.py tweak --dry-run --section 1 --target 100.0
 python run_bkg_hrm_piezo_tweak.py monitor --interval 0.5
 ```
 Polls all PVs every 0.5 seconds. Press Ctrl-C to stop.
+
+### Scenario 2: Monitor with target highlighting
+```bash
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0 --tolerance 5.0
+```
+Monitor PVs print green when within 5% of 100.0, red otherwise.
 
 ### Scenario 2: Tweak with tight tolerance
 ```bash
