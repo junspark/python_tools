@@ -171,7 +171,8 @@ def _read(pv_name, label):
 
 
 def tweak_piezo(monitor_pv, setpoint_pv, target,
-                step=0.01, max_change=0.05, tolerance=0.05, settle=0.5):
+                step=0.01, max_change=0.05, tolerance=0.05, settle=0.5,
+                pos_min=None, pos_max=None, pos_auto=False):
     """
     Tweak setpoint_pv in 'step' increments until monitor_pv is within
     'tolerance' (fractional) of 'target', or the cumulative absolute
@@ -190,12 +191,22 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     print(f"  Max change  : {max_change:.4f}")
     print(f"  Step        : {step:.4f}")
     print(f"  Settle time : {settle}s")
+    pos_src = "auto: current ±0.1" if pos_auto else "user-defined"
+    print(f"  {_BOLD}{_YELLOW}Pos min     : {pos_min:.6f}  ({pos_src}){_RESET}")
+    print(f"  {_BOLD}{_YELLOW}Pos max     : {pos_max:.6f}  ({pos_src}){_RESET}")
     print()
 
     rel_err = abs(current_val - target) / abs(target)
     if rel_err <= tolerance:
         print(f"{_GREEN}  Already within tolerance ({rel_err*100:.2f}%). Nothing to do.{_RESET}")
         return True
+
+    try:
+        input("  Press Enter to start tweaking, or Ctrl-C to abort... ")
+    except KeyboardInterrupt:
+        print("\n  Aborted.")
+        return False
+    print()
 
     start_pos = _read(setpoint_pv, 'setpoint')
 
@@ -215,6 +226,11 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     probe_pos = round(current_pos + step, 9)
     if abs(probe_pos - start_pos) > max_change:
         print(f"{_RED}  Cannot take even one step without exceeding max-change. Aborting.{_RESET}")
+        return False
+    if (pos_min is not None and probe_pos < pos_min) or \
+       (pos_max is not None and probe_pos > pos_max):
+        print(f"{_RED}  Probe position {probe_pos:.6f} outside allowed range "
+              f"[{pos_min}, {pos_max}]. Aborting.{_RESET}")
         return False
 
     _caput(setpoint_pv, probe_pos, wait=True)
@@ -254,6 +270,11 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
         if delta > max_change:
             print(f"\n{_RED}  Max change ({max_change}) reached. Stopping.{_RESET}")
             break
+        if (pos_min is not None and next_pos < pos_min) or \
+           (pos_max is not None and next_pos > pos_max):
+            print(f"\n{_RED}  Next position {next_pos:.6f} would exceed allowed range "
+                  f"[{pos_min}, {pos_max}]. Stopping.{_RESET}")
+            break
 
         step_n += 1
         _caput(setpoint_pv, next_pos, wait=True)
@@ -286,6 +307,19 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+def _parse_pair(s, name):
+    """Parse a 'val1,val2' string into a list of two floats, or exit with an error."""
+    try:
+        vals = [float(v.strip()) for v in s.split(',')]
+    except ValueError:
+        print(f"ERROR: {name} must be two comma-separated numbers, e.g. {name} 0.0,-0.5")
+        sys.exit(1)
+    if len(vals) != 2:
+        print(f"ERROR: {name} requires exactly 2 values (got {len(vals)})")
+        sys.exit(1)
+    return vals
+
 
 def _default_config():
     here = os.path.dirname(os.path.abspath(__file__))
@@ -363,6 +397,10 @@ def main():
                        help='Acceptable error as a percentage of target')
     p_twk.add_argument('--settle', type=float, default=0.5,
                        help='Seconds to wait after each step')
+    p_twk.add_argument('--pos-min', type=str, default=None,
+                       help='Comma-separated min drive positions for Piezo1,Piezo2 (e.g. -0.5,-0.5)')
+    p_twk.add_argument('--pos-max', type=str, default=None,
+                       help='Comma-separated max drive positions for Piezo1,Piezo2 (e.g. 0.5,0.5)')
 
     args = parser.parse_args()
 
@@ -384,7 +422,28 @@ def main():
                      targets=targets, tolerance=args.tolerance / 100.0)
 
     elif args.command == 'tweak':
+        pos_mins = _parse_pair(args.pos_min, '--pos-min') if args.pos_min else None
+        pos_maxs = _parse_pair(args.pos_max, '--pos-max') if args.pos_max else None
+        if (pos_mins is None) != (pos_maxs is None):
+            print("ERROR: --pos-min and --pos-max must both be provided together.")
+            sys.exit(1)
+        idx = args.section - 1
         sec = _load_section(args)
+        if pos_mins is None:
+            cur = _caget(sec['position'], timeout=5)
+            if cur is None:
+                print(f"ERROR: Cannot read position PV to auto-set limits: {sec['position']}")
+                sys.exit(1)
+            pos_min = round(cur - 0.1, 9)
+            pos_max = round(cur + 0.1, 9)
+            pos_auto = True
+        else:
+            pos_min = pos_mins[idx]
+            pos_max = pos_maxs[idx]
+            pos_auto = False
+        if pos_min >= pos_max:
+            print(f"ERROR: pos-min ({pos_min}) must be less than pos-max ({pos_max})")
+            sys.exit(1)
         success = tweak_piezo(
             monitor_pv=sec['monitor'],
             setpoint_pv=sec['setpoint'],
@@ -393,6 +452,9 @@ def main():
             max_change=args.max_change,
             tolerance=args.tolerance / 100.0,
             settle=args.settle,
+            pos_min=pos_min,
+            pos_max=pos_max,
+            pos_auto=pos_auto,
         )
         sys.exit(0 if success else 1)
 

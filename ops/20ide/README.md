@@ -2,260 +2,275 @@
 
 ## Overview
 
-This package provides tools to monitor and adjust piezo setpoints in the 20-ID High-Resolution Modulation (HRM) background hutch. The system consists of two main components:
+Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 
-- **bkg_hrm_piezo_tweak.py** — Configuration file defining PV names for piezo control and monitoring
-- **run_bkg_hrm_piezo_tweak.py** — CLI tool with two subcommands: `monitor` and `tweak`
+| File | Purpose |
+|---|---|
+| `bkg_hrm_piezo_tweak.py` | Config: maps EPICS PV names to each piezo section |
+| `run_bkg_hrm_piezo_tweak.py` | CLI tool: `monitor` and `tweak` subcommands |
+| `environment.yml` | Conda environment definition |
 
-## Configuration Setup
+---
 
-### bkg_hrm_piezo_tweak.py
+## Setup
 
-This file maps EPICS Process Variables (PVs) to piezo sections. Each section is separated by blank lines and contains four annotated PVs:
-
-```python
-PIEZO_SECTION_1_MONITOR      %%% NAME TO MONITOR
-PIEZO_SECTION_1_VOLTAGE      %%% VOLTAGE PV
-PIEZO_SECTION_1_POSITION     %%% POSITION PV
-PIEZO_SECTION_1_SETPOINT     %%% POSITION SETPOINT PV
-
-PIEZO_SECTION_2_MONITOR      %%% NAME TO MONITOR
-PIEZO_SECTION_2_VOLTAGE      %%% VOLTAGE PV
-PIEZO_SECTION_2_POSITION     %%% POSITION PV
-PIEZO_SECTION_2_SETPOINT     %%% POSITION SETPOINT PV
-```
-
-The `%%%` separator marks the comment/tag that identifies each PV's role:
-- **NAME TO MONITOR**: The output PV value to observe and control
-- **VOLTAGE PV**: The voltage applied to the piezo (informational)
-- **POSITION PV**: The current physical position of the piezo
-- **POSITION SETPOINT PV**: The setpoint value to adjust to reach the target
-
-## Usage
-
-### Monitor Mode
-
-Continuously poll all configured PVs at regular intervals:
+### 1. Create the conda environment
 
 ```bash
-# Monitor all 8 PVs (4 per section × 2 sections) every second
-python run_bkg_hrm_piezo_tweak.py monitor
-
-# Monitor with custom interval (2 seconds)
-python run_bkg_hrm_piezo_tweak.py monitor --interval 2.0
-
-# Dry-run mode (uses simulated values instead of real EPICS PVs)
-python run_bkg_hrm_piezo_tweak.py monitor --dry-run
-
-# Custom config file
-python run_bkg_hrm_piezo_tweak.py monitor --config /path/to/config.py
-```
-
-**Output Example:**
-```
-  Tracking 8 PVs across 2 section(s)
-  Interval : 1s
-  Press Ctrl-C to stop.
-
---- 14:32:45 ---
-  [S1] monitor  : 20IDE:bkg:HRM:mon:PV              = 98.234
-  [S1] voltage  : 20IDE:bkg:HRM:volt:PV            = 45.67
-  [S1] position : 20IDE:bkg:HRM:pos:PV             = 0.523
-  [S1] setpoint : 20IDE:bkg:HRM:setpt:PV           = 0.520
-  [S2] monitor  : 20IDE:bkg:HRM2:mon:PV            = 102.456
-  ...
-```
-
-### Tweak Mode
-
-Adjust a piezo setpoint to bring the monitored value to a target:
-
-The console output uses ANSI colors during tweaking:
-- Green: success / within tolerance
-- Yellow: active step-by-step progress lines and tweak-in-progress banner
-- Red: safety stop or non-improving error stop
-- Cyan: probe step direction details
-
-```bash
-# Adjust section 1 to target 100.0
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
-
-# With custom step size and tolerance
-python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
-    --step 0.02 --tolerance 2.0
-
-# With longer settle time between steps
-python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 50.0 --settle 1.0
-
-# Dry-run mode
-python run_bkg_hrm_piezo_tweak.py tweak --dry-run --section 1 --target 100.0 \
-    --target 100.0
-```
-
-## Tweak Algorithm
-
-The `tweak` subcommand uses a **probe-and-reverse** optimization strategy:
-
-### Phase 1: Direction Probe
-1. Reads the current monitor PV value
-2. Compares to target; if already within tolerance, exits with success
-3. Attempts one positive step in the setpoint
-4. Measures the error change:
-   - If error improved → move in positive direction (step_n = 1)
-   - If error worsened → revert and try negative direction (step_n = 0)
-
-### Phase 2: Iterative Adjustment
-1. Continues stepping in the determined direction
-2. Checks if error is **decreasing** — if error increases or plateaus, stops
-3. Enforces **max-delta** constraint — stops if cumulative displacement exceeds limit
-4. Enforces **tolerance** — stops if relative error ≤ tolerance%
-5. Settles for N seconds after each step before re-reading
-
-### Phase 3: Summary
-Reports final position, final monitor value, and final error percentage.
-
-## Parameters
-
-### Monitor Options
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `--config` | str | bkg_hrm_piezo_tweak.py | Path to config file |
-| `--interval` | float | 1.0 | Polling interval in seconds |
-| `--target` | str | (optional) | Comma-separated target values for Piezo1,Piezo2 (e.g. `100.0,80.0`); enables per-section green/red coloring of monitor PVs |
-| `--tolerance` | float | 5.0 | Tolerance in % around target for green/red coloring |
-| `--dry-run` | flag | False | Use simulated PVs (no EPICS required) |
-
-### Tweak Options
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `--config` | str | bkg_hrm_piezo_tweak.py | Path to config file |
-| `--section` | int | 1 | Config section (1 or 2) |
-| `--target` | float | (required) | Target value for monitor PV |
-| `--step` | float | 0.01 | Setpoint step size per iteration |
-| `--max-change` | float | 0.05 | Max cumulative displacement from start |
-| `--tolerance` | float | 5.0 | Acceptable error as % of target |
-| `--settle` | float | 0.5 | Seconds to wait after each step |
-| `--dry-run` | flag | False | Use simulated PVs (no EPICS required) |
-
-## Requirements
-
-- Python 3.9+
-- **pyepics** (optional, required only for real EPICS connection; not needed for `--dry-run`)
-
-### Option A: conda environment (recommended)
-
-An `environment.yml` is provided at the repo root for a reproducible setup:
-
-```bash
-# From the repo root
 conda env create -f environment.yml
 conda activate hrm-monitor
 ```
 
-### Option B: pip only
+Or with pip only:
+
 ```bash
 pip install pyepics
 ```
 
-## Dry-Run Mode
+### 2. Verify the config file
 
-For testing without EPICS connection, use `--dry-run`:
-- Simulates random walk behavior for each PV
-- Allows testing tweaking logic without hardware
-- Useful for validation before running on real beamline hardware
+`bkg_hrm_piezo_tweak.py` defines two sections (one per piezo), separated by blank lines.
+Each line has the form `PV_NAME  %%% COMMENT`:
 
-```bash
-python run_bkg_hrm_piezo_tweak.py monitor --dry-run
-python run_bkg_hrm_piezo_tweak.py tweak --dry-run --section 1 --target 100.0
+```
+20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
+20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
+20idPI518:PIE518:1:p1_position   %%% PIEZO1 POSITION PV
+20idPI518:PIE518:1:p1_sendPOS    %%% PIEZO1 POSITION SETPOINT PV
+
+20aT2:TM:Current1:MeanValue_RBV  %%% PV2 NAME TO MONITOR
+20idPI518:PIE518:1:p2_volts      %%% PIEZO2 VOLTAGE PV
+20idPI518:PIE518:1:p2_position   %%% PIEZO2 POSITION PV
+20idPI518:PIE518:1:p2_sendPOS    %%% PIEZO2 POSITION SETPOINT PV
 ```
 
-## Exit Codes
+---
 
-- `0` — Success (for `tweak`, target was reached or monitor exited cleanly)
-- `1` — Failure (for `tweak`, target was not reached within constraints; or config error)
+## Subcommand: `monitor`
 
-## Examples
+Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 
-### Scenario 1: Quick monitoring check
-```bash
-python run_bkg_hrm_piezo_tweak.py monitor --interval 0.5
+### Required argument
+
+| Argument | Description |
+|---|---|
+| `--target T1,T2` | Target values for Piezo1 and Piezo2 (comma-separated, **required**) |
+
+### Optional arguments
+
+| Argument | Default | Description |
+|---|---|---|
+| `--interval` | `1.0` | Polling interval in seconds |
+| `--tolerance` | `5.0` | % tolerance around target for green/red coloring |
+| `--config` | same dir | Path to PV config file |
+| `--dry-run` | off | Use simulated values (no EPICS connection needed) |
+
+### Color coding
+
+| Color | Meaning |
+|---|---|
+| Green | Monitor PV is within `--tolerance` % of its target |
+| Red | Monitor PV is outside tolerance |
+
+### Checking phase
+
+After printing the configuration, the script pauses:
+
 ```
-Polls all PVs every 0.5 seconds. Press Ctrl-C to stop.
-
-### Scenario 2: Monitor with per-section target highlighting
-```bash
-python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --tolerance 5.0
+  Press Enter to start monitoring, or Ctrl-C to abort...
 ```
-Piezo1 monitor PV prints green when within 5% of 100.0, Piezo2 when within 5% of 80.0; red otherwise.
 
-### Scenario 3: Tweak with tight tolerance
+Review the targets and tolerance before confirming.
+
+### Use cases
+
 ```bash
+# Case 1: Basic monitoring — Piezo1 target 100.0, Piezo2 target 80.0
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
+
+# Case 2: Slower polling interval
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --interval 2.0
+
+# Case 3: Tighter tolerance (2% instead of default 5%)
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --tolerance 2.0
+
+# Case 4: Dry run (no EPICS — uses simulated random-walk values)
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --dry-run
+
+# Case 5: Custom config file
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 \
+    --config /path/to/bkg_hrm_piezo_tweak.py
+```
+
+### Example output
+
+```
+  Tracking 8 PVs across 2 section(s)
+  Interval  : 1.0s
+  Piezo1 target : 100  (±5.0%  green = in range / red = out of range)
+  Piezo2 target : 80   (±5.0%  green = in range / red = out of range)
+
+  Press Enter to start monitoring, or Ctrl-C to abort...
+
+  Monitoring started. Press Ctrl-C to stop.
+
+--- 14:32:01 ---
+  [Piezo1]
+    monitor  : 20aT1:TM:Current3:MeanValue_RBV            = 98.5      ← green
+    voltage  : 20idPI518:PIE518:1:p1_volts                = 45.2
+    position : 20idPI518:PIE518:1:p1_position             = 0.231
+    setpoint : 20idPI518:PIE518:1:p1_sendPOS              = 0.230
+
+  [Piezo2]
+    monitor  : 20aT2:TM:Current1:MeanValue_RBV            = 112.3     ← red
+    voltage  : 20idPI518:PIE518:1:p2_volts                = 38.7
+    position : 20idPI518:PIE518:1:p2_position             = 0.185
+    setpoint : 20idPI518:PIE518:1:p2_sendPOS              = 0.184
+```
+
+---
+
+## Subcommand: `tweak`
+
+Adjusts the setpoint of one piezo to bring its monitor PV within tolerance of a target.
+
+### Required arguments
+
+| Argument | Description |
+|---|---|
+| `--target T` | Target value for the monitor PV |
+
+### Optional arguments
+
+| Argument | Default | Description |
+|---|---|---|
+| `--section` | `1` | Piezo section to tweak: `1` or `2` |
+| `--step` | `0.01` | Setpoint step size per iteration |
+| `--max-change` | `0.05` | Max cumulative absolute displacement from start position |
+| `--tolerance` | `5.0` | Acceptable error as % of target |
+| `--settle` | `0.5` | Seconds to wait after each step |
+| `--pos-min P1,P2` | auto | Min allowed drive position for Piezo1,Piezo2 (comma-separated) |
+| `--pos-max P1,P2` | auto | Max allowed drive position for Piezo1,Piezo2 (comma-separated) |
+| `--config` | same dir | Path to PV config file |
+
+### Drive position limits (`--pos-min` / `--pos-max`)
+
+These guard rails prevent the piezo from being driven beyond a safe range.
+
+- **If provided:** the script uses the value for the selected section (e.g. `--section 1` uses the first of the two comma-separated values).
+- **If omitted:** the script reads the current position PV and automatically sets:
+  ```
+  pos_min = current_position - 0.1
+  pos_max = current_position + 0.1
+  ```
+
+Both limits are always displayed during the checking phase (bold yellow) so you can verify them before tweaking begins.
+
+### Checking phase
+
+Before any PV is written, the script prints a full parameter summary and pauses:
+
+```
+  Monitor PV  : 20aT1:TM:Current3:MeanValue_RBV
+  Setpoint PV : 20idPI518:PIE518:1:p1_sendPOS
+  Current     : 98.5
+  Target      : 100.0
+  Tolerance   : 5.0%
+  Max change  : 0.0500
+  Step        : 0.0100
+  Settle time : 0.5s
+  Pos min     : 0.150000  (auto: current ±0.1)
+  Pos max     : 0.350000  (auto: current ±0.1)
+
+  Press Enter to start tweaking, or Ctrl-C to abort...
+```
+
+### Color coding during tweak
+
+| Color | Meaning |
+|---|---|
+| Bold yellow | "TWEAKING IN PROGRESS" banner |
+| Cyan | Probe step and direction decision |
+| Yellow | Each active step being written to the setpoint |
+| Bold green | Target reached successfully |
+| Red | Safety stop (pos limit, max-change) or error no longer improving |
+
+### Tweak algorithm
+
+1. **Tolerance check** — if already within tolerance, exit immediately (no PV writes).
+2. **Probe step** — move setpoint +0.01 and read monitor PV.
+   - If monitor moves closer to target → continue in `+` direction.
+   - If monitor moves further → undo step, continue in `−` direction.
+3. **Iterative stepping** — keep stepping in the chosen direction until:
+   - Monitor PV is within tolerance of target ✓
+   - Error stops decreasing (plateau) ✗
+   - Cumulative displacement exceeds `--max-change` ✗
+   - Next position would exceed `pos-min` / `pos-max` ✗
+4. **Summary** — prints final position, monitor value, and error %.
+
+### Use cases
+
+```bash
+# Case 1: Tweak Piezo1 to target 100.0 (pos limits auto-set from current position)
+python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
+
+# Case 2: Tweak Piezo2 to target 80.0
+python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0
+
+# Case 3: Explicit drive position limits for both piezos (uses Piezo1 limits for section 1)
 python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
-    --tolerance 1.0 --step 0.005 --max-change 0.1
-```
-Fine-tuning: small steps, strict tolerance, larger allowed range.
+    --pos-min -0.5,-0.5 --pos-max 0.5,0.5
 
-### Scenario 4: Tweak with quick broad search
-```bash
-python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 50.0 \
-    --step 0.02 --tolerance 5.0 --settle 0.2
-```
-Faster adjustment with looser tolerance and shorter settle times.
+# Case 4: Finer steps with tighter tolerance
+python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
+    --step 0.005 --tolerance 2.0
 
-### Scenario 5: Test configuration
-```bash
-python run_bkg_hrm_piezo_tweak.py monitor --dry-run --interval 2.0
+# Case 5: Larger allowed range and longer settle time
+python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0 \
+    --max-change 0.1 --settle 1.0
+
+# Case 6: Allow more displacement with explicit safe limits
+python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
+    --max-change 0.05 --pos-min 0.1,0.1 --pos-max 0.4,0.4
 ```
-Simulates PV polling without EPICS to verify config and script logic.
+
+---
+
+## Typical Workflow
+
+```bash
+# Step 1: Confirm PVs are live and check baseline values
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
+
+# Step 2: If Piezo1 is off, tweak it (pos limits auto-set)
+python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
+
+# Step 3: If Piezo2 is off, tweak it
+python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 80.0
+
+# Step 4: Confirm both are back in range
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
+```
+
+---
 
 ## Troubleshooting
 
-### "ERROR: cannot read X PV"
-- Connection to EPICS is down
-- PV name in config is incorrect
-- Use `--dry-run` to test without EPICS
+| Error | Cause | Fix |
+|---|---|---|
+| `pyepics not installed` | Package missing | `pip install pyepics` or use `--dry-run` |
+| `Cannot read monitor PV` | EPICS disconnected or wrong PV name | Check network / config file |
+| `Config file not found` | Wrong path | Use `--config /full/path/to/file` |
+| `Section N not found` | Fewer sections than requested | Check blank-line-separated blocks in config |
+| `Probe position outside allowed range` | Auto pos limit too tight | Provide explicit `--pos-min` / `--pos-max` |
+| `Max change reached` | Target unreachable within `--max-change` | Increase `--max-change` or check target value |
+| `Error no longer decreasing` | Plateau — target may be unreachable | Try different `--step` or `--settle` time |
 
-### "ERROR: Config file not found"
-- Default config path is incorrect
-- Explicitly pass `--config /path/to/bkg_hrm_piezo_tweak.py`
+---
 
-### "ERROR: Section N not found"
-- Config has fewer sections than requested
-- Check number of blank-line-separated blocks in config file
+## Exit Codes
 
-### "ERROR: Section N is missing 'monitor' or 'setpoint' PV"
-- A section is missing required PV definitions
-- Verify all sections have both NAME TO MONITOR and POSITION SETPOINT PV tags
-
-### "Max delta reached. Stopping."
-- Piezo cannot reach target within `--max-change` constraint
-- Increase `--max-change` or adjust `--target`
-
-### "Error no longer decreasing"
-- Algorithm hit a plateau; target may be unreachable
-- Verify target value is physically achievable
-- Try different `--step` size or `--settle` time
-
-## Technical Notes
-
-### Precision
-- Setpoint values are rounded to 9 decimal places to avoid floating-point artifacts
-- Error is computed as relative error: `|current - target| / |target| × 100%`
-
-### Safety Features
-- **Max-change enforcement**: Prevents excessive piezo displacement
-- **Direction probe**: Automatically determines correct adjustment direction
-- **Error monitoring**: Stops if error stops decreasing (plateau detection)
-- **Settle time**: Allows PV to stabilize before re-reading
-- **Visual status cues**: Colorized console messages make success, progress, and stop conditions easy to spot
-
-### PV State After Tweak
-- Final setpoint remains at the adjusted value
-- Use `monitor` subcommand to verify post-adjustment state
-- To revert a tweak, run another tweak with the original target or manually adjust
-
-## Related Documentation
-
-- EPICS Channel Access documentation: http://www.aps.anl.gov/epics/
-- 20-ID beamline documentation: [internal reference]
-- HRM background hutch design: [internal reference]
+| Code | Meaning |
+|---|---|
+| `0` | Success (tweak reached target, or monitor exited cleanly) |
+| `1` | Failure (target not reached, config error, or safety stop) |
