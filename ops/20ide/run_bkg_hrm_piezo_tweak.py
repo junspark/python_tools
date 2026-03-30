@@ -70,6 +70,12 @@ def _caput(pv, value, wait=False):
         return epics.caput(pv, value, wait=wait)
     _dry_run_store[pv] = value
 
+def _log(fh, msg):
+    """Write msg to log file (no ANSI codes) with a newline."""
+    if fh is not None:
+        fh.write(msg + '\n')
+        fh.flush()
+
 def _read_normalized(mon_pv, sr_pv=None, ref_current=None):
     """Read monitor PV and normalize by storage ring current if configured.
 
@@ -100,6 +106,7 @@ def parse_config(config_file):
       sections : list of dicts with keys 'monitor', 'voltage', 'position', 'setpoint'
     """
     sr_pv = None
+    shutter_pv = None
     sections = []
     current = {}
     with open(config_file) as fh:
@@ -117,6 +124,8 @@ def parse_config(config_file):
             tag = comment.strip().upper()
             if 'RING CURRENT PV' in tag:
                 sr_pv = pv_name
+            elif 'SHUTTER' in tag:
+                shutter_pv = pv_name
             elif 'NAME TO MONITOR' in tag:
                 current['monitor'] = pv_name
             elif 'VOLTAGE PV' in tag:
@@ -127,7 +136,7 @@ def parse_config(config_file):
                 current['position'] = pv_name
     if current:
         sections.append(current)
-    return sr_pv, sections
+    return sr_pv, shutter_pv, sections
 
 # ---------------------------------------------------------------------------
 # Display helpers
@@ -168,7 +177,7 @@ def _confirm_step(set_pv, value):
 
 
 def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
-               confirm=False, sr_pv=None, ref_current=None):
+               confirm=False, sr_pv=None, ref_current=None, log_fh=None):
     """
     Tweak one piezo until its monitor PV is within tolerance of target.
 
@@ -193,7 +202,10 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         print(f"{_RED}  [{label}] Cannot read setpoint PV. Aborting.{_RESET}")
         return False
 
+    ts = time.strftime('%H:%M:%S')
+    msg = f"[{ts}] *** TWEAKING {label} ***"
     print(f"{_BOLD}{_YELLOW}  *** TWEAKING {label} — do not touch ***{_RESET}")
+    _log(log_fh, msg)
 
     prev_err = abs(current_val - target)
 
@@ -203,8 +215,11 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         probe_pos = round(start_pos - TWEAK_STEP, 9)   # try −step instead
 
     if probe_pos < pos_min or probe_pos > pos_max:
+        msg = (f"[{time.strftime('%H:%M:%S')}]   GUARD RAIL: cannot step in either "
+               f"direction within [{pos_min:.4f}, {pos_max:.4f}].")
         print(f"{_RED}    GUARD RAIL: cannot step in either direction within "
               f"[{pos_min:.4f}, {pos_max:.4f}]. Aborting.{_RESET}")
+        _log(log_fh, msg)
         return False
 
     if confirm and not _confirm_step(set_pv, probe_pos):
@@ -222,9 +237,12 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         current_val = probe_val
         prev_err    = probe_err
         step_n      = 1
-        arrow = '+' if direction == 1 else '−'
+        arrow = '+' if direction == 1 else '-'
+        msg = (f"[{time.strftime('%H:%M:%S')}]   probe  pos={probe_pos:.4f}"
+               f"  monitor={probe_val:.6g}  -> continuing {arrow}")
         print(f"{_CYAN}    probe  pos={probe_pos:.4f}  monitor={probe_val:.6g}"
               f"  → continuing {arrow}{_RESET}")
+        _log(log_fh, msg)
     else:
         # Revert and go opposite direction
         direction = -1 if probe_pos > start_pos else +1
@@ -236,9 +254,12 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         current_val = _read_normalized(mon_pv, sr_pv, ref_current) or current_val
         prev_err    = abs(current_val - target)
         step_n      = 0
-        arrow = '+' if direction == 1 else '−'
+        arrow = '+' if direction == 1 else '-'
+        msg = (f"[{time.strftime('%H:%M:%S')}]   probe  pos={probe_pos:.4f}"
+               f"  monitor={probe_val:.6g}  -> undo, try {arrow}")
         print(f"{_CYAN}    probe  pos={probe_pos:.4f}  monitor={probe_val:.6g}"
               f"  → undo, try {arrow}{_RESET}")
+        _log(log_fh, msg)
 
     # --- Step loop ---
     best_pos = current_pos   # position with lowest error seen so far
@@ -247,14 +268,20 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
     while step_n < max_steps:
         rel_err = abs(current_val - target) / abs(target)
         if rel_err <= tolerance:
+            msg = (f"[{time.strftime('%H:%M:%S')}]   {label} reached target"
+                   f"  (error={rel_err*100:.2f}%)")
             print(f"{_BOLD}{_GREEN}    {label} reached target "
                   f"(error={rel_err*100:.2f}%).{_RESET}")
-            return True   # ← success; caller may proceed to next piezo
+            _log(log_fh, msg)
+            return True
 
         next_pos = round(current_pos + direction * TWEAK_STEP, 9)
         if next_pos < pos_min or next_pos > pos_max:
+            msg = (f"[{time.strftime('%H:%M:%S')}]   GUARD RAIL: position"
+                   f" [{next_pos:.4f}] outside [{pos_min:.4f}, {pos_max:.4f}].")
             print(f"{_RED}    GUARD RAIL: position [{next_pos:.4f}] outside "
                   f"[{pos_min:.4f}, {pos_max:.4f}]. Aborting.{_RESET}")
+            _log(log_fh, msg)
             return False
 
         if confirm and not _confirm_step(set_pv, next_pos):
@@ -267,13 +294,20 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         current_err = abs(current_val - target)
         step_n += 1
         delta = next_pos - start_pos
+        msg = (f"[{time.strftime('%H:%M:%S')}]   step {step_n:2d}"
+               f"  pos={next_pos:.4f} (D={delta:+.3f})"
+               f"  monitor={current_val:.6g}  err={current_err:.4g}")
         print(f"{_YELLOW}    step {step_n:2d}  pos={next_pos:.4f} (Δ={delta:+.3f})"
               f"  monitor={current_val:.6g}  err={current_err:.4g}{_RESET}")
+        _log(log_fh, msg)
 
         if current_err >= prev_err:
             # Peak passed — step back to the best position seen
+            msg = (f"[{time.strftime('%H:%M:%S')}]   Peak passed"
+                   f" — stepping back to best pos={best_pos:.4f} (err={best_err:.4g})")
             print(f"{_CYAN}    Peak passed — stepping back to best pos={best_pos:.4f}"
                   f"  (err={best_err:.4g}){_RESET}")
+            _log(log_fh, msg)
             if confirm and not _confirm_step(set_pv, best_pos):
                 return False
             _caput(set_pv, best_pos, wait=True)
@@ -283,11 +317,17 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
                 return False
             final_rel_err = abs(final_val - target) / abs(target)
             if final_rel_err <= tolerance:
+                msg = (f"[{time.strftime('%H:%M:%S')}]   {label} at best pos,"
+                       f" within tolerance (error={final_rel_err*100:.2f}%)")
                 print(f"{_BOLD}{_GREEN}    {label} at best pos, within tolerance "
                       f"(error={final_rel_err*100:.2f}%).{_RESET}")
+                _log(log_fh, msg)
                 return True
+            msg = (f"[{time.strftime('%H:%M:%S')}]   Best position still outside"
+                   f" tolerance (error={final_rel_err*100:.2f}%).")
             print(f"{_RED}    Best position still outside tolerance "
                   f"(error={final_rel_err*100:.2f}%). Aborting.{_RESET}")
+            _log(log_fh, msg)
             return False
 
         if current_err < best_err:
@@ -298,8 +338,11 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         current_pos = next_pos
 
     # max_steps exhausted without reaching target
+    msg = (f"[{time.strftime('%H:%M:%S')}]   GUARD RAIL: max steps ({max_steps})"
+           f" reached without reaching target.")
     print(f"{_RED}    GUARD RAIL: max steps ({max_steps}) reached without "
           f"reaching target. Aborting.{_RESET}")
+    _log(log_fh, msg)
     return False
 
 # ---------------------------------------------------------------------------
@@ -308,7 +351,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
 
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
              tweak_mode=False, pos_limits=None, max_steps=5, confirm=False,
-             sr_pv=None, ref_current=None):
+             sr_pv=None, ref_current=None, shutter_pv=None, log_fh=None):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
 
@@ -353,15 +396,25 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
         while True:
             # Read ring current once per cycle
             ring_current = _caget(sr_pv, timeout=5) if norm_active else None
-            norm_ok = norm_active and ring_current is not None and ring_current > 0
+            norm_ok  = norm_active and ring_current is not None and ring_current > 0
+            sr_low   = (norm_ok and ring_current < ref_current * 0.90)
+
+            # Check front end shutter — skip tweak if beam is blocked
+            shutter_val = _caget(shutter_pv, timeout=5) if shutter_pv else None
+            shutter_on  = (shutter_val is not None and
+                           (shutter_val == 1 or str(shutter_val).upper() == 'ON'))
 
             # Cycle header
+            ts = time.strftime('%H:%M:%S')
             if norm_active:
                 sr_str = f"{ring_current:.2f}" if ring_current is not None else "?"
-                print(f"--- {time.strftime('%H:%M:%S')} ---  "
-                      f"SR: {sr_str} mA / ref: {ref_current:.4g} mA")
+                hdr = f"--- {ts} ---  SR: {sr_str} mA / ref: {ref_current:.4g} mA"
+                print(hdr)
+                _log(log_fh, f"\n## {hdr}")
             else:
-                print(f"--- {time.strftime('%H:%M:%S')} ---")
+                hdr = f"--- {ts} ---"
+                print(hdr)
+                _log(log_fh, f"\n## {hdr}")
 
             out_of_range = []
             eff_targets  = []   # normalized targets for this cycle (one per piezo)
@@ -373,6 +426,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                 eff_targets.append(eff_target)
 
                 print(f"  [Piezo{i}]")
+                _log(log_fh, f"\n**[Piezo{i}]**")
                 for key in _PV_KEYS:
                     if key not in sec:
                         continue
@@ -383,34 +437,50 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                         if norm_ok:
                             val_str += (f"  target={target:.6g}"
                                         f"  norm={eff_target:.6g}")
+                        val_str_plain = val_str   # save before ANSI wrapping
                         val_str = _color(val_str, val, eff_target, tolerance)
                         if tweak_mode and val is not None:
                             if abs(val - eff_target) / abs(eff_target) > tolerance:
                                 out_of_range.append(i)
                     else:
                         val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
+                        val_str_plain = val_str
                     print(f"    {key:8s} : {pv:<42s} = {val_str}")
+                    _log(log_fh, f"- `{key}` : `{pv}` = {val_str_plain}")
                 print()
 
             # --- Tweak phase (skipped in monitor mode) ---
-            # Always Piezo1 first, then Piezo2.  If a guard rail is hit,
-            # abort immediately and do not proceed to the next piezo.
-            if tweak_mode and out_of_range:
+            # Always Piezo1 first, then Piezo2.
+            if tweak_mode and sr_low:
+                msg = (f"SR current ({ring_current:.2f} mA) is >10% below "
+                       f"ref ({ref_current:.4g} mA) — tweak skipped.")
+                print(f"  {_BOLD}{_YELLOW}{msg}{_RESET}")
+                _log(log_fh, f"> {msg}")
+
+            if tweak_mode and shutter_on:
+                msg = f"Front end shutter is ON (beam blocked) — tweak skipped."
+                print(f"  {_BOLD}{_YELLOW}{msg}{_RESET}")
+                _log(log_fh, f"> {msg}")
+
+            if tweak_mode and out_of_range and not sr_low and not shutter_on:
                 for i in sorted(out_of_range):   # ascending: 1 before 2
                     lo, hi = pos_limits[i - 1]
                     success = _tweak_one(i, sections[i - 1], eff_targets[i - 1],
                                          tolerance, lo, hi, max_steps,
                                          confirm=confirm,
-                                         sr_pv=sr_pv, ref_current=ref_current)
+                                         sr_pv=sr_pv, ref_current=ref_current,
+                                         log_fh=log_fh)
                     if not success:
-                        print(f"{_BOLD}{_RED}  Piezo{i} tweak ended without reaching "
-                              f"target. Continuing.{_RESET}")
+                        msg = f"Piezo{i} tweak ended without reaching target."
+                        print(f"{_BOLD}{_RED}  {msg} Continuing.{_RESET}")
+                        _log(log_fh, f"> {msg}")
                 print()
 
             time.sleep(interval)
 
     except KeyboardInterrupt:
         print("\n  Stopped.")
+        _log(log_fh, "\n---\nSession stopped by user.")
 
 # ---------------------------------------------------------------------------
 # Argument helpers
@@ -438,11 +508,11 @@ def _load_config(config):
     if not os.path.exists(config):
         print(f"ERROR: Config file not found: {config}")
         sys.exit(1)
-    sr_pv, sections = parse_config(config)
+    sr_pv, shutter_pv, sections = parse_config(config)
     if not sections:
         print("ERROR: No valid sections found in config file.")
         sys.exit(1)
-    return sr_pv, sections
+    return sr_pv, shutter_pv, sections
 
 
 def _parse_targets(s):
@@ -455,12 +525,17 @@ def _parse_targets(s):
 
 _MONITOR_TOLERANCE = 0.05   # fixed 5 % for green/red coloring in monitor mode
 
+_LOG_BASE = '/home/beams/S20IDUSER/new_data'
+
 def _add_shared_args(p):
     p.add_argument('--target', type=str, required=True,
                    help='Comma-separated targets for Piezo1,Piezo2 (e.g. 10300,6500)')
     p.add_argument('--ref-current', type=float, default=None, metavar='mA',
                    help='Reference storage ring current in mA for normalization '
                         '(requires RING CURRENT PV in config)')
+    p.add_argument('--expid', type=str, default=None, metavar='NAME',
+                   help='Experiment ID — log is written to '
+                        f'{_LOG_BASE}/<NAME>/hrm_auto_tweak_record.md')
     p.add_argument('--interval', type=float, default=1.0,
                    help='Display refresh interval in seconds')
     p.add_argument('--config', default=_default_config(),
@@ -502,9 +577,9 @@ def main():
         print("ERROR: pyepics not installed. Use --dry-run to test without EPICS.")
         sys.exit(1)
 
-    targets       = _parse_targets(args.target)
-    sr_pv, sections = _load_config(args.config)
-    ref_current   = args.ref_current
+    targets                    = _parse_targets(args.target)
+    sr_pv, shutter_pv, sections = _load_config(args.config)
+    ref_current                = args.ref_current
 
     if sr_pv and ref_current is None:
         print("WARNING: SR current PV found in config but --ref-current not given. "
@@ -515,34 +590,62 @@ def main():
               f"{len(targets)} values.")
         sys.exit(1)
 
-    if args.command == 'monitor':
-        run_loop(sections, targets,
-                 interval=args.interval,
-                 tolerance=_MONITOR_TOLERANCE,
-                 sr_pv=sr_pv,
-                 ref_current=ref_current)
+    # --- Open log file if --expid given ---
+    log_fh = None
+    if args.expid:
+        log_dir  = os.path.join(_LOG_BASE, args.expid)
+        log_path = os.path.join(log_dir, 'hrm_auto_tweak_record.md')
+        os.makedirs(log_dir, exist_ok=True)
+        log_fh = open(log_path, 'a')
+        start_ts = time.strftime('%Y-%m-%d %H:%M:%S')
+        log_fh.write(f"\n# HRM Piezo Tweak Record\n")
+        log_fh.write(f"- **Started** : {start_ts}\n")
+        log_fh.write(f"- **Exp ID**  : {args.expid}\n")
+        log_fh.write(f"- **Mode**    : {args.command}\n")
+        log_fh.write(f"- **Targets** : {args.target}\n")
+        if ref_current is not None:
+            log_fh.write(f"- **Ref SR current** : {ref_current:.4g} mA\n")
+        log_fh.write("\n---\n")
+        log_fh.flush()
+        print(f"  Log file : {log_path}")
 
-    elif args.command == 'tweak':
-        # Read current position for each piezo and compute allowed range
-        pos_limits = []
-        for i, sec in enumerate(sections, 1):
-            cur = _caget(sec['position'], timeout=5)
-            if cur is None:
-                print(f"ERROR: Cannot read position PV for Piezo{i}: {sec['position']}")
-                sys.exit(1)
-            lo = round(cur - args.pos_range, 9)
-            hi = round(cur + args.pos_range, 9)
-            pos_limits.append((lo, hi))
+    try:
+        if args.command == 'monitor':
+            run_loop(sections, targets,
+                     interval=args.interval,
+                     tolerance=_MONITOR_TOLERANCE,
+                     sr_pv=sr_pv,
+                     ref_current=ref_current,
+                     shutter_pv=shutter_pv,
+                     log_fh=log_fh)
 
-        run_loop(sections, targets,
-                 interval=args.interval,
-                 tolerance=args.tolerance / 100.0,
-                 tweak_mode=True,
-                 pos_limits=pos_limits,
-                 max_steps=args.max_steps,
-                 confirm=args.confirm,
-                 sr_pv=sr_pv,
-                 ref_current=ref_current)
+        elif args.command == 'tweak':
+            # Read current position for each piezo and compute allowed range
+            pos_limits = []
+            for i, sec in enumerate(sections, 1):
+                cur = _caget(sec['position'], timeout=5)
+                if cur is None:
+                    print(f"ERROR: Cannot read position PV for Piezo{i}: "
+                          f"{sec['position']}")
+                    sys.exit(1)
+                lo = round(cur - args.pos_range, 9)
+                hi = round(cur + args.pos_range, 9)
+                pos_limits.append((lo, hi))
+
+            run_loop(sections, targets,
+                     interval=args.interval,
+                     tolerance=args.tolerance / 100.0,
+                     tweak_mode=True,
+                     pos_limits=pos_limits,
+                     max_steps=args.max_steps,
+                     confirm=args.confirm,
+                     sr_pv=sr_pv,
+                     ref_current=ref_current,
+                     shutter_pv=shutter_pv,
+                     log_fh=log_fh)
+    finally:
+        if log_fh:
+            log_fh.close()
 
 
 if __name__ == '__main__':

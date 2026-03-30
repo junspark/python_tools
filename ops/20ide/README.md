@@ -6,7 +6,7 @@ Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 
 | File | Purpose |
 |---|---|
-| `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section and optional ring-current PV |
+| `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section, optional ring-current PV, and optional shutter-status PV |
 | `run_bkg_hrm_piezo_tweak.py` | CLI tool: `monitor` and `tweak` subcommands |
 | `environment.yml` | Conda environment definition |
 
@@ -34,6 +34,7 @@ Each line has the form `PV_NAME  %%% COMMENT`:
 
 ```
 S-DCCT:CurrentM   %%% STORAGE RING CURRENT PV
+S20ID-PSS:FES:BeamBlockingM   %%% FRONT END SHUTTER STATUS
 
 20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
 20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
@@ -64,6 +65,7 @@ Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 |---|---|---|
 | `--interval` | `1.0` | Polling interval in seconds |
 | `--ref-current` | off | Reference storage ring current in mA for monitor normalization |
+| `--expid` | off | Experiment ID; writes a Markdown session log under `/home/beams/S20IDUSER/new_data/<EXPID>/` |
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
@@ -114,6 +116,9 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --dry-run
 # Case 5: Custom config file
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 \
   --config /path/to/hrm_piezo_pvs.txt
+
+# Case 6: Write a Markdown monitoring record for this experiment
+python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --expid test123
 ```
 
 ### Example output
@@ -165,6 +170,7 @@ is out of tolerance it automatically attempts a bounded tweak cycle for that pie
 | `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
 | `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
 | `--confirm` | off | Prompt for user approval before each caput |
+| `--expid` | off | Experiment ID; writes a Markdown tweak/monitor record under `/home/beams/S20IDUSER/new_data/<EXPID>/` |
 | `--config` | same dir | Path to PV config file |
 | `--dry-run` | off | Use simulated values (no EPICS connection needed) |
 
@@ -180,6 +186,30 @@ These guard rails prevent the piezo from being driven beyond a safe range.
   ```
 
 These computed ranges are shown before the loop starts so you can verify them before enabling tweaks.
+
+### Automatic tweak skip conditions
+
+Even in `tweak` mode, the script will skip the write phase for a cycle when either condition is true:
+
+- Storage ring current is more than 10% below `--ref-current`
+- Front end shutter status indicates the beam is blocked
+
+In those cases, the tool continues monitoring and logging, but does not issue any `caput` writes for that cycle.
+
+### Session logging (`--expid`)
+
+If `--expid NAME` is provided, the tool appends a Markdown session record to:
+
+```text
+/home/beams/S20IDUSER/new_data/NAME/hrm_auto_tweak_record.md
+```
+
+The log includes:
+
+- start time and mode (`monitor` or `tweak`)
+- configured targets and optional reference current
+- per-cycle PV snapshots
+- tweak attempts, step decisions, guard-rail hits, and stop events
 
 ### Checking phase
 
@@ -197,6 +227,7 @@ Before the loop starts, the script prints the tweak settings and pauses:
   Settle time : 1.0s (fixed)
   Step size   : 0.01
   Max steps   : 5 per cycle
+  Confirm     : OFF
   Piezo1 pos range : [0.150000, 0.350000]  (auto)
   Piezo2 pos range : [0.120000, 0.320000]  (auto)
 
@@ -218,6 +249,7 @@ Before the loop starts, the script prints the tweak settings and pauses:
 1. **Display pass** — print all PVs for both piezos with green/red target coloring.
   - If `--ref-current` is enabled, compare against per-cycle normalized targets.
 2. **Out-of-range detection** — identify any piezo whose monitor PV is outside tolerance.
+  - If SR current is too low or the front end shutter is blocking beam, skip tweaking for that cycle.
 3. **Probe step** — for each out-of-range piezo, try a `+0.01` step first; if that is outside the allowed range, try `-0.01`.
 4. **Direction choice** — continue in the direction that improves the monitor error.
 5. **Bounded stepping** — keep stepping until one of these occurs:
@@ -254,6 +286,9 @@ python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --dry-run
 
 # Case 8: Require manual confirmation before each caput
 python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --confirm
+
+# Case 9: Write a persistent tweak log for an experiment
+python run_bkg_hrm_piezo_tweak.py tweak --target 10300,6500 --expid test123
 ```
 
 ---
@@ -282,6 +317,8 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 10300,6500
 |---|---|---|
 | `pyepics not installed` | Package missing | `pip install pyepics` or use `--dry-run` |
 | `SR current PV found in config but --ref-current not given` | Normalization was available but not enabled | Pass `--ref-current <mA>` if you want SR-current normalization |
+| `SR current (...) is >10% below ref (...) — tweak skipped` | Beam current too low for reliable comparison | Wait for current recovery or lower `--ref-current` |
+| `Front end shutter is ON (beam blocked) — tweak skipped` | Beam is blocked at the front end | Re-open beam path before expecting auto-tweak writes |
 | `Cannot read monitor PV` | EPICS disconnected or wrong PV name | Check network / config file |
 | `Config file not found` | Wrong path | Use `--config /full/path/to/file` |
 | `Section N not found` | Fewer sections than requested | Check blank-line-separated blocks in config |

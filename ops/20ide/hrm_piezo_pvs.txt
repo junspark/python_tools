@@ -1,5 +1,6 @@
+S-DCCT:CurrentM                  %%% STORANGE RING CURRENT PV
 
-S-DCCT:CurrentM   %%% STORANGE RING CURRENT PV
+S20ID-PSS:FES:BeamBlockingM      %%% FRONT END SHUTTER STATUS
 
 20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
 20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
