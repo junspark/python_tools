@@ -131,10 +131,19 @@ Reports final position, final monitor value, and final error percentage.
 
 ## Requirements
 
-- Python 3.6+
+- Python 3.9+
 - **pyepics** (optional, required only for real EPICS connection; not needed for `--dry-run`)
 
-### Install pyepics
+### Option A: conda environment (recommended)
+
+An `environment.yml` is provided for a reproducible setup:
+
+```bash
+conda env create -f environment.yml
+conda activate hrm-piezo
+```
+
+### Option B: pip only
 ```bash
 pip install pyepics
 ```
