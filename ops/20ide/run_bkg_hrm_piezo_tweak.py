@@ -130,6 +130,8 @@ def monitor_loop(sections, interval=1.0, target=None, tolerance=0.05):
         while True:
             print(f"--- {time.strftime('%H:%M:%S')} ---")
             for i, sec in enumerate(sections, 1):
+                label = f"Piezo{i}"
+                print(f"  [{label}]")
                 for key in _PV_KEYS:
                     if key not in sec:
                         continue
@@ -138,8 +140,8 @@ def monitor_loop(sections, interval=1.0, target=None, tolerance=0.05):
                     val_str = f"{val:.6g}" if val is not None else "DISCONNECTED"
                     if key == 'monitor':
                         val_str = _color(val_str, val, target, tolerance)
-                    print(f"  [S{i}] {key:8s} : {pv:<42s} = {val_str}")
-            print()
+                    print(f"    {key:8s} : {pv:<42s} = {val_str}")
+                print()
             time.sleep(interval)
     except KeyboardInterrupt:
         print("\n  Monitoring stopped.")
