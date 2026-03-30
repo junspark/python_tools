@@ -99,9 +99,12 @@ def parse_config(config_file):
 # Ordered keys to display for each section
 _PV_KEYS = ['monitor', 'voltage', 'position', 'setpoint']
 
-_GREEN = '\033[92m'
-_RED   = '\033[91m'
-_RESET = '\033[0m'
+_GREEN  = '\033[92m'
+_RED    = '\033[91m'
+_YELLOW = '\033[93m'
+_CYAN   = '\033[96m'
+_BOLD   = '\033[1m'
+_RESET  = '\033[0m'
 
 
 def _color(val_str, val, target, tolerance):
@@ -191,10 +194,15 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
 
     rel_err = abs(current_val - target) / abs(target)
     if rel_err <= tolerance:
-        print(f"  Already within tolerance ({rel_err*100:.2f}%). Nothing to do.")
+        print(f"{_GREEN}  Already within tolerance ({rel_err*100:.2f}%). Nothing to do.{_RESET}")
         return True
 
     start_pos = _read(setpoint_pv, 'setpoint')
+
+    # --- Tweaking banner ---
+    banner = f"  *** TWEAKING IN PROGRESS — do not touch the piezo ***"
+    print(f"{_BOLD}{_YELLOW}{banner}{_RESET}")
+    print()
     print(f"  Start pos   : {start_pos:.6f}")
     print(f"  {'Step':>6}  {'Position':>10}  {'Delta':>8}  {'Monitor':>12}  {'|Error|':>12}")
     print(f"  {'-'*6}  {'-'*10}  {'-'*8}  {'-'*12}  {'-'*12}")
@@ -206,7 +214,7 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     # --- Probe: one step in positive direction ---
     probe_pos = round(current_pos + step, 9)
     if abs(probe_pos - start_pos) > max_change:
-        print("  Cannot take even one step without exceeding max-delta. Aborting.")
+        print(f"{_RED}  Cannot take even one step without exceeding max-change. Aborting.{_RESET}")
         return False
 
     _caput(setpoint_pv, probe_pos, wait=True)
@@ -214,18 +222,18 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     probe_val = _read(monitor_pv, 'monitor')
     probe_err = abs(probe_val - target)
     delta = probe_pos - start_pos
-    print(f"  {'probe':>6}  {probe_pos:10.6f}  {delta:+8.4f}  {probe_val:12.6g}  {probe_err:12.6g}", end="")
+    print(f"{_CYAN}  {'probe':>6}  {probe_pos:10.6f}  {delta:+8.4f}  {probe_val:12.6g}  {probe_err:12.6g}{_RESET}", end="")
 
     if probe_err < prev_err:
         direction = +1
-        print("  → +")
+        print(f"  {_CYAN}→ +{_RESET}")
         current_pos = probe_pos
         current_val = probe_val
         prev_err = probe_err
         step_n = 1
     else:
         direction = -1
-        print("  → undo, try −")
+        print(f"  {_CYAN}→ undo, try −{_RESET}")
         # Revert probe step
         _caput(setpoint_pv, start_pos, wait=True)
         time.sleep(settle)
@@ -238,13 +246,13 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     while True:
         rel_err = abs(current_val - target) / abs(target)
         if rel_err <= tolerance:
-            print(f"\n  Target reached. Error = {rel_err*100:.2f}%")
+            print(f"\n{_BOLD}{_GREEN}  Target reached. Error = {rel_err*100:.2f}%{_RESET}")
             break
 
         next_pos = round(current_pos + direction * step, 9)
         delta = abs(next_pos - start_pos)
         if delta > max_change:
-            print(f"\n  Max delta ({max_change}) reached. Stopping.")
+            print(f"\n{_RED}  Max change ({max_change}) reached. Stopping.{_RESET}")
             break
 
         step_n += 1
@@ -253,10 +261,10 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
         current_val = _read(monitor_pv, 'monitor')
         current_err = abs(current_val - target)
         signed_delta = next_pos - start_pos
-        print(f"  {step_n:>6}  {next_pos:10.6f}  {signed_delta:+8.4f}  {current_val:12.6g}  {current_err:12.6g}")
+        print(f"{_YELLOW}  {step_n:>6}  {next_pos:10.6f}  {signed_delta:+8.4f}  {current_val:12.6g}  {current_err:12.6g}{_RESET}")
 
         if current_err >= prev_err:
-            print("  Error no longer decreasing. Stopping.")
+            print(f"{_RED}  Error no longer decreasing. Stopping.{_RESET}")
             break
 
         prev_err = current_err
@@ -270,7 +278,8 @@ def tweak_piezo(monitor_pv, setpoint_pv, target,
     print(f"  Final pos   : {final_pos:.6f}  (Δ = {final_pos - start_pos:+.4f})")
     print(f"  Final val   : {final_val:.6g}")
     print(f"  Target      : {target:.6g}")
-    print(f"  Final error : {rel_err*100:.2f}%")
+    result_color = _GREEN if rel_err <= tolerance else _RED
+    print(f"  Final error : {result_color}{rel_err*100:.2f}%{_RESET}")
     return rel_err <= tolerance
 
 

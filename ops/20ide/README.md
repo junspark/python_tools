@@ -70,6 +70,12 @@ python run_bkg_hrm_piezo_tweak.py monitor --config /path/to/config.py
 
 Adjust a piezo setpoint to bring the monitored value to a target:
 
+The console output uses ANSI colors during tweaking:
+- Green: success / within tolerance
+- Yellow: active step-by-step progress lines and tweak-in-progress banner
+- Red: safety stop or non-improving error stop
+- Cyan: probe step direction details
+
 ```bash
 # Adjust section 1 to target 100.0
 python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0
@@ -143,7 +149,7 @@ An `environment.yml` is provided at the repo root for a reproducible setup:
 ```bash
 # From the repo root
 conda env create -f environment.yml
-conda activate hrm-piezo
+conda activate hrm-monitor
 ```
 
 ### Option B: pip only
@@ -182,21 +188,21 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --tolerance 5.0
 ```
 Piezo1 monitor PV prints green when within 5% of 100.0, Piezo2 when within 5% of 80.0; red otherwise.
 
-### Scenario 2: Tweak with tight tolerance
+### Scenario 3: Tweak with tight tolerance
 ```bash
 python run_bkg_hrm_piezo_tweak.py tweak --section 1 --target 100.0 \
     --tolerance 1.0 --step 0.005 --max-change 0.1
 ```
 Fine-tuning: small steps, strict tolerance, larger allowed range.
 
-### Scenario 3: Tweak with quick broad search
+### Scenario 4: Tweak with quick broad search
 ```bash
 python run_bkg_hrm_piezo_tweak.py tweak --section 2 --target 50.0 \
     --step 0.02 --tolerance 5.0 --settle 0.2
 ```
 Faster adjustment with looser tolerance and shorter settle times.
 
-### Scenario 4: Test configuration
+### Scenario 5: Test configuration
 ```bash
 python run_bkg_hrm_piezo_tweak.py monitor --dry-run --interval 2.0
 ```
@@ -241,6 +247,7 @@ Simulates PV polling without EPICS to verify config and script logic.
 - **Direction probe**: Automatically determines correct adjustment direction
 - **Error monitoring**: Stops if error stops decreasing (plateau detection)
 - **Settle time**: Allows PV to stabilize before re-reading
+- **Visual status cues**: Colorized console messages make success, progress, and stop conditions easy to spot
 
 ### PV State After Tweak
 - Final setpoint remains at the adjusted value
