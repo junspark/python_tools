@@ -2,6 +2,8 @@ S-DCCT:CurrentM                  %%% STORAGE RING CURRENT PV
 
 S20ID-PSS:FES:BeamBlockingM      %%% FRONT END SHUTTER STATUS
 
+20ida1:m27.RBV                   %%% FOIL WHEEL RBV PV
+
 20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
 20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
 20idPI518:PIE518:1:p1_position   %%% PIEZO1 POSITION PV

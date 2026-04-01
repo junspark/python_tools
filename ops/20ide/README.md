@@ -6,7 +6,7 @@ Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 
 | File | Purpose |
 |---|---|
-| `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section, optional ring-current PV, and optional shutter-status PV |
+| `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section, optional ring-current PV, optional shutter-status PV, and optional foil-wheel RBV PV |
 | `run_bkg_hrm_piezo_tweak.py` | CLI tool: `monitor` and `tweak` subcommands |
 | `environment.yml` | Conda environment definition |
 
@@ -33,8 +33,9 @@ pip install pyepics
 Each line has the form `PV_NAME  %%% COMMENT`:
 
 ```
-S-DCCT:CurrentM   %%% STORAGE RING CURRENT PV
-S20ID-PSS:FES:BeamBlockingM   %%% FRONT END SHUTTER STATUS
+S-DCCT:CurrentM                  %%% STORAGE RING CURRENT PV
+S20ID-PSS:FES:BeamBlockingM      %%% FRONT END SHUTTER STATUS
+20ida1:m27.RBV                   %%% FOIL WHEEL RBV PV
 
 20aT1:TM:Current3:MeanValue_RBV  %%% PV1 NAME TO MONITOR
 20idPI518:PIE518:1:p1_volts      %%% PIEZO1 VOLTAGE PV
@@ -203,12 +204,15 @@ and `--pos-range` before continuing.
 
 ### Automatic tweak skip conditions
 
-Even in `tweak` mode, the script will skip the write phase for a cycle when either condition is true:
+Even in `tweak` mode, the script will skip the write phase for a cycle when any of these conditions is true:
 
 - Storage ring current is more than 10% below `--ref-current`
 - Front end shutter status indicates the beam is blocked
+- Foil wheel RBV is not equal to `1` (i.e. the foil wheel is not in the correct position)
 
 In those cases, the tool continues monitoring and logging, but does not issue any `caput` writes for that cycle.
+
+The `FOIL WHEEL RBV PV` entry in the config is optional. If it is absent, the foil-wheel check is skipped and tweaking proceeds regardless of foil position.
 
 ### Session logging (`--expid`)
 
@@ -344,6 +348,7 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 10300,6500
 | `SR current PV found in config but --ref-current not given` | Normalization was available but not enabled | Pass `--ref-current <mA>` if you want SR-current normalization |
 | `SR current (...) is >10% below ref (...) — tweak skipped` | Beam current too low for reliable comparison | Wait for current recovery or lower `--ref-current` |
 | `Front end shutter is ON (beam blocked) — tweak skipped` | Beam is blocked at the front end | Re-open beam path before expecting auto-tweak writes |
+| `foil wheel not in position (RBV=...) — tweak skipped` | Foil wheel RBV PV value is not `1` | Verify foil wheel position and wait for it to reach the correct position |
 | `Cannot read monitor PV` | EPICS disconnected or wrong PV name | Check network / config file |
 | `Config file not found` | Wrong path | Use `--config /full/path/to/file` |
 | `Section N not found` | Fewer sections than requested | Check blank-line-separated blocks in config |

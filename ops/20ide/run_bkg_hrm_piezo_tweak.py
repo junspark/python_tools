@@ -156,6 +156,7 @@ def parse_config(config_file):
     """
     sr_pv = None
     shutter_pv = None
+    foil_pv = None
     sections = []
     current = {}
     with open(config_file) as fh:
@@ -175,6 +176,8 @@ def parse_config(config_file):
                 sr_pv = pv_name
             elif 'SHUTTER' in tag:
                 shutter_pv = pv_name
+            elif 'FOIL WHEEL' in tag:
+                foil_pv = pv_name
             elif 'NAME TO MONITOR' in tag:
                 current['monitor'] = pv_name
             elif 'VOLTAGE PV' in tag:
@@ -185,7 +188,7 @@ def parse_config(config_file):
                 current['position'] = pv_name
     if current:
         sections.append(current)
-    return sr_pv, shutter_pv, sections
+    return sr_pv, shutter_pv, foil_pv, sections
 
 # ---------------------------------------------------------------------------
 # Display helpers
@@ -401,7 +404,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
 
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
              tweak_mode=False, pos_limits=None, max_steps=5, confirm=False,
-             sr_pv=None, ref_current=None, shutter_pv=None, log_fh=None,
+             sr_pv=None, ref_current=None, shutter_pv=None, foil_pv=None, log_fh=None,
              pos_range=None, settle_time=TWEAK_SETTLE_DEFAULT):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
@@ -486,6 +489,10 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
             shutter_on  = (shutter_val is not None and
                            (shutter_val == 1 or str(shutter_val).upper() == 'ON'))
 
+            # Check foil wheel — skip tweak if readback is not 1
+            foil_val    = _caget(foil_pv, timeout=5) if foil_pv else None
+            foil_not_in = (foil_val is not None and foil_val != 1)
+
             # Cycle header
             ts = time.strftime('%H:%M:%S')
             if norm_active:
@@ -533,7 +540,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
 
             # --- Tweak phase (skipped in monitor mode) ---
             # Always Piezo1 first, then Piezo2.
-            skip_tweak = sr_low or shutter_on
+            skip_tweak = sr_low or shutter_on or foil_not_in
             if tweak_mode and skip_tweak:
                 reasons = []
                 if sr_low:
@@ -541,6 +548,8 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                                    f">10% below ref ({ref_current:.4g} mA)")
                 if shutter_on:
                     reasons.append("front end shutter is ON")
+                if foil_not_in:
+                    reasons.append(f"foil wheel not in position (Foil Wheel Pos={foil_val})")
                 msg = "Tweak skipped: " + " and ".join(reasons) + "."
                 print(f"  {_BOLD}{_YELLOW}{msg}{_RESET}")
                 _log(log_fh, f"> {msg}")
@@ -595,11 +604,12 @@ def _load_config(config):
     if not os.path.exists(config):
         print(f"ERROR: Config file not found: {config}")
         sys.exit(1)
-    sr_pv, shutter_pv, sections = parse_config(config)
+    sr_pv, shutter_pv, foil_pv, sections = parse_config(config)
     if not sections:
         print("ERROR: No valid sections found in config file.")
         sys.exit(1)
-    return sr_pv, shutter_pv, sections
+    return sr_pv, shutter_pv, foil_pv, sections
+
 
 
 def _parse_targets(s):
@@ -670,7 +680,7 @@ def main():
         sys.exit(1)
 
     targets = _parse_targets(args.target) if args.target else None
-    sr_pv, shutter_pv, sections = _load_config(args.config)
+    sr_pv, shutter_pv, foil_pv, sections = _load_config(args.config)
     ref_current                = args.ref_current
 
     if sr_pv and ref_current is None:
@@ -709,6 +719,7 @@ def main():
                      sr_pv=sr_pv,
                      ref_current=ref_current,
                      shutter_pv=shutter_pv,
+                     foil_pv=foil_pv,
                      log_fh=log_fh)
 
         elif args.command == 'tweak':
