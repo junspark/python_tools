@@ -53,11 +53,11 @@ S20ID-PSS:FES:BeamBlockingM   %%% FRONT END SHUTTER STATUS
 
 Continuously prints all 8 PVs (4 per piezo) every second until Ctrl-C.
 
-### Required argument
+### Optional target argument
 
 | Argument | Description |
 |---|---|
-| `--target T1,T2` | Target values for Piezo1 and Piezo2 (comma-separated, **required**) |
+| `--target T1,T2` | Target values for Piezo1 and Piezo2 (comma-separated). If omitted, all PVs are displayed with no green/red coloring. |
 
 ### Optional arguments
 
@@ -73,6 +73,7 @@ Runtime keyboard controls (both subcommands):
 
 - `p`: pause loop activity
 - `r`: resume loop activity
+- `q`: quit the loop (equivalent to Ctrl-C)
 
 ### Color coding
 
@@ -106,23 +107,26 @@ Review the targets and tolerance before confirming.
 ### Use cases
 
 ```bash
-# Case 1: Basic monitoring — Piezo1 target 100.0, Piezo2 target 80.0
+# Case 1: Raw display — no target set, just watch all 8 PVs (no coloring)
+python run_bkg_hrm_piezo_tweak.py monitor
+
+# Case 2: Monitoring with targets — Piezo1 target 100.0, Piezo2 target 80.0
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0
 
-# Case 2: Slower polling interval
+# Case 3: Slower polling interval
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --interval 2.0
 
-# Case 3: Normalize monitor values to a reference SR current
+# Case 4: Normalize monitor values to a reference SR current
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --ref-current 100
 
-# Case 4: Dry run (no EPICS — uses simulated random-walk values)
+# Case 5: Dry run (no EPICS — uses simulated random-walk values)
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --dry-run
 
-# Case 5: Custom config file
+# Case 6: Custom config file
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 \
   --config /path/to/hrm_piezo_pvs.txt
 
-# Case 6: Write a Markdown monitoring record for this experiment
+# Case 7: Write a Markdown monitoring record for this experiment
 python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --expid test123
 ```
 
@@ -136,7 +140,7 @@ python run_bkg_hrm_piezo_tweak.py monitor --target 100.0,80.0 --expid test123
 
   Press Enter to start monitoring, or Ctrl-C to abort...
 
-  Monitoring started. Press Ctrl-C to stop.
+  Monitoring started. Press Ctrl-C to stop  |  'p' = pause  |  'r' = resume  |  'q' = quit
 
 --- 14:32:01 ---
   [Piezo1]
@@ -247,10 +251,10 @@ Before the loop starts, the script prints the tweak settings and pauses:
 Once running, you can pause or resume without terminating the process:
 
 ```
-  Started. Press Ctrl-C to stop  |  'p' = pause  |  'r' = resume
+  Started. Press Ctrl-C to stop  |  'p' = pause  |  'r' = resume  |  'q' = quit
 ```
 
-The same `p/r` reminder line is printed again during the loop so controls remain visible.
+The same `p/r/q` reminder line is printed again during the loop so controls remain visible.
 The reminder is color-highlighted (green) in the terminal for visibility during long runs.
 
 ### Color coding during tweak

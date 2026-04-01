@@ -115,7 +115,7 @@ def _start_keyboard_listener():
                         _update_limits.set()
                         _pause_event.set()
                         print(f"\n  {_GREEN}[RESUMED]{_RESET}", flush=True)
-                    elif ch == '\x03':   # Ctrl-C
+                    elif ch in ('q', '\x03'):   # q or Ctrl-C
                         os.kill(os.getpid(), signal.SIGINT)
         finally:
             termios.tcsetattr(fd, termios.TCSADRAIN, old)
@@ -414,13 +414,16 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
     n_pvs = sum(len(s) for s in sections)
     print(f"\n  Tracking {n_pvs} PVs across {len(sections)} section(s)")
     print(f"  Interval  : {interval}s")
-    print(f"  Keys      : {_BOLD}'p'{_RESET} pause  |  {_BOLD}'r'{_RESET} resume")
+    print(f"  Keys      : {_BOLD}'p'{_RESET} pause  |  {_BOLD}'r'{_RESET} resume  |  {_BOLD}'q'{_RESET} quit")
     if sr_pv and ref_current is not None:
         print(f"  SR current PV  : {sr_pv}")
         print(f"  Ref current    : {ref_current:.4g} mA  (monitor values normalized to this)")
-    for i, t in enumerate(targets, 1):
-        print(f"  Piezo{i} target : {t:.6g}  (±{tolerance*100:.1f}%  "
-              f"{_GREEN}green{_RESET} / {_RED}red{_RESET})")
+    if targets is not None:
+        for i, t in enumerate(targets, 1):
+            print(f"  Piezo{i} target : {t:.6g}  (±{tolerance*100:.1f}%  "
+                  f"{_GREEN}green{_RESET} / {_RED}red{_RESET})")
+    else:
+        print(f"  Targets : not set (raw values displayed, no coloring)")
 
     if tweak_mode:
         print(f"\n  {_BOLD}{_YELLOW}Tweak mode ON{_RESET}")
@@ -499,9 +502,9 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
             eff_targets  = []   # normalized targets for this cycle (one per piezo)
 
             for i, sec in enumerate(sections, 1):
-                target = targets[i - 1]
+                target = targets[i - 1] if targets is not None else None
                 eff_target = (target * (ring_current / ref_current)
-                              if norm_ok else target)
+                              if (norm_ok and target is not None) else target)
                 eff_targets.append(eff_target)
 
                 print(f"  [Piezo{i}]")
@@ -557,7 +560,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                         _log(log_fh, f"> {msg}")
                 print()
 
-            print(f"  {_BOLD}{_GREEN}'p' pause  |  'r' resume{_RESET}\n")
+            print(f"  {_BOLD}{_GREEN}'p' pause  |  'r' resume  |  'q' quit{_RESET}\n")
             time.sleep(interval)
 
     except KeyboardInterrupt:
@@ -612,8 +615,6 @@ _MONITOR_TOLERANCE = 0.05   # fixed 5 % for green/red coloring in monitor mode
 _LOG_BASE = '/home/beams/S20IDUSER/new_data'
 
 def _add_shared_args(p):
-    p.add_argument('--target', type=str, required=True,
-                   help='Comma-separated targets for Piezo1,Piezo2 (e.g. 10300,6500)')
     p.add_argument('--ref-current', type=float, default=None, metavar='mA',
                    help='Reference storage ring current in mA for normalization '
                         '(requires RING CURRENT PV in config)')
@@ -640,12 +641,17 @@ def main():
                            help='Display all 8 PVs continuously. No PVs written.',
                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _add_shared_args(p_mon)
+    p_mon.add_argument('--target', type=str, default=None,
+                       help='Comma-separated targets for Piezo1,Piezo2 (optional — '
+                            'omit to display raw values without coloring)')
 
     # --- tweak ---
     p_twk = sub.add_parser('tweak',
                            help='Same as monitor, but auto-adjusts when out of tolerance.',
                            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     _add_shared_args(p_twk)
+    p_twk.add_argument('--target', type=str, required=True,
+                       help='Comma-separated targets for Piezo1,Piezo2 (e.g. 10300,6500)')
     p_twk.add_argument('--tolerance', type=float, default=5.0,
                        help='%% tolerance: tweak trigger and green/red threshold')
     p_twk.add_argument('--pos-range', type=float, default=0.1,
@@ -663,7 +669,7 @@ def main():
         print("ERROR: pyepics not installed. Use --dry-run to test without EPICS.")
         sys.exit(1)
 
-    targets                    = _parse_targets(args.target)
+    targets = _parse_targets(args.target) if args.target else None
     sr_pv, shutter_pv, sections = _load_config(args.config)
     ref_current                = args.ref_current
 
@@ -671,7 +677,7 @@ def main():
         print("WARNING: SR current PV found in config but --ref-current not given. "
               "Normalization disabled.")
 
-    if len(sections) < len(targets):
+    if targets is not None and len(sections) < len(targets):
         print(f"ERROR: Config has {len(sections)} section(s) but --target has "
               f"{len(targets)} values.")
         sys.exit(1)
