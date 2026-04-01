@@ -26,8 +26,8 @@ Tweak-only arguments
   --tolerance %       Green/red threshold and tweak trigger  (default 5 %)
   --pos-range  R      Allowed drive range = current_pos ± R  (default 0.1)
   --max-steps  N      Max setpoint steps per tweak cycle     (default 5)
-  --confirm           Prompt for approval before each caput  (default off)
-  (settle time is fixed at 1 s)
+  --settle-time s     Seconds to wait between caput and PV read (default 3 s)
+  --confirm           Prompt for approval before each caput    (default off)
 
 Monitor color coding uses a fixed 5 % tolerance (not configurable).
 
@@ -200,8 +200,8 @@ _CYAN   = '\033[96m'
 _BOLD   = '\033[1m'
 _RESET  = '\033[0m'
 
-TWEAK_SETTLE = 1.0   # fixed settle time (s) between tweak steps
-TWEAK_STEP   = 0.01  # fixed setpoint step size
+TWEAK_SETTLE_DEFAULT = 3.0   # default settle time (s) between caput and PV read
+TWEAK_STEP           = 0.01  # fixed setpoint step size
 
 
 def _color(val_str, val, target, tolerance):
@@ -226,7 +226,8 @@ def _confirm_step(set_pv, value):
 
 
 def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
-               confirm=False, sr_pv=None, ref_current=None, log_fh=None):
+               confirm=False, sr_pv=None, ref_current=None, log_fh=None,
+               settle_time=TWEAK_SETTLE_DEFAULT):
     """
     Tweak one piezo until its monitor PV is within tolerance of target.
 
@@ -274,7 +275,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
     if confirm and not _confirm_step(set_pv, probe_pos):
         return False
     _caput(set_pv, probe_pos, wait=True)
-    time.sleep(TWEAK_SETTLE)
+    time.sleep(settle_time)
     probe_val = _read_normalized(mon_pv, sr_pv, ref_current)
     if probe_val is None:
         return False
@@ -298,7 +299,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         if confirm and not _confirm_step(set_pv, start_pos):
             return False
         _caput(set_pv, start_pos, wait=True)
-        time.sleep(TWEAK_SETTLE)
+        time.sleep(settle_time)
         current_pos = start_pos
         current_val = _read_normalized(mon_pv, sr_pv, ref_current) or current_val
         prev_err    = abs(current_val - target)
@@ -336,7 +337,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
         if confirm and not _confirm_step(set_pv, next_pos):
             return False
         _caput(set_pv, next_pos, wait=True)
-        time.sleep(TWEAK_SETTLE)
+        time.sleep(settle_time)
         current_val = _read_normalized(mon_pv, sr_pv, ref_current)
         if current_val is None:
             return False
@@ -360,7 +361,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
             if confirm and not _confirm_step(set_pv, best_pos):
                 return False
             _caput(set_pv, best_pos, wait=True)
-            time.sleep(TWEAK_SETTLE)
+            time.sleep(settle_time)
             final_val = _read_normalized(mon_pv, sr_pv, ref_current)
             if final_val is None:
                 return False
@@ -401,7 +402,7 @@ def _tweak_one(piezo_n, sec, target, tolerance, pos_min, pos_max, max_steps,
 def run_loop(sections, targets, interval=1.0, tolerance=0.05,
              tweak_mode=False, pos_limits=None, max_steps=5, confirm=False,
              sr_pv=None, ref_current=None, shutter_pv=None, log_fh=None,
-             pos_range=None):
+             pos_range=None, settle_time=TWEAK_SETTLE_DEFAULT):
     """
     Continuous loop shared by both 'monitor' and 'tweak' subcommands.
 
@@ -423,7 +424,7 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
 
     if tweak_mode:
         print(f"\n  {_BOLD}{_YELLOW}Tweak mode ON{_RESET}")
-        print(f"  Settle time : {TWEAK_SETTLE}s (fixed)")
+        print(f"  Settle time : {settle_time}s")
         print(f"  Step size   : {TWEAK_STEP}")
         print(f"  Max steps   : {max_steps} per cycle")
         print(f"  Confirm     : {'ON (will prompt before each caput)' if confirm else 'OFF'}")
@@ -548,7 +549,8 @@ def run_loop(sections, targets, interval=1.0, tolerance=0.05,
                                          tolerance, lo, hi, max_steps,
                                          confirm=confirm,
                                          sr_pv=sr_pv, ref_current=ref_current,
-                                         log_fh=log_fh)
+                                         log_fh=log_fh,
+                                         settle_time=settle_time)
                     if not success:
                         msg = f"Piezo{i} tweak ended without reaching target."
                         print(f"{_BOLD}{_RED}  {msg} Continuing.{_RESET}")
@@ -650,6 +652,8 @@ def main():
                        help='Allowed drive range = current_pos ± pos-range per piezo')
     p_twk.add_argument('--max-steps', type=int, default=5,
                        help='Max setpoint steps per tweak cycle per piezo')
+    p_twk.add_argument('--settle-time', type=float, default=TWEAK_SETTLE_DEFAULT,
+                       help='Seconds to wait between caput and PV read')
     p_twk.add_argument('--confirm', action='store_true',
                        help='Prompt for user approval before each caput')
 
@@ -725,7 +729,8 @@ def main():
                      ref_current=ref_current,
                      shutter_pv=shutter_pv,
                      log_fh=log_fh,
-                     pos_range=args.pos_range)
+                     pos_range=args.pos_range,
+                     settle_time=args.settle_time)
     finally:
         if log_fh:
             log_fh.close()

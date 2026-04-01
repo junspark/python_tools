@@ -174,6 +174,7 @@ is out of tolerance it automatically attempts a bounded tweak cycle for that pie
 | `--ref-current` | off | Reference storage ring current in mA for monitor normalization |
 | `--pos-range` | `0.1` | Allowed drive range = current position ± `pos-range` for each piezo |
 | `--max-steps` | `5` | Max tweak steps per cycle for each piezo |
+| `--settle-time` | `3.0` | Seconds to wait after each caput before reading PV values |
 | `--confirm` | off | Prompt for user approval before each caput |
 | `--expid` | off | Experiment ID; writes a Markdown tweak/monitor record under `/home/beams/S20IDUSER/new_data/<EXPID>/` |
 | `--config` | same dir | Path to PV config file |
@@ -233,7 +234,7 @@ Before the loop starts, the script prints the tweak settings and pauses:
   Piezo2 target : 6500   (±5.0%  green / red)
 
   Tweak mode ON
-  Settle time : 1.0s (fixed)
+  Settle time : 3.0s
   Step size   : 0.01
   Max steps   : 5 per cycle
   Confirm     : OFF
