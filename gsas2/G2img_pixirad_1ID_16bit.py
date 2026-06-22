@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 '''
-*Module G2img_1ID_32bit_TIFsum.py: 1ID normalized 16bit Pixirad TIF for rapid access measurement*
---------------------------------------------------
+*Module G2img_pixirad_1ID_16bit.py: 16-bit Pixirad TIF*
+----------------------------------------------------------
 
-Adaptation of G2img_1ID_32bit_TIFsum.py revision 4902 for use with the 1ID SAXS pixirad.
-
+Adaptation of G2img_1ID_32bit_TIFsum.py for use with the 1ID SAXS pixirad.
+Used at 1-ID with normalized 16bit Pixirad TIF for rapid access measurement
 '''
 
 from __future__ import division, print_function
@@ -166,14 +166,27 @@ def GetTifData(filename):
     '''This is the code that was changed from the original GSASII tiff reading
     script, only populates the image variable if certain parameters are met
     '''
-    if IFD[258][2][0] == 16:                                                    #summed files are 16 bit to hold the required amount of data
-        if sizexy == [1024, 402] or sizexy == [402, 1024]:                      #confirms that it has the proper size
-            tifType = '1ID summed 16bit Pixirad'
-            pixy = [62.,62.]                                                      #sets the pixel size
+    bitsPerSample = IFD[258][2][0]
+    sampleFormat = IFD[339][2][0] if 339 in IFD else 1                          #1=uint, 2=int, 3=float (TIFF default is 1)
+    stripOffset = IFD[273][2][0]                                                #pixel data offset; not always 0/8
+    if sizexy == [1024, 402] or sizexy == [402, 1024]:                          #confirms that it has the proper size
+        pixy = [62.,62.]                                                        #sets the pixel size
+        if bitsPerSample == 16 and sampleFormat in (1, 2):                      #legacy 16-bit summed format
+            tifType = '1ID summed 16bit Dexela'
             print ('Read 1ID normalized 16bit Pixirad tiff file: '+filename)
-            File.seek(0)                                                        #goto first pixel
-            image = np.array(np.frombuffer(File.read(2*Npix),dtype=np.int16),dtype=np.int32)  #result must be 32 bit like all the others
-            
+            File.seek(stripOffset)
+            image = np.array(np.frombuffer(File.read(2*Npix),dtype=byteOrd+'i2'),dtype=np.int32)
+        elif bitsPerSample == 32 and sampleFormat == 3:                         #normalized 32-bit float format
+            tifType = '1ID normalized 32bit float Pixirad'
+            print ('Read 1ID normalized 32bit float Pixirad tiff file: '+filename)
+            File.seek(stripOffset)
+            image = np.array(np.frombuffer(File.read(4*Npix),dtype=byteOrd+'f4'),dtype=np.int32)
+        elif bitsPerSample == 32 and sampleFormat in (1, 2):                    #32-bit integer variant
+            tifType = '1ID 32bit int Pixirad'
+            print ('Read 1ID 32bit integer Pixirad tiff file: '+filename)
+            File.seek(stripOffset)
+            image = np.array(np.frombuffer(File.read(4*Npix),dtype=byteOrd+'i4'),dtype=np.int32)
+
     if image is None:
         print('Image is improperly formatted in some way, confirm that this tiff file is being uses properly with the 1ID workflow')
         lines = ['Image is improperly formatted in some way',]
