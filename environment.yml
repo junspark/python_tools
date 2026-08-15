@@ -1,9 +1,10 @@
-name: hrm-monitor
+name: ops
 channels:
   - conda-forge
   - defaults
 dependencies:
   - python=3.9
   - pip
+  - pyqt=5
   - pip:
     - pyepics

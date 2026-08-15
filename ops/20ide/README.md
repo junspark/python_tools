@@ -8,7 +8,7 @@ Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 |---|---|
 | `hrm_piezo_pvs.txt` | Config: maps EPICS PV names to each piezo section, optional ring-current PV, optional shutter-status PV, and optional foil-wheel RBV PV |
 | `run_bkg_hrm_piezo_tweak.py` | CLI tool: `monitor` and `tweak` subcommands |
-| `environment.yml` | Conda environment definition |
+The conda environment is shared across all `ops/` tools; see `../../environment.yml`.
 
 ---
 
@@ -17,8 +17,8 @@ Tools to monitor and adjust piezo setpoints in the 20-ID HRM background hutch.
 ### 1. Create the conda environment
 
 ```bash
-conda env create -f environment.yml
-conda activate hrm-monitor
+conda env create -f ../../environment.yml
+conda activate ops
 ```
 
 Or with pip only:
