@@ -26,7 +26,7 @@ Tweak-only arguments
   --tolerance %       Green/red threshold and tweak trigger  (default 5 %)
   --pos-range  R      Allowed drive range = current_pos ± R  (default 0.1)
   --max-steps  N      Max setpoint steps per tweak cycle     (default 5)
-  --settle-time s     Seconds to wait between caput and PV read (default 3 s)
+  --settle-time s     Seconds to wait between caput and PV read (default 5 s)
   --confirm           Prompt for approval before each caput    (default off)
 
 Monitor color coding uses a fixed 5 % tolerance (not configurable).
@@ -203,7 +203,7 @@ _CYAN   = '\033[96m'
 _BOLD   = '\033[1m'
 _RESET  = '\033[0m'
 
-TWEAK_SETTLE_DEFAULT = 3.0   # default settle time (s) between caput and PV read
+TWEAK_SETTLE_DEFAULT = 5.0   # default settle time (s) between caput and PV read
 TWEAK_STEP           = 0.01  # fixed setpoint step size
 
 
