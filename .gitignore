@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# Runtime-generated state/history/records for the ops/ tools - not source,
+# regenerated on every run, and would just accumulate noise in the repo.
+ops/data_integrity/records/
+ops/disk_monitor/disk_history.jsonl
+ops/disk_monitor/disk_alert_state.json
+ops/disk_monitor/disk_monitor_cron.log
+ops/pv_logger/pv_alert_state.json

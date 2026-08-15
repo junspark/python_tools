@@ -1,0 +1,2808 @@
+{
+  "settings": {
+    "log_interval_sec": 5,
+    "connect_timeout_sec": 2.0,
+    "recipients": [],
+    "sender": "pv_logger@your-host.aps.anl.gov",
+    "smtp_host": "apsmail.aps.anl.gov",
+    "smtp_port": 25,
+    "alert_cooldown_min": 60
+  },
+  "pvs": [
+    {
+      "name": "hydraZE",
+      "pv": "1idc:m7.RBV",
+      "group": "GE/Pilatus DETECTOR"
+    },
+    {
+      "name": "geXE",
+      "pv": "1ide1:m103.RBV",
+      "group": "GE/Pilatus DETECTOR"
+    },
+    {
+      "name": "geZE",
+      "pv": "1ide1:m50.RBV",
+      "group": "GE/Pilatus DETECTOR"
+    },
+    {
+      "name": "ImgXE",
+      "pv": "1ide1:m63.RBV",
+      "group": "Tomo det"
+    },
+    {
+      "name": "ImgYE",
+      "pv": "1ide1:m40.RBV",
+      "group": "Tomo det"
+    },
+    {
+      "name": "ImgZE",
+      "pv": "1ide1:m62.RBV",
+      "group": "Tomo det"
+    },
+    {
+      "name": "ImgChiE",
+      "pv": "1ide1:m38.RBV",
+      "group": "Tomo det"
+    },
+    {
+      "name": "DetX",
+      "pv": "1ide1:m6.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "NFYE",
+      "pv": "1ide1:m59.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "DetZ",
+      "pv": "1ide1:m7.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "bbYE",
+      "pv": "1ide1:m39.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "focus",
+      "pv": "1ide1:m12.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "bbPhi",
+      "pv": "1ide1:m57.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "NFtiltX",
+      "pv": "1ide1:m5.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "NFtiltY",
+      "pv": "1ide1:m6.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "NFX",
+      "pv": "1ide1:m111.RBV",
+      "group": "NF DET"
+    },
+    {
+      "name": "L1th",
+      "pv": "1ide1:m30.RBV",
+      "group": "LENSES IN E VERTICAL FOCUS"
+    },
+    {
+      "name": "L1y",
+      "pv": "1ide1:m28.RBV",
+      "group": "LENSES IN E VERTICAL FOCUS"
+    },
+    {
+      "name": "L2th",
+      "pv": "1ide1:m32.RBV",
+      "group": "LENSES IN E VERTICAL FOCUS"
+    },
+    {
+      "name": "L2y",
+      "pv": "1ide1:m29.RBV",
+      "group": "LENSES IN E VERTICAL FOCUS"
+    },
+    {
+      "name": "L3x",
+      "pv": "1ide1:m82.RBV",
+      "group": "LENSES IN E Horizontal FOCUS"
+    },
+    {
+      "name": "L3ph",
+      "pv": "1ide1:m83.RBV",
+      "group": "LENSES IN E Horizontal FOCUS"
+    },
+    {
+      "name": "L4x",
+      "pv": "1ide1:m85.RBV",
+      "group": "LENSES IN E Horizontal FOCUS"
+    },
+    {
+      "name": "L4ph",
+      "pv": "1ide1:m88.RBV",
+      "group": "LENSES IN E Horizontal FOCUS"
+    },
+    {
+      "name": "L1piv",
+      "pv": "1idb:m47.RBV",
+      "group": "LENSES IN B VERTICAL FOCUS"
+    },
+    {
+      "name": "L1gap",
+      "pv": "1idb:m29.RBV",
+      "group": "LENSES IN B VERTICAL FOCUS"
+    },
+    {
+      "name": "L2piv",
+      "pv": "1idb:m22.RBV",
+      "group": "LENSES IN B VERTICAL FOCUS"
+    },
+    {
+      "name": "L2gap",
+      "pv": "1idb:m24.RBV",
+      "group": "LENSES IN B VERTICAL FOCUS"
+    },
+    {
+      "name": "RLxb",
+      "pv": "1idb:m54.RBV",
+      "group": "LENGELER LENSES IN B"
+    },
+    {
+      "name": "RLyb",
+      "pv": "1idb:m44.RBV",
+      "group": "LENGELER LENSES IN B"
+    },
+    {
+      "name": "RLthb",
+      "pv": "1idb:m53.RBV",
+      "group": "LENGELER LENSES IN B"
+    },
+    {
+      "name": "RLphib",
+      "pv": "1idb:m49.RBV",
+      "group": "LENGELER LENSES IN B"
+    },
+    {
+      "name": "CRL1Y",
+      "pv": "1ida:m21.RBV",
+      "group": "US CRL LENSES IN B"
+    },
+    {
+      "name": "CRL1Th",
+      "pv": "1ida:m31.RBV",
+      "group": "US CRL LENSES IN B"
+    },
+    {
+      "name": "CRL2Y",
+      "pv": "1ida:m26.RBV",
+      "group": "US CRL LENSES IN B"
+    },
+    {
+      "name": "CRL2Th",
+      "pv": "1ida:m24.RBV",
+      "group": "US CRL LENSES IN B"
+    },
+    {
+      "name": "LCx",
+      "pv": "1idc:m42.RBV",
+      "group": "CRL LENSES IN DS C"
+    },
+    {
+      "name": "LCy",
+      "pv": "1idc:m43.RBV",
+      "group": "CRL LENSES IN DS C"
+    },
+    {
+      "name": "LCth",
+      "pv": "1idc:m41.RBV",
+      "group": "CRL LENSES IN DS C"
+    },
+    {
+      "name": "LCphi",
+      "pv": "1idc:m44.RBV",
+      "group": "CRL LENSES IN DS C"
+    },
+    {
+      "name": "atten",
+      "pv": "1idb:m50.RBV",
+      "group": "Foils. attens"
+    },
+    {
+      "name": "foil",
+      "pv": "1idb:m18.RBV",
+      "group": "Foils. attens"
+    },
+    {
+      "name": "attenC",
+      "pv": "1idc:m16.RBV",
+      "group": "Foils. attens"
+    },
+    {
+      "name": "mtsX2E",
+      "pv": "1ide1:m9.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "phi",
+      "pv": "1ide1:m4.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsXE",
+      "pv": "1ide1:m13.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsYE",
+      "pv": "1ide1:m16.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsZE",
+      "pv": "1ide1:m14.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsY1",
+      "pv": "1ide1:m1.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsY2",
+      "pv": "1ide1:m2.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "mtsY3",
+      "pv": "1ide1:m3.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "rams1",
+      "pv": "1idrams1:m1.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "oxyPhi",
+      "pv": "1ide1:m91.RBV",
+      "group": "MTS+RAMS1+OXYGON setup"
+    },
+    {
+      "name": "samXE",
+      "pv": "1ide1:m34.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "samYE",
+      "pv": "1ide1:m35.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "samZE",
+      "pv": "1ide1:m36.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "th",
+      "pv": "1ide1:m86.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "chi",
+      "pv": "1ide1:m87.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "aero",
+      "pv": "1ide:m9.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "tension",
+      "pv": "1ide1:m33.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "aeroXE",
+      "pv": "1ide1:m101.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "aeroZE",
+      "pv": "1ide1:m102.RBV",
+      "group": "Aero setup"
+    },
+    {
+      "name": "msamXC",
+      "pv": "1idc:m12.RBV",
+      "group": "MAMC setup"
+    },
+    {
+      "name": "msamYC",
+      "pv": "1idc:m14.RBV",
+      "group": "MAMC setup"
+    },
+    {
+      "name": "msamZC",
+      "pv": "1idc:m13.RBV",
+      "group": "MAMC setup"
+    },
+    {
+      "name": "momeC",
+      "pv": "1idc:m9.RBV",
+      "group": "MAMC setup"
+    },
+    {
+      "name": "mrotXC",
+      "pv": "1idc:m15.RBV",
+      "group": "MAMC setup"
+    },
+    {
+      "name": "coilPhi",
+      "pv": "1ide1:m60.RBV",
+      "group": "RF Furnace"
+    },
+    {
+      "name": "coilZ",
+      "pv": "1ide1:m61.RBV",
+      "group": "RF Furnace"
+    },
+    {
+      "name": "coilY",
+      "pv": "1ide1:m56.RBV",
+      "group": "RF Furnace"
+    },
+    {
+      "name": "samX",
+      "pv": "1ide1:m95.RBV",
+      "group": "AM chamber setup"
+    },
+    {
+      "name": "samZ",
+      "pv": "1ide1:m96.RBV",
+      "group": "AM chamber setup"
+    },
+    {
+      "name": "samY",
+      "pv": "1ide1:m79.RBV",
+      "group": "AM chamber setup"
+    },
+    {
+      "name": "chmY",
+      "pv": "1ide1:m76.RBV",
+      "group": "AM chamber setup"
+    },
+    {
+      "name": "chmX",
+      "pv": "1ide1:m68.RBV",
+      "group": "AM chamber setup"
+    },
+    {
+      "name": "cmufx",
+      "pv": "1ide1:m17.RBV",
+      "group": "CMU Suter / Basil furnace motors"
+    },
+    {
+      "name": "cmufz",
+      "pv": "1ide1:m18.RBV",
+      "group": "CMU Suter / Basil furnace motors"
+    },
+    {
+      "name": "cmufy",
+      "pv": "1ide1:m94.RBV",
+      "group": "CMU Suter / Basil furnace motors"
+    },
+    {
+      "name": "shieldX",
+      "pv": "1ide1:m42.RBV",
+      "group": "Shields"
+    },
+    {
+      "name": "SAXpinX",
+      "pv": "1ide1:m66.RBV",
+      "group": "Shields"
+    },
+    {
+      "name": "dexX",
+      "pv": "1ide1:m47.RBV",
+      "group": "Shields"
+    },
+    {
+      "name": "Iring",
+      "pv": "S:SRcurrentAI",
+      "group": "INITATE LOGGING"
+    },
+    {
+      "name": "ge1 fnum",
+      "pv": "GE1:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "ge2 fnum",
+      "pv": "GE2:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "ge3 fnum",
+      "pv": "GE3:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "ge4 fnum",
+      "pv": "GE4:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "ge5 fnum",
+      "pv": "GE5:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "Q2 tomo fnum",
+      "pv": "QIMAGE2:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "PG1 tomo fnum (1idPG1)",
+      "pv": "1idPG1:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "PG1 tomo fnum (1idGH1)",
+      "pv": "1idGH1:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "dexela fnum",
+      "pv": "1idDEX:TIFF1:FileNumber",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "PG5 fnum",
+      "pv": "1idPG5:TIFF1:FileNumber",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "NF fnum",
+      "pv": "QIMAGE1:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "Lambda fnum",
+      "pv": "dp_lambda_xrd30:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "dic fname",
+      "pv": "s1_gx2750:TIFF1:FileName_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "dic fnum",
+      "pv": "s1_gx2750:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "vff fnum (dp_mar165_xrd82)",
+      "pv": "dp_mar165_xrd82:cam1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "vff fnum (QMPX3)",
+      "pv": "QMPX3:TIFF1:FileNumber_RBV",
+      "group": "DETECTORS frame number"
+    },
+    {
+      "name": "PilNextFileNr",
+      "pv": "1idPil:TIFF1:FileNumber_RBV",
+      "group": "Pilatus"
+    },
+    {
+      "name": "PilExpTime (s)",
+      "pv": "1idPil:cam1:AcquireTime_RBV",
+      "group": "Pilatus"
+    },
+    {
+      "name": "PilNumImages",
+      "pv": "1idPil:cam1:NumImages_RBV",
+      "group": "Pilatus"
+    },
+    {
+      "name": "saxs fnum (s1_pixirad2)",
+      "pv": "s1_pixirad2:TIFF1:FileNumber_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "saxs fnum (s1_pixirad2)",
+      "pv": "s1_pixirad2:HDF1:FileNumber_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "set pt temp",
+      "pv": "s1_pixirad2:cam1:Temperature_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "actual temp",
+      "pv": "s1_pixirad2:cam1:TemperatureActual",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "box temp",
+      "pv": "s1_pixirad2:cam1:BoxTemperature_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "box humidity",
+      "pv": "s1_pixirad2:cam1:BoxHumidity_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "dew pt",
+      "pv": "s1_pixirad2:cam1:DewPoint_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "saxs peltier power",
+      "pv": "s1_pixirad2:cam1:PeltierPower_RBV",
+      "group": "PIXIRAD2"
+    },
+    {
+      "name": "L5B Y",
+      "pv": "1idb:m47.RBV",
+      "group": "LENSES"
+    },
+    {
+      "name": "L5B Th",
+      "pv": "1idb:m29.RBV",
+      "group": "LENSES"
+    },
+    {
+      "name": "L4B Y",
+      "pv": "1idb:m22.RBV",
+      "group": "LENSES"
+    },
+    {
+      "name": "L4B Th",
+      "pv": "1idb:m24.RBV",
+      "group": "LENSES"
+    },
+    {
+      "name": "CRL 1 Th",
+      "pv": "1ida:m31.RBV",
+      "group": "LENSES IN B CRL, upstream"
+    },
+    {
+      "name": "CRL 1 Y",
+      "pv": "1ida:m21.RBV",
+      "group": "LENSES IN B CRL, upstream"
+    },
+    {
+      "name": "CRL 2 Th",
+      "pv": "1ida:m24.RBV",
+      "group": "LENSES IN B CRL, upstream"
+    },
+    {
+      "name": "CRL 2 Y",
+      "pv": "1ida:m26.RBV",
+      "group": "LENSES IN B CRL, upstream"
+    },
+    {
+      "name": "Fedrl1 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_1",
+      "group": "Aero setup"
+    },
+    {
+      "name": "Fedrl1 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_1",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl2 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_2",
+      "group": "Aero setup"
+    },
+    {
+      "name": "Fedrl2 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_2",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "afrl_shield (-)",
+      "pv": "1ide:Unidig1Bo2",
+      "group": "Shields"
+    },
+    {
+      "name": "HEM E (keV)",
+      "pv": "1id:userTran3.A",
+      "group": "Monochromator"
+    },
+    {
+      "name": "Th1 offset",
+      "pv": "1id:userTran3.B",
+      "group": "Monochromator"
+    },
+    {
+      "name": "SCU1 Current (A)",
+      "pv": "ID01ds:MainCurrentRdbk.VAL",
+      "group": "Monochromator"
+    },
+    {
+      "name": "UndA Gap (mm)",
+      "pv": "S01ID:DSID:GapM.VAL",
+      "group": "Monochromator"
+    },
+    {
+      "name": "Undulator gap (mm)",
+      "pv": "S01ID:DSID:GapM.VAL",
+      "group": "Monochromator"
+    },
+    {
+      "name": "HEM Th1 (deg)",
+      "pv": "1ida:m30.RBV",
+      "group": "Monochromator"
+    },
+    {
+      "name": "HEM Th2 (deg)",
+      "pv": "1ida:m32.RBV",
+      "group": "Monochromator"
+    },
+    {
+      "name": "HEM Z2 (mm)",
+      "pv": "1idsft1:m1.RBV",
+      "group": "Monochromator"
+    },
+    {
+      "name": "HEM Chi2 (deg)",
+      "pv": "1ida:m17.RBV",
+      "group": "Monochromator"
+    },
+    {
+      "name": "B Kohzu H size (mm)",
+      "pv": "1idb:SlitHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "B Kohzu V size (mm)",
+      "pv": "1idb:SlitVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "B Kohzu H pos (mm)",
+      "pv": "1idb:SlitHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "B Kohzu V pos (mm)",
+      "pv": "1idb:SlitVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu DS H size (mm)",
+      "pv": "1idc:KslitdsHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu DS V size (mm)",
+      "pv": "1idc:KslitdsVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu DS H pos (mm)",
+      "pv": "1idc:KslitdsHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu DS V pos (mm)",
+      "pv": "1idc:KslitdsVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu US H size (mm)",
+      "pv": "1idc:KslitusHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu US V size (mm)",
+      "pv": "1idc:KslitusVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu US H pos (mm)",
+      "pv": "1idc:KslitusHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "C Kohzu US V pos (mm)",
+      "pv": "1idc:KslitusVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu DS H size (mm)",
+      "pv": "1ide1:Kohzu_E_dnHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu DS V size (mm)",
+      "pv": "1ide1:Kohzu_E_dnVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu DS H pos (mm)",
+      "pv": "1ide1:Kohzu_E_dnHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu DS V pos (mm)",
+      "pv": "1ide1:Kohzu_E_dnVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu US H size (mm)",
+      "pv": "1ide1:Kohzu_E_upHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu US V size (mm)",
+      "pv": "1ide1:Kohzu_E_upVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu US H pos (mm)",
+      "pv": "1ide1:Kohzu_E_upHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "E Kohzu US V pos (mm)",
+      "pv": "1ide1:Kohzu_E_upVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "SR BPM H pos (mm)",
+      "pv": "S1:ID:SrcPt:xPositionM",
+      "group": "Beam positions"
+    },
+    {
+      "name": "SR BPM H angle (urad)",
+      "pv": "S1:ID:SrcPt:xAngleM",
+      "group": "Beam positions"
+    },
+    {
+      "name": "SR BPM V pos (mm)",
+      "pv": "S1:ID:SrcPt:yPositionM",
+      "group": "Beam positions"
+    },
+    {
+      "name": "SR BPM V angle (urad)",
+      "pv": "S1:ID:SrcPt:yAngleM",
+      "group": "Beam positions"
+    },
+    {
+      "name": "XBPM H pos (mm)",
+      "pv": "FE:01:ID:HPOSITION:CC",
+      "group": "Beam positions"
+    },
+    {
+      "name": "XBPM H angle (urad)",
+      "pv": "FE:01:ID:HANGLE:CC",
+      "group": "Beam positions"
+    },
+    {
+      "name": "XBPM V pos (mm)",
+      "pv": "FE:01:ID:VPOSITION:CC",
+      "group": "Beam positions"
+    },
+    {
+      "name": "XBPM V angle (urad)",
+      "pv": "FE:01:ID:VANGLE:CC",
+      "group": "Beam positions"
+    },
+    {
+      "name": "BPM_C (mm)",
+      "pv": "1ide2:S1:scaler1_calc3.VAL",
+      "group": "Beam positions"
+    },
+    {
+      "name": "BPM_E (mm)",
+      "pv": "1ide2:S1:scaler1_calc5.VAL",
+      "group": "Beam positions"
+    },
+    {
+      "name": "IC-B1 (cts)",
+      "pv": "1id:S1:scaler1_cts1.C",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B2 (cts)",
+      "pv": "1id:S1:scaler1_cts1.D",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B3 (cts)",
+      "pv": "1id:S1:scaler1_cts2.A",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B4 (cts)",
+      "pv": "1id:S1:scaler1_cts2.B",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B5 (cts)",
+      "pv": "1id:S1:scaler1_cts2.C",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B8 (cts)",
+      "pv": "1id:S1:scaler1_cts2.D",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B6 (cts)",
+      "pv": "1id:S1:scaler1_cts3.A",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-B7 (cts)",
+      "pv": "1id:S1:scaler1_cts3.B",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C1 (cts) (1id)",
+      "pv": "1id:S1:scaler1_cts3.D",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C1 (cts) (1ide2)",
+      "pv": "1ide2:S1:scaler1_cts4.C",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C2 (cts) (1id)",
+      "pv": "1id:S1:scaler1_cts4.A",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C2 (cts) (1ide2)",
+      "pv": "1ide2:S1:scaler1_cts4.D",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C3 (cts) (1id)",
+      "pv": "1id:S1:scaler1_cts4.B",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C3 (cts) (1ide2)",
+      "pv": "1ide2:S1:scaler1_cts5.C",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C4 (cts) (1id)",
+      "pv": "1id:S1:scaler1_cts4.C",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C4 (cts) (1ide2)",
+      "pv": "1ide2:S1:scaler1_cts5.D",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C5 (cts)",
+      "pv": "1id:S1:scaler1_cts4.D",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-C6 (cts)",
+      "pv": "1id:S1:scaler1_cts5.A",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "mut (-)",
+      "pv": "1id:S1:scaler1_calc8.VAL",
+      "group": "IC from scaler1 in 1id"
+    },
+    {
+      "name": "IC-E1 (cts)",
+      "pv": "1ide2:S1:scaler1_cts1.C",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-E2 (cts)",
+      "pv": "1ide2:S1:scaler1_cts1.D",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-E3 (cts)",
+      "pv": "1ide2:S1:scaler1_cts2.A",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-E4 (cts)",
+      "pv": "1ide2:S1:scaler1_cts2.C",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-E5 (cts)",
+      "pv": "1ide2:S1:scaler1_cts2.B",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-E6 (cts)",
+      "pv": "1ide2:S1:scaler1_cts2.D",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-B5e (cts)",
+      "pv": "1ide2:S1:scaler1_cts4.A",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-B8e (cts)",
+      "pv": "1ide2:S1:scaler1_cts4.B",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C1e (cts)",
+      "pv": "1ide2:S1:scaler1_cts4.C",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "IC-C2e (cts)",
+      "pv": "1ide2:S1:scaler1_cts4.D",
+      "group": "IC from scaler1 in 1ide"
+    },
+    {
+      "name": "world angle (urad)",
+      "pv": "1ida:HR1_worldOffAO.VAL",
+      "group": "HRM"
+    },
+    {
+      "name": "E_hrm (keV)",
+      "pv": "1ida:HR1_ERdbkAO",
+      "group": "HRM"
+    },
+    {
+      "name": "pzt1 (um)",
+      "pv": "1idPI518:PIE518:1:p1_position",
+      "group": "HRM"
+    },
+    {
+      "name": "pzt2 (um)",
+      "pv": "1idPI518:PIE518:1:p2_position",
+      "group": "HRM"
+    },
+    {
+      "name": "pzt1 (V)",
+      "pv": "1idPI518:PIE518:1:p1_volts",
+      "group": "HRM"
+    },
+    {
+      "name": "pzt2 (V)",
+      "pv": "1idPI518:PIE518:1:p2_volts",
+      "group": "HRM"
+    },
+    {
+      "name": "bpm_c (mm)",
+      "pv": "1ide2:S1:scaler1_calc3.VAL",
+      "group": "HRM"
+    },
+    {
+      "name": "bpm_e (mm)",
+      "pv": "1ide2:S1:scaler1_calc5.VAL",
+      "group": "HRM"
+    },
+    {
+      "name": "Aero tiltX",
+      "pv": "1ide:USdig_X3:1:A1.VAL",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "Aero tiltX offset",
+      "pv": "1ide:USdig_X3:1:A1.B.VAL",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "Aero tiltZ",
+      "pv": "1ide:USdig_X3:1:A2.VAL",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "Aero tiltZ offset",
+      "pv": "1ide:USdig_X3:1:A2.B.VAL",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "MTS tiltZ",
+      "pv": "1ide:USdig_X3:2:A1",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "MTS tiltZ offset",
+      "pv": "1ide:USdig_X3:2:A1.B",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "MTS tiltX",
+      "pv": "1ide:USdig_X3:2:A2",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "MTS tiltX offset",
+      "pv": "1ide:USdig_X3:2:A2.B",
+      "group": "TILT SENSORS"
+    },
+    {
+      "name": "keyence1",
+      "pv": "1ide:Keyence:1:ch1.VAL",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "keyence2",
+      "pv": "1ide:Keyence:1:ch2.VAL",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl3 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_3",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl3 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_3",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl4 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_4",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl4 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_4",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl5 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_5",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl5 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_5",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl6 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_6",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl6 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_6",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl7 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_7",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl7 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_7",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl8 (mm) (1ide)",
+      "pv": "1ide:Fed:s1:probe_8",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Fedrl8 (mm) (1id)",
+      "pv": "1id:Fed:s1:probe_8",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "Disp (mm) (1idc)",
+      "pv": "1idc:m33.RBV",
+      "group": "Compact loadframe"
+    },
+    {
+      "name": "Disp (mm) (1idc)",
+      "pv": "1idc:m79.RBV",
+      "group": "OWIS compression type"
+    },
+    {
+      "name": "Load E (V)",
+      "pv": "1ide:D1Ch7_raw.VAL",
+      "group": "Compact loadframe"
+    },
+    {
+      "name": "Load E (N)",
+      "pv": "1ide:D1Ch7_calc.VAL",
+      "group": "Compact loadframe"
+    },
+    {
+      "name": "Load C (V)",
+      "pv": "1id:D2Ch11_raw.VAL",
+      "group": "Compact loadframe"
+    },
+    {
+      "name": "Load C (N)",
+      "pv": "1id:D2Ch11_calc.VAL",
+      "group": "Compact loadframe"
+    },
+    {
+      "name": "Load (V) (1ide)",
+      "pv": "1ide:D1Ch17_raw.VAL",
+      "group": "meimei psylotech load frame"
+    },
+    {
+      "name": "Load (V) (1ide)",
+      "pv": "1ide:D1Ch22_raw.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "Load (V) (1ide)",
+      "pv": "1ide:D1Ch7_raw.VAL",
+      "group": "OWIS compression type"
+    },
+    {
+      "name": "Load (N) (1ide)",
+      "pv": "1ide:D1Ch17_calc.VAL",
+      "group": "meimei psylotech load frame"
+    },
+    {
+      "name": "Load (N) (1ide)",
+      "pv": "1ide:D1Ch22_calc.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "Load (N) (1ide)",
+      "pv": "1ide:D1Ch7_calc.VAL",
+      "group": "OWIS compression type"
+    },
+    {
+      "name": "sg1 (V)",
+      "pv": "1ide:D1Ch21_raw.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "sg1 (strain)",
+      "pv": "1ide:D1Ch21_calc.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "sg2 (V)",
+      "pv": "1ide:D1Ch23_raw.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "sg2 (strain)",
+      "pv": "1ide:D1Ch23_calc.VAL",
+      "group": "Compact loadframe UL / DESY"
+    },
+    {
+      "name": "MTS crosshead (V)",
+      "pv": "1ide:D1Ch11_raw.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS crosshead (mm)",
+      "pv": "1ide:D1Ch11_calc.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS load (V)",
+      "pv": "1ide:D1Ch12_raw.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS load (mm)",
+      "pv": "1ide:D1Ch12_calc.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "Chamber load (V)",
+      "pv": "1ide:D1Ch20_raw.VAL",
+      "group": "NIST BOULDER CONNOLLY H2 CHAMBER"
+    },
+    {
+      "name": "Chamber load (N)",
+      "pv": "1ide:D1Ch20_calc.VAL",
+      "group": "NIST BOULDER CONNOLLY H2 CHAMBER"
+    },
+    {
+      "name": "Chamber extensometer (V)",
+      "pv": "1ide:D1Ch13_raw.VAL",
+      "group": "NIST BOULDER CONNOLLY H2 CHAMBER"
+    },
+    {
+      "name": "Chamber extensometer (strain)",
+      "pv": "1ide:D1Ch13_calc.VAL",
+      "group": "NIST BOULDER CONNOLLY H2 CHAMBER"
+    },
+    {
+      "name": "MTS In1",
+      "pv": "1id:softGlue2:FI11_BI",
+      "group": "handshake signals"
+    },
+    {
+      "name": "MTS In2",
+      "pv": "1id:softGlue2:FI12_BI",
+      "group": "handshake signals"
+    },
+    {
+      "name": "MTS In3",
+      "pv": "1id:softGlue2:FI13_BI",
+      "group": "handshake signals"
+    },
+    {
+      "name": "MTS Out1",
+      "pv": "1id:9440:1:bo_10.VAL",
+      "group": "handshake signals"
+    },
+    {
+      "name": "MTS Out2",
+      "pv": "1id:9440:1:bo_11.VAL",
+      "group": "handshake signals"
+    },
+    {
+      "name": "MTS Out3",
+      "pv": "1id:9440:1:bo_12.VAL",
+      "group": "handshake signals"
+    },
+    {
+      "name": "ramsrot (deg)",
+      "pv": "1idrams1:m1.RBV",
+      "group": "RAMS1"
+    },
+    {
+      "name": "ch31 (V)",
+      "pv": "1ide:D1Ch31_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch32 (V)",
+      "pv": "1ide:D1Ch32_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch33 (V)",
+      "pv": "1ide:D1Ch33_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch34 (V)",
+      "pv": "1ide:D1Ch34_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch35 (V)",
+      "pv": "1ide:D1Ch35_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch36 (V)",
+      "pv": "1ide:D1Ch36_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch37 (V)",
+      "pv": "1ide:D1Ch37_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "ch38 (V)",
+      "pv": "1ide:D1Ch38_raw.VAL",
+      "group": "MTS - BIAXIAL"
+    },
+    {
+      "name": "Furnace T1 (C) (1id)",
+      "pv": "1id:ET_RI:Temp1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Furnace T1 (C) (1mini2)",
+      "pv": "1mini2:ET2k:1:Temp",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Furnace T2 (C) (1id)",
+      "pv": "1id:ET_RI:Temp2",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Furnace T2 (C) (1idTC32)",
+      "pv": "1idTC32:Ti8",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Furnace T3 (C)",
+      "pv": "1id:ET_RI:Temp3",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "User set point (C) (1id)",
+      "pv": "1id:ET_RI:SP1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "User set point (C) (1mini2)",
+      "pv": "1mini2:ET2k:1:SP",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Set point (C) (1id)",
+      "pv": "1id:ET_RI:Sp1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Set point (C) (1mini2)",
+      "pv": "1mini2:ET2k:1:Sp",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Output power (pct) (1id)",
+      "pv": "1id:ET_RI:OP1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Output power (pct) (1mini2)",
+      "pv": "1mini2:ET2k:1:OP",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Ramp rate (C per min) (1id)",
+      "pv": "1id:ET_RI:RRt1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Ramp rate (C per min) (1mini2)",
+      "pv": "1mini2:ET2k:1:RRt",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "Ramp rate RBV (C per min) (1id)",
+      "pv": "1id:ET_RI:RR1",
+      "group": "IR FURNACE"
+    },
+    {
+      "name": "Ramp rate RBV (C per min) (1mini2)",
+      "pv": "1mini2:ET2k:1:RR",
+      "group": "HASTINGS FURNACE"
+    },
+    {
+      "name": "RF set point (C)",
+      "pv": "Smarts:Lake:GetSP3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF set point input (C)",
+      "pv": "Smarts:Lake:SetSP3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF Tc (C)",
+      "pv": "Smarts:Lake:GetCelsiusC",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF Td (C)",
+      "pv": "Smarts:Lake:GetCelsiusD",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF Heater range",
+      "pv": "Smarts:Lake:GetRange3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF power limit3 RBV (-)",
+      "pv": "Smarts:Lake:GetPower3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF power limit3 (-)",
+      "pv": "Smarts:Lake:PowerLimit3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF set ramp3 (C)",
+      "pv": "Smarts:Lake:SetRamp3",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF get TlimC (C) (Smarts)",
+      "pv": "Smarts:Lake:GetTLimC",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF get TlimC (C) (Smarts)",
+      "pv": "Smarts:Lake:SetTLimC",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF get TlimC (C) (Smarts)",
+      "pv": "Smarts:Lake:GetTLimA",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF get TlimC (C) (Smarts)",
+      "pv": "Smarts:Lake:SetTLimA",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF get TlimD (C) (Smarts)",
+      "pv": "Smarts:Lake:GetTLimD",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF get TlimD (C) (Smarts)",
+      "pv": "Smarts:Lake:GetTLimB",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set TlimD (C) (Smarts)",
+      "pv": "Smarts:Lake:SetTLimD",
+      "group": "LANL RF FURNACE"
+    },
+    {
+      "name": "RF set TlimD (C) (Smarts)",
+      "pv": "Smarts:Lake:SetTLimB",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set point 1 (C)",
+      "pv": "Smarts:Lake:GetSP1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set point input 1 (C)",
+      "pv": "Smarts:Lake:SetSP1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set point 2 (C)",
+      "pv": "Smarts:Lake:GetSP2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set point input 2 (C)",
+      "pv": "Smarts:Lake:SetSP2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF Tc A (C)",
+      "pv": "Smarts:Lake:GetKelvinA",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF Td B (C)",
+      "pv": "Smarts:Lake:GetKelvinB",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF Heater range 1",
+      "pv": "Smarts:Lake:GetRange1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF power limit1 RBV (-)",
+      "pv": "Smarts:Lake:GetPower1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF power limit1 (-)",
+      "pv": "Smarts:Lake:PowerLimit1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF Heater range 2",
+      "pv": "Smarts:Lake:GetRange2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF power limit2 RBV (-)",
+      "pv": "Smarts:Lake:GetPower2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF power limit2 (-)",
+      "pv": "Smarts:Lake:PowerLimit2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set ramp1 (C)",
+      "pv": "Smarts:Lake:SetRamp1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "RF set ramp2 (C)",
+      "pv": "Smarts:Lake:SetRamp2",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Heating Sample Temp (K) (Brandon)",
+      "pv": "Brandon:LakeshoreB:SensorA",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Heating Sample Temp (K) (Brandon)",
+      "pv": "Brandon:LakeshoreA:SensorA",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Heating Heater Output (%)",
+      "pv": "Brandon:LakeshoreB:HeaterOutput1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Heating Setpoint (C)",
+      "pv": "Brandon:LakeshoreB:Setpoint1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Cooling Setpoint (C)",
+      "pv": "Brandon:LakeshoreA:Setpoint1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Cooling Heater Output (%)",
+      "pv": "Brandon:LakeshoreA:HeaterOutput1",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "Pyrometer Temperature (C)",
+      "pv": "Brandon:Pyro:Temperature",
+      "group": "LANL CHILLER"
+    },
+    {
+      "name": "LANL TA C (C)",
+      "pv": "Belial:LakeshoreA:GetCelsiusC",
+      "group": "LANL WELDER"
+    },
+    {
+      "name": "LANL TA D (C)",
+      "pv": "Belial:LakeshoreA:GetCelsiusD",
+      "group": "LANL WELDER"
+    },
+    {
+      "name": "LANL TB C (C)",
+      "pv": "Belial:LakeshoreB:GetCelsiusC",
+      "group": "LANL WELDER"
+    },
+    {
+      "name": "LANL TB D (C)",
+      "pv": "Belial:LakeshoreB:GetCelsiusD",
+      "group": "LANL WELDER"
+    },
+    {
+      "name": "Linkam rate Cps",
+      "pv": "1ide:ci94:setRate",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "Linkam T1 input (C)",
+      "pv": "1ide:ci94:setLimit",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "Linkam T1 (C)",
+      "pv": "1ide:ci94:temp",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "Linkam T2 (C)",
+      "pv": "1ide:ci94:temp2",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "Linkam status",
+      "pv": "1ide:ci94:status",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "Linkam DSC",
+      "pv": "1ide:ci94:dsc",
+      "group": "LINKAM FURNACE"
+    },
+    {
+      "name": "CMU Furnace T (deg C)",
+      "pv": "1ide:ET2k:1:Temperature.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Ramp rate (degC per min)",
+      "pv": "1ide:ET2k:1:WriteRampRate.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Ramp rate readback (degC per min)",
+      "pv": "1ide:ET2k:1:ReadRampRate.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Furnce output (pct)",
+      "pv": "1ide:ET2k:1:RBV_Output",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Read set pt (deg C)",
+      "pv": "1ide:ET2k:1:ReadSetPoint.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Read wset pt (deg C)",
+      "pv": "1ide:ET2k:1:ReadWSetPoint.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Write set pt (deg C)",
+      "pv": "1ide:ET2k:1:WriteSetPoint.VAL",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU Gas flow meter (V)",
+      "pv": "1idadam:adam_6017:1:AI0",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "Tsam (deg C)",
+      "pv": "1idTC32:Ti7",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "CMU T housing (deg C)",
+      "pv": "1idTC32:Ti24",
+      "group": "SUTER-BASIL FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace Force (-)",
+      "pv": "9idcCOLD:force",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace Force RBV (-)",
+      "pv": "9idcCOLD:force_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace Pressure (MPa)",
+      "pv": "9idcCOLD:pressure.VAL",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace piston (ustep)",
+      "pv": "9idcCOLD:piston",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace piston RBV (ustep)",
+      "pv": "9idcCOLD:piston_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace extension (mm)",
+      "pv": "9idcCOLD:extension.VAL",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace temperature target (deg C)",
+      "pv": "9idcCOLD:temp",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace temperature RBV (deg C)",
+      "pv": "9idcCOLD:temp_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace heat rate (deg C / min)",
+      "pv": "9idcCOLD:hrate",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace heat rate RBV (deg C / min)",
+      "pv": "9idcCOLD:hrate_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace P(-)",
+      "pv": "9idcCOLD:Kp",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace P RBV (-)",
+      "pv": "9idcCOLD:Kp_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace I (-)",
+      "pv": "9idcCOLD:Ki",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace I RBV (-)",
+      "pv": "9idcCOLD:Ki_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace D (-)",
+      "pv": "9idcCOLD:Kd",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace D RBV (-)",
+      "pv": "9idcCOLD:Kd_RBV",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace auto state (-)",
+      "pv": "9idcCOLD:auto",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "FZHANG Furnace stop state (-)",
+      "pv": "9idcCOLD:stop",
+      "group": "FZHANG COLD SINTER FURNACE"
+    },
+    {
+      "name": "rams3 Slow Out1 (V)",
+      "pv": "1ide:D1Ch21_raw.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Slow Out1 (-)",
+      "pv": "1ide:D1Ch21_calc.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Fast LoadA (V)",
+      "pv": "1ide:D1Ch22_raw.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Fast LoadA (N)",
+      "pv": "1ide:D1Ch22_calc.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Slow Out2 (V)",
+      "pv": "1ide:D1Ch23_raw.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Slow Out2 (-)",
+      "pv": "1ide:D1Ch23_calc.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Fast LoadB (V)",
+      "pv": "1ide:D1Ch24_raw.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Fast LoadB (N)",
+      "pv": "1ide:D1Ch24_calc.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Torsion (V)",
+      "pv": "1ide:D1Ch25_raw.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Torsion (N-m)",
+      "pv": "1ide:D1Ch25_calc.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Load cellA-dig (N)",
+      "pv": "1ide:RAMS3_LC:Force1",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 Load cellB-dig (N)",
+      "pv": "1ide:RAMS3_LC:Force2",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 TopRot (deg)",
+      "pv": "1idrams3:m1.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 BotRot (deg)",
+      "pv": "1idrams3:m2.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 tension (mm)",
+      "pv": "1idrams3:m3.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 rot (deg)",
+      "pv": "1idrams3:m4.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 offset (deg)",
+      "pv": "1idrams3:m5.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 rotX (mm)",
+      "pv": "1idc:m2.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 tiltX (deg)",
+      "pv": "1idc:m4.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 tiltZ (deg)",
+      "pv": "1idc:m3.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 samY (mm)",
+      "pv": "1idc:m6.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 tableY (mm)",
+      "pv": "1idc:m5.RBV",
+      "group": "RAMS3"
+    },
+    {
+      "name": "rams3 sam top rotation encoder (deg)",
+      "pv": "1ide:userStringCalc10.VAL",
+      "group": "RAMS3"
+    },
+    {
+      "name": "TC1 (C)",
+      "pv": "1ide:DP41:s1:temp.VAL",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TC2 (C) (1ide)",
+      "pv": "1ide:DP41:s2:temp.VAL",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TC2 (C) (1ide)",
+      "pv": "1ide:DP41:s3:temp.VAL",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "T24-surface (C)",
+      "pv": "1idTC32:Ti24",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCC (C)",
+      "pv": "1idTC32:Ti3",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCD (C)",
+      "pv": "1idTC32:Ti4",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCE (C)",
+      "pv": "1idTC32:Ti5",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCF (C)",
+      "pv": "1idTC32:Ti6",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCG (C)",
+      "pv": "1idTC32:Ti7",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "TCH (C)",
+      "pv": "1idTC32:Ti8",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "T1 (C)",
+      "pv": "1id:ET_RI:Temp1",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "T2 (C)",
+      "pv": "1id:ET_RI:Temp2",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "T3 (C)",
+      "pv": "1id:ET_RI:Temp3",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "Tsurf (C) (1idTC32)",
+      "pv": "1idTC32:Ti1",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "Tsurf (C) (1idTC32)",
+      "pv": "1idTC32:Ti11",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "Tsurf (C) (1idTC32)",
+      "pv": "1idTC32:Ti7",
+      "group": "THERMOCOUPLE"
+    },
+    {
+      "name": "FLOW (V)",
+      "pv": "1ide:D1Ch8_raw.VAL",
+      "group": "FLOW METER"
+    },
+    {
+      "name": "FLOW (LPM)",
+      "pv": "1ide:D1Ch8_calc.VAL",
+      "group": "FLOW METER"
+    },
+    {
+      "name": "TC16 (C)",
+      "pv": "1idTC32:Ti16",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TC17 (C)",
+      "pv": "1idTC32:Ti17",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TC18 (C)",
+      "pv": "1idTC32:Ti18",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TC19 (C)",
+      "pv": "1idTC32:Ti19",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TC20 (C)",
+      "pv": "1idTC32:Ti20",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TRIBO-A-raw (V)",
+      "pv": "1ide:D1Ch28_raw.VAL",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TRIBO-B-raw (V)",
+      "pv": "1ide:D1Ch29_raw.VAL",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TRIBO-A-calc",
+      "pv": "1ide:D1Ch28_calc.VAL",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TRIBO-B-calc",
+      "pv": "1ide:D1Ch29_calc.VAL",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "TTLTrigger",
+      "pv": "1ide:sg2:FI6_BI",
+      "group": "Hutch monitoring thermocouples"
+    },
+    {
+      "name": "offset (V)",
+      "pv": "1ide:33220A:1:offset_V.A",
+      "group": "AGILENT FUNC GEN"
+    },
+    {
+      "name": "offset_rbk (V)",
+      "pv": "1ide:33220A:1:offset",
+      "group": "AGILENT FUNC GEN"
+    },
+    {
+      "name": "Sample (V)",
+      "pv": "1ide:D1Ch21_calc.VAL",
+      "group": "VOLTAGE SIGNAL POKHAREL_MAR18"
+    },
+    {
+      "name": "PG1 (Spinnaker, E-hutch)",
+      "pv": "1idPG1:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "GH1 (Spinnaker, E-hutch)",
+      "pv": "1idGH1:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "TomoC_PG5 (PointGrey, C-hutch)",
+      "pv": "1idPG5:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "TomoC_SP5 (Spinnaker, C-hutch)",
+      "pv": "1idSP5:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Dexela",
+      "pv": "1idDEX:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Andor",
+      "pv": "dp_andor3_xrd67:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Pilatus",
+      "pv": "1idPil:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Eiger",
+      "pv": "1idEig16M:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Varex",
+      "pv": "1idVarex1:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "CoolSnap (B-hutch)",
+      "pv": "s1PVCAM:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Tomo (Retiga, QIMAGE2)",
+      "pv": "QIMAGE2:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "NF (Retiga, QIMAGE1)",
+      "pv": "QIMAGE1:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Pixirad",
+      "pv": "s1_pixirad2:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "ASI (Medipix3)",
+      "pv": "QMPX3:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Lambda",
+      "pv": "dp_lambda_xrd30:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "mar165",
+      "pv": "dp_mar165_xrd82:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Hydra GE1",
+      "pv": "GE1:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Hydra GE2",
+      "pv": "GE2:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Hydra GE3",
+      "pv": "GE3:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Hydra GE4",
+      "pv": "GE4:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "Hydra GE5",
+      "pv": "GE5:cam1:Acquire_RBV",
+      "group": "Detectors (armed state)"
+    },
+    {
+      "name": "C-station shutter (Sopen/Sclose)",
+      "pv": "S01ID-PSS:SCS:BeamBlockingM.RVAL",
+      "group": "Shutters"
+    },
+    {
+      "name": "A (front-end) shutter",
+      "pv": "S01ID-PSS:FES:BeamBlockingM.RVAL",
+      "group": "Shutters"
+    },
+    {
+      "name": "Auto-shutter enable",
+      "pv": "1id:AShtr:Enable",
+      "group": "Shutters"
+    },
+    {
+      "name": "Fast shutter 1 (FS1, softGlue AND-1)",
+      "pv": "1id:softGlue:AND-1_IN1_Signal",
+      "group": "Shutters"
+    },
+    {
+      "name": "Fast shutter 2 (FS2, softGlue AND-2)",
+      "pv": "1id:softGlue:AND-2_IN1_Signal",
+      "group": "Shutters"
+    },
+    {
+      "name": "WAXS shield move-in",
+      "pv": "1ide:Unidig1Bo0",
+      "group": "Shutters"
+    },
+    {
+      "name": "WAXS shield move-out",
+      "pv": "1ide:Unidig1Bo1",
+      "group": "Shutters"
+    },
+    {
+      "name": "WAXS shield enable",
+      "pv": "1ide:Unidig1Bo2",
+      "group": "Shutters"
+    },
+    {
+      "name": "E-hutch upstream H size",
+      "pv": "1ide1:Kohzu_E_upHsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "E-hutch upstream V size",
+      "pv": "1ide1:Kohzu_E_upVsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "E-hutch downstream H size",
+      "pv": "1ide1:Kohzu_E_dnHsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "E-hutch downstream V size",
+      "pv": "1ide1:Kohzu_E_dnVsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "C-hutch upstream H size",
+      "pv": "1idc:KslitusHsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "C-hutch upstream V size",
+      "pv": "1idc:KslitusVsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "C-hutch downstream H size",
+      "pv": "1idc:KslitdsHsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "C-hutch downstream V size",
+      "pv": "1idc:KslitdsVsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "B-hutch H size",
+      "pv": "1idb:SlitHsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "B-hutch V size",
+      "pv": "1idb:SlitVsize.VAL",
+      "group": "Slits"
+    },
+    {
+      "name": "DAC1_3",
+      "pv": "1id:DAC1_3.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "HO1",
+      "pv": "1id:ET_RI:HO1",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "HS1",
+      "pv": "1id:ET_RI:HS1",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idEig16M)",
+      "pv": "1idEig16M:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idPG1)",
+      "pv": "1idPG1:TIFF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idPil)",
+      "pv": "1idPil:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idPil)",
+      "pv": "1idPil:Raw1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idPil)",
+      "pv": "1idPil:TIFF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (1idVarex1)",
+      "pv": "1idVarex1:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (GE1)",
+      "pv": "GE1:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (GE2)",
+      "pv": "GE2:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (GE3)",
+      "pv": "GE3:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (GE4)",
+      "pv": "GE4:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (GE5)",
+      "pv": "GE5:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (QIMAGE1)",
+      "pv": "QIMAGE1:TIFF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (dp_lambda_xrd30)",
+      "pv": "dp_lambda_xrd30:TIFF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileName_RBV (s1_pixirad2)",
+      "pv": "s1_pixirad2:HDF1:FileName_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (1idEig16M)",
+      "pv": "1idEig16M:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (1idPil)",
+      "pv": "1idPil:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (1idPil)",
+      "pv": "1idPil:Raw1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (1idVarex1)",
+      "pv": "1idVarex1:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (GE1)",
+      "pv": "GE1:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (GE2)",
+      "pv": "GE2:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (GE3)",
+      "pv": "GE3:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (GE4)",
+      "pv": "GE4:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "FileNumber_RBV (GE5)",
+      "pv": "GE5:HDF1:FileNumber_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idEig16M)",
+      "pv": "1idEig16M:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idPG1)",
+      "pv": "1idPG1:TIFF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idPil)",
+      "pv": "1idPil:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idPil)",
+      "pv": "1idPil:Raw1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idPil)",
+      "pv": "1idPil:TIFF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (1idVarex1)",
+      "pv": "1idVarex1:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (GE1)",
+      "pv": "GE1:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (GE2)",
+      "pv": "GE2:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (GE3)",
+      "pv": "GE3:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (GE4)",
+      "pv": "GE4:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (GE5)",
+      "pv": "GE5:HDF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumCapture_RBV (QIMAGE1)",
+      "pv": "QIMAGE1:TIFF1:NumCapture_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (1idEig16M)",
+      "pv": "1idEig16M:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (1idPG1)",
+      "pv": "1idPG1:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (1idVarex1)",
+      "pv": "1idVarex1:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (GE1)",
+      "pv": "GE1:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (GE2)",
+      "pv": "GE2:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (GE3)",
+      "pv": "GE3:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (GE4)",
+      "pv": "GE4:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (GE5)",
+      "pv": "GE5:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (QIMAGE1)",
+      "pv": "QIMAGE1:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquireTime_RBV (s1_pixirad2)",
+      "pv": "s1_pixirad2:cam1:AcquireTime_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Ti1",
+      "pv": "1idSoft:TC32:Ti1",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Ti24",
+      "pv": "1idSoft:TC32:Ti24",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Ti3",
+      "pv": "1idSoft:TC32:Ti3",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Ti7",
+      "pv": "1idSoft:TC32:Ti7",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Ti8",
+      "pv": "1idSoft:TC32:Ti8",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "T0",
+      "pv": "1idadam:adam_6018:1:T0",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m41 (1idb)",
+      "pv": "1idb:m41.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m41 (1ide1)",
+      "pv": "1ide1:m41.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A1sens_num (1idc)",
+      "pv": "1idc:A1sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A1sens_num (1ide)",
+      "pv": "1ide:A1sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A2sens_num (1idc)",
+      "pv": "1idc:A2sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A2sens_num (1ide)",
+      "pv": "1ide:A2sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A3sens_num (1idc)",
+      "pv": "1idc:A3sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A3sens_num (1ide)",
+      "pv": "1ide:A3sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A4sens_num (1idc)",
+      "pv": "1idc:A4sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A4sens_num (1ide)",
+      "pv": "1ide:A4sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m24",
+      "pv": "1idc:m24.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m25",
+      "pv": "1idc:m25.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m26",
+      "pv": "1idc:m26.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m27",
+      "pv": "1idc:m27.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m28",
+      "pv": "1idc:m28.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m29",
+      "pv": "1idc:m29.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m30",
+      "pv": "1idc:m30.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m31",
+      "pv": "1idc:m31.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m47",
+      "pv": "1idc:m47.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m48",
+      "pv": "1idc:m48.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m62",
+      "pv": "1idc:m62.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m64",
+      "pv": "1idc:m64.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m82",
+      "pv": "1idc:m82.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m83",
+      "pv": "1idc:m83.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m85",
+      "pv": "1idc:m85.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m88",
+      "pv": "1idc:m88.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m10",
+      "pv": "1ide1:m10.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m37",
+      "pv": "1ide1:m37.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m52",
+      "pv": "1ide1:m52.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m53",
+      "pv": "1ide1:m53.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m55",
+      "pv": "1ide1:m55.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m69",
+      "pv": "1ide1:m69.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m70",
+      "pv": "1ide1:m70.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m71",
+      "pv": "1ide1:m71.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m73",
+      "pv": "1ide1:m73.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m8",
+      "pv": "1ide1:m8.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m97",
+      "pv": "1ide1:m97.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "sm3",
+      "pv": "1ide1:sm3.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "scaler1.T",
+      "pv": "1ide2:S1:scaler1.T",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A5sens_num",
+      "pv": "1ide:A5sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A6sens_num",
+      "pv": "1ide:A6sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A7sens_num",
+      "pv": "1ide:A7sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A8sens_num",
+      "pv": "1ide:A8sens_num.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "D1Ch26_raw",
+      "pv": "1ide:D1Ch26_raw.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "D1Ch27_calc",
+      "pv": "1ide:D1Ch27_calc.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "D1Ch30_raw",
+      "pv": "1ide:D1Ch30_raw.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "D1Ch34_calc",
+      "pv": "1ide:D1Ch34_calc.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A1",
+      "pv": "1ide:USdig_X3:1:A1",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A1.B",
+      "pv": "1ide:USdig_X3:1:A1.B",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A2",
+      "pv": "1ide:USdig_X3:1:A2",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A2.B",
+      "pv": "1ide:USdig_X3:1:A2.B",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m1 (1idmotx)",
+      "pv": "1idmotx:m1.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m1 (1mini2)",
+      "pv": "1mini2:hxp:c0:m1.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m3 (1idrams3)",
+      "pv": "1idrams3:m3.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m3 (1mini2)",
+      "pv": "1mini2:hxp:c0:m3.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m2",
+      "pv": "1mini2:hxp:c0:m2.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m4",
+      "pv": "1mini2:hxp:c0:m4.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m5",
+      "pv": "1mini2:hxp:c0:m5.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "m6",
+      "pv": "1mini2:hxp:c0:m6.RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "Gap",
+      "pv": "ID01us:Gap.VAL",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "AcquirePeriod_RBV",
+      "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumImages_RBV (dp_lambda_xrd30)",
+      "pv": "dp_lambda_xrd30:cam1:NumImages_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "NumImages_RBV (s1_pixirad2)",
+      "pv": "s1_pixirad2:cam1:NumImages_RBV",
+      "group": "write_parfile_general.mac (misc, review before use)"
+    }
+  ]
+}

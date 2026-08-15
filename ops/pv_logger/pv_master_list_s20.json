@@ -1,0 +1,2288 @@
+{
+  "settings": {
+    "log_interval_sec": 5,
+    "connect_timeout_sec": 2.0,
+    "recipients": [],
+    "sender": "pv_logger@your-host.aps.anl.gov",
+    "smtp_host": "apsmail.aps.anl.gov",
+    "smtp_port": 25,
+    "alert_cooldown_min": 60
+  },
+  "pvs": [
+    {
+      "name": "DetADCoreVersion",
+      "pv": "bse1:cam1:ADCoreVersion_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "bse1:cam1:AcquirePeriod_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "bse1:cam1:AcquireTime_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "bse1:cam1:ArrayCounter_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "bse1:cam1:ArraySizeX_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "bse1:cam1:ArraySizeY_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "bse1:cam1:BinX_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "bse1:cam1:BinY_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "bse1:cam1:DataType_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "bse1:cam1:DriverVersion_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "bse1:HDF1:FilePath_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "bse1:cam1:FirmwareVersion_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "bse1:HDF1:FullFileName_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "bse1:cam1:Gain_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "bse1:HDF1:PluginType_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "bse1:cam1:Manufacturer_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "bse1:cam1:MaxSizeX_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "bse1:cam1:MaxSizeY_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "bse1:cam1:Model_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "bse1:Attr1:1:AttrName_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "bse1:Attr1:2:AttrName_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "bse1:cam1:SDKVersion_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "bse1:HDF1:FileName",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "bse1:cam1:FrameType",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "bse1:cam1:SerialNumber_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetShieldX",
+      "pv": "20ide2:m73.RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "bse1:cam1:Temperature_RBV",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetX",
+      "pv": "20idaSoft:userTran10.A",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetY",
+      "pv": "20idaSoft:userTran10.B",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetZ",
+      "pv": "20idaSoft:userTran10.N",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "VFF_ETA",
+      "pv": "20idaSoft:userTran10.D",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "VFF_R",
+      "pv": "20idaSoft:userTran10.C",
+      "group": "BSE1 Detector"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "bse2:cam1:ADCoreVersion_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "bse2:cam1:AcquirePeriod_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "bse2:cam1:AcquireTime_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "bse2:cam1:ArrayCounter_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "bse2:cam1:ArraySizeX_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "bse2:cam1:ArraySizeY_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "bse2:cam1:BinX_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "bse2:cam1:BinY_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "bse2:cam1:DataType_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "bse2:cam1:DriverVersion_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "bse2:HDF1:FilePath_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "bse2:cam1:FirmwareVersion_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "bse2:HDF1:FullFileName_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "bse2:cam1:Gain_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "bse2:HDF1:PluginType_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "bse2:cam1:Manufacturer_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "bse2:cam1:MaxSizeX_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "bse2:cam1:MaxSizeY_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "bse2:cam1:Model_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "bse2:Attr1:1:AttrName_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "bse2:Attr1:2:AttrName_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "bse2:cam1:SDKVersion_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "bse2:HDF1:FileName",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "bse2:cam1:FrameType",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "bse2:cam1:SerialNumber_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "bse2:cam1:Temperature_RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetX",
+      "pv": "20ide2:m58.RBV",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "DetY",
+      "pv": "20idHPOD2:sym01:MOVE_PTP:Tz",
+      "group": "BSE2 Detector"
+    },
+    {
+      "name": "ActiveDMS",
+      "pv": "20idaSoft:userStringCalc10.LL",
+      "group": "Calculation/Software"
+    },
+    {
+      "name": "ActiveSE",
+      "pv": "20idaSoft:userStringCalc10.HH",
+      "group": "Calculation/Software"
+    },
+    {
+      "name": "ActiveSMS",
+      "pv": "20idaSoft:userStringCalc10.II",
+      "group": "Calculation/Software"
+    },
+    {
+      "name": "ActiveTechnique",
+      "pv": "20idaSoft:userStringCalc10.JJ",
+      "group": "Calculation/Software"
+    },
+    {
+      "name": "ExperimentID",
+      "pv": "20idaSoft:userStringCalc10.KK",
+      "group": "Calculation/Software"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "QMPX3:cam1:ADCoreVersion_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "20idsp1:cam1:ADCoreVersion_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "dp_lambda_xrd30:cam1:ADCoreVersion_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "QMPX3:cam1:AcquirePeriod_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "20idsp1:cam1:AcquirePeriod_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "QMPX3:cam1:AcquireTime_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "20idsp1:cam1:AcquireTime_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "dp_lambda_xrd30:cam1:AcquireTime_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "QMPX3:cam1:ArrayCounter_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "20idsp1:cam1:ArrayCounter_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "dp_lambda_xrd30:cam1:ArrayCounter_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "QMPX3:cam1:ArraySizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "20idsp1:cam1:ArraySizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "dp_lambda_xrd30:cam1:ArraySizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "QMPX3:cam1:ArraySizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "20idsp1:cam1:ArraySizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "dp_lambda_xrd30:cam1:ArraySizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "QMPX3:cam1:BinX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "20idsp1:cam1:BinX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "dp_lambda_xrd30:cam1:BinX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "QMPX3:cam1:BinY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "20idsp1:cam1:BinY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "dp_lambda_xrd30:cam1:BinY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "QMPX3:cam1:DataType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "20idsp1:cam1:DataType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "dp_lambda_xrd30:cam1:DataType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "QMPX3:HDF1:FilePath_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "20idsp1:HDF1:FilePath_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "dp_lambda_xrd30:HDF1:FilePath_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "QMPX3:HDF1:FullFileName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "20idsp1:HDF1:FullFileName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "dp_lambda_xrd30:HDF1:FullFileName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "QMPX3:cam1:Gain_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "20idsp1:cam1:Gain_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "dp_lambda_xrd30:cam1:Gain_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "QMPX3:HDF1:PluginType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "20idsp1:HDF1:PluginType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "dp_lambda_xrd30:HDF1:PluginType_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "QMPX3:cam1:Manufacturer_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "20idsp1:cam1:Manufacturer_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "dp_lambda_xrd30:cam1:Manufacturer_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "QMPX3:cam1:MaxSizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "20idsp1:cam1:MaxSizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "dp_lambda_xrd30:cam1:MaxSizeX_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "QMPX3:cam1:MaxSizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "20idsp1:cam1:MaxSizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "dp_lambda_xrd30:cam1:MaxSizeY_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "QMPX3:cam1:Model_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "20idsp1:cam1:Model_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "dp_lambda_xrd30:cam1:Model_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "QMPX3:Attr1:1:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "20idsp1:Attr1:1:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "dp_lambda_xrd30:Attr1:1:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "QMPX3:Attr1:2:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "20idsp1:Attr1:2:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "dp_lambda_xrd30:Attr1:2:AttrName_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "QMPX3:HDF1:FileName",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "20idsp1:HDF1:FileName",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "dp_lambda_xrd30:HDF1:FileName",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "QMPX3:cam1:FrameType",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "20idsp1:cam1:FrameType",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "dp_lambda_xrd30:cam1:FrameType",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "QMPX3:cam1:Temperature_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "20idsp1:cam1:Temperature_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "dp_lambda_xrd30:cam1:Temperature_RBV",
+      "group": "D3 Detector"
+    },
+    {
+      "name": "DetX",
+      "pv": "20ideD3D4:m5.RBV",
+      "group": "D4-1 Detector"
+    },
+    {
+      "name": "DetY",
+      "pv": "20ideD3D4:m6.RBV",
+      "group": "D4-1 Detector"
+    },
+    {
+      "name": "DetZ",
+      "pv": "20idaSoft:userTran10.O",
+      "group": "D4-1 Detector"
+    },
+    {
+      "name": "VFF_ETA",
+      "pv": "20idaSoft:userTran10.H",
+      "group": "D4-1 Detector"
+    },
+    {
+      "name": "VFF_R",
+      "pv": "20idaSoft:userTran10.G",
+      "group": "D4-1 Detector"
+    },
+    {
+      "name": "DetZ",
+      "pv": "20idaSoft:userTran10.P",
+      "group": "D4-2 Detector"
+    },
+    {
+      "name": "VFF_ETA",
+      "pv": "20idaSoft:userTran10.L",
+      "group": "D4-2 Detector"
+    },
+    {
+      "name": "VFF_R",
+      "pv": "20idaSoft:userTran10.K",
+      "group": "D4-2 Detector"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "20idGH2S:cam1:ADCoreVersion_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "20idGH2S:cam1:AcquirePeriod_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "20idGH2S:cam1:AcquireTime_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "20idGH2S:cam1:ArrayCounter_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "20idGH2S:cam1:BinX",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "20idGH2S:cam1:BinY",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "20idGH2S:cam1:DataType_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "20idGH2S:cam1:DriverVersion_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "20idGH2S:HDF1:FilePath_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "20idGH2S:cam1:FirmwareVersion_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "20idGH2S:HDF1:FullFileName_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "20idGH2S:cam1:Gain_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "20idGH2S:HDF1:PluginType_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "20idGH2S:cam1:Manufacturer_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "20idGH2S:cam1:MaxSizeX_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "20idGH2S:cam1:MaxSizeY_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetMinX",
+      "pv": "20idGH2S:cam1:MinX",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetMinY",
+      "pv": "20idGH2S:cam1:MinY",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "20idGH2S:cam1:Model_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "20idGH2S:cam1:SDKVersion_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "20idGH2S:HDF1:FileName",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "20idGH2S:cam1:FrameType",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "20idGH2S:cam1:SerialNumber_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSizeX",
+      "pv": "20idGH2S:cam1:SizeX",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetSizeY",
+      "pv": "20idGH2S:cam1:SizeY",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "20idGH2S:cam1:Temperature_RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetX",
+      "pv": "20ide2:m50.RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetY",
+      "pv": "20ide2:m51.RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "DetZ",
+      "pv": "20ide2:m49.RBV",
+      "group": "GH2 Detector"
+    },
+    {
+      "name": "HEM_Bender1",
+      "pv": "20idHEM:m10.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Bender2",
+      "pv": "20idHEM:m11.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Roll2",
+      "pv": "20idHEM:m7.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Th1",
+      "pv": "20idHEM:m1.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Th2",
+      "pv": "20idHEM:m4.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_WBS_Diag",
+      "pv": "20idHEM:m14.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_WBS_Horz",
+      "pv": "20idHEM:m13.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_WBS_Pitch",
+      "pv": "20idHEM:m15.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_WBS_Yaw",
+      "pv": "20idHEM:m16.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_WB_StopX",
+      "pv": "20idHEM:m9.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_X1",
+      "pv": "20idHEM:m2.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_X2",
+      "pv": "20idHEM:m5.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Y1",
+      "pv": "20idHEM:m3.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Y2",
+      "pv": "20idHEM:m6.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HEM_Z2",
+      "pv": "20idHEM:m8.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "WBSlitsHCenter",
+      "pv": "20idHEM:slits:hCenter.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "WBSlitsHSize",
+      "pv": "20idHEM:slits:hSize.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "WBSlitsVCenter",
+      "pv": "20idHEM:slits:vCenter.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "WBSlitsVSize",
+      "pv": "20idHEM:slits:vSize.RBV",
+      "group": "HEM (Monochromator)"
+    },
+    {
+      "name": "HRM_Energy",
+      "pv": "20ida1:HR1_ERdbkAO",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "HRM_PZT1",
+      "pv": "20idPI518:PIE518:1:p1_position",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "HRM_PZT1V",
+      "pv": "20idPI518:PIE518:1:p1_volts",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "HRM_PZT2",
+      "pv": "20idPI518:PIE518:1:p2_position",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "HRM_PZT2V",
+      "pv": "20idPI518:PIE518:1:p2_volts",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "IC3A_HRM",
+      "pv": "20aT1:TM:Current3:MeanValue_RBV",
+      "group": "HRM (Analyzer)"
+    },
+    {
+      "name": "DIC_Strain",
+      "pv": "20ideLJ:T701:Ai4",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "DSIC_E",
+      "pv": "20eT2:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC1A",
+      "pv": "20aT1:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC2A",
+      "pv": "20aT1:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC2D",
+      "pv": "20dT1:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC3D",
+      "pv": "20dT1:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC4A_foil_I0",
+      "pv": "20aT2:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC4DIB",
+      "pv": "20dT1:TM:Current3:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC4DOB",
+      "pv": "20dT1:TM:Current4:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC5A_foil_I1",
+      "pv": "20aT2:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC6A",
+      "pv": "20aT1:TM:Current4:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC7D",
+      "pv": "20dT3:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "IC8D",
+      "pv": "20dT3:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC1_D_B",
+      "pv": "20dT2:TM:Current3:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC1_D_IB",
+      "pv": "20dT2:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC1_D_OB",
+      "pv": "20dT2:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC1_D_T",
+      "pv": "20dT2:TM:Current4:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_X_2D_1",
+      "pv": "20aT3:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_X_2D_2",
+      "pv": "20aT3:TM:Current2:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_Y_1D_1",
+      "pv": "20aT2:TM:Current3:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_Y_1D_2",
+      "pv": "20aT2:TM:Current4:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_Y_2D_1",
+      "pv": "20aT3:TM:Current3:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "SIC_A_Y_2D_2",
+      "pv": "20aT3:TM:Current4:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "T7_IC7D_X",
+      "pv": "20idd1:m7.RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "T7_IC8D_X",
+      "pv": "20idd1:m20.RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "USIC_E",
+      "pv": "20eT2:TM:Current1:MeanValue_RBV",
+      "group": "Ion Chamber"
+    },
+    {
+      "name": "D2PD_E",
+      "pv": "20eT2:TM:Current3:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "DSBOT_E",
+      "pv": "20eT3:TM:Current3:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "DSIB_E",
+      "pv": "20eT3:TM:Current1:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "DSOB_E",
+      "pv": "20eT3:TM:Current2:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "DSTOP_E",
+      "pv": "20eT3:TM:Current4:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "DateTimeStart",
+      "pv": "S:IOC:timeOfDayForm1SI",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_HLSMS_tilt1",
+      "pv": "20ideSoft:JDI:1:X",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_HLSMS_tilt1_offset",
+      "pv": "20ideSoft:JDI:1:X_Offset",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_HLSMS_tilt2",
+      "pv": "20ideSoft:JDI:1:Y",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_HLSMS_tilt2_offset",
+      "pv": "20ideSoft:JDI:1:Y_Offset",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_Hutch_Analog_In",
+      "pv": "20ideLJ:T701:Ai1",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_Hutch_Light",
+      "pv": "20ideLJ:T701:Ai0",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_Output",
+      "pv": "20idcSoft:ET2k:1:OP",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_RBV",
+      "pv": "20ideLJ:T701:Ai12",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_RampRate",
+      "pv": "20idcSoft:ET2k:1:RRt",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_RampRate_RBV",
+      "pv": "20idcSoft:ET2k:1:RR",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T1",
+      "pv": "20idcSoft:ET2k:1:Temp",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_max_output",
+      "pv": "20idcSoft:ET2k:1:Hi_Pwr_Lim",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_max_output_RBV",
+      "pv": "20idcSoft:ET2k:1:HO",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_max_set_pt",
+      "pv": "20idcSoft:ET2k:1:SP_Hi_Lim",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_max_set_pt_RBV",
+      "pv": "20idcSoft:ET2k:1:HS",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_set_pt",
+      "pv": "20idcSoft:ET2k:1:Sp",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "E_PR_IRF_T_target",
+      "pv": "20idcSoft:ET2k:1:SP",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "IDEnergyDS",
+      "pv": "S20ID:DSID:EnergyM",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "IDEnergyUS",
+      "pv": "S20ID:USID:EnergyM",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "IDGapDS",
+      "pv": "S20ID:DSID:GapM",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "IDGapUS",
+      "pv": "S20ID:USID:GapM",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_Heating_Rate",
+      "pv": "20ideSoft:ci94:setRate",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_Pump_Speed",
+      "pv": "20ideSoft:ci94:pumpSpeed",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_Pump_Speed_set",
+      "pv": "20ideSoft:ci94:setSpeed",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_T1",
+      "pv": "20ideSoft:ci94:temp",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_T1_set",
+      "pv": "20ideSoft:ci94:setLimit",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_T2",
+      "pv": "20ideSoft:ci94:temp2",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_dsc_value",
+      "pv": "20ideSoft:ci94:dsc",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "LINKAM_OLD_status",
+      "pv": "20ideSoft:ci94:status",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "Psylotech_Done",
+      "pv": "20ideLJ:T701:Ai3",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "Psylotech_Load",
+      "pv": "20ideLJ:T701:Ai2",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "SRCurrent",
+      "pv": "S-DCCT:CurrentM",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "SamPressure",
+      "pv": "20ideSoft:TC32:Ti0",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "SamTemperature",
+      "pv": "20ideSoft:TC32:Ti1",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "T2_4_E",
+      "pv": "20eT2:TM:Current4:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "USBOT_E",
+      "pv": "20eT1:TM:Current3:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "USIB_E",
+      "pv": "20eT1:TM:Current1:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "USOB_E",
+      "pv": "20eT1:TM:Current2:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "USTOP_E",
+      "pv": "20eT1:TM:Current4:MeanValue_RBV",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "World_Angle",
+      "pv": "20ida1:HR1_worldOffAO.VAL",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "World_Angle_Th1",
+      "pv": "20ida1:HR1_Theta1RdbkAO",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "World_Angle_Th2",
+      "pv": "20ida1:HR1_Theta2RdbkAO",
+      "group": "Miscellaneous"
+    },
+    {
+      "name": "D_AttenPos",
+      "pv": "20idhedm:m6.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_RotX",
+      "pv": "20idhedm:m46.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samRx",
+      "pv": "20idhedm:m44.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samRy",
+      "pv": "20idhedmA:m1.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samRz",
+      "pv": "20idhedm:m43.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samX",
+      "pv": "20idhedm:m41.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samY",
+      "pv": "20idhedm:m45.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_HRSMS_samZ",
+      "pv": "20idhedm:m42.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1RX",
+      "pv": "20idhedm:m13.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1RY",
+      "pv": "20idhedm:m12.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1RZ",
+      "pv": "20idhedm:m14.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1X",
+      "pv": "20idhedm:m9.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1Y",
+      "pv": "20idhedm:m11.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens1Z",
+      "pv": "20idhedm:m10.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2RX",
+      "pv": "20idhedm:m19.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2RY",
+      "pv": "20idhedm:m18.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2RZ",
+      "pv": "20idhedm:m20.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2X",
+      "pv": "20idhedm:m15.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2Y",
+      "pv": "20idhedm:m17.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens2Z",
+      "pv": "20idhedm:m16.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3RX",
+      "pv": "20idhedm:m25.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3RY",
+      "pv": "20idhedm:m24.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3RZ",
+      "pv": "20idhedm:m26.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3X",
+      "pv": "20idhedm:m21.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3Y",
+      "pv": "20idhedm:m23.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens3Z",
+      "pv": "20idhedm:m22.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4RX",
+      "pv": "20idhedm:m31.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4RY",
+      "pv": "20idhedm:m30.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4RZ",
+      "pv": "20idhedm:m32.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4X",
+      "pv": "20idhedm:m27.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4Y",
+      "pv": "20idhedm:m29.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens4Z",
+      "pv": "20idhedm:m28.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5RX",
+      "pv": "20idd1:m12.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5RY",
+      "pv": "20idd1:m11.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5RZ",
+      "pv": "20idd1:m13.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5X",
+      "pv": "20idd1:m8.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5Y",
+      "pv": "20idd1:m10.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens5Z",
+      "pv": "20idd1:m9.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6RX",
+      "pv": "20idd1:m18.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6RY",
+      "pv": "20idd1:m17.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6RZ",
+      "pv": "20idd1:m19.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6X",
+      "pv": "20idd1:m15.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6Y",
+      "pv": "20idd1:m16.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "D_Lens6Z",
+      "pv": "20idd1:m14.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_RotX",
+      "pv": "20ide2:m88.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_RotY1",
+      "pv": "20ide2:m81.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_RotY2",
+      "pv": "20ide2:m82.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_RotY3",
+      "pv": "20ide2:m83.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_samRy",
+      "pv": "20ide2:m84.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_samX",
+      "pv": "20ide2:m85.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_samY",
+      "pv": "20ide2:m86.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HLSMS_samZ",
+      "pv": "20ide2:m87.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samRx",
+      "pv": "20ideHRSMS:m3.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samRy",
+      "pv": "20ideHRSMS:m2.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samRz",
+      "pv": "20ideHRSMS:m5.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samX",
+      "pv": "20ideHRSMS:m6.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samY",
+      "pv": "20ideHRSMS:m7.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_HRSMS_samZ",
+      "pv": "20ideHRSMS:m8.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1RX",
+      "pv": "20ide2:m18.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1RY",
+      "pv": "20ide2:m19.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1RZ",
+      "pv": "20ide2:m20.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1X",
+      "pv": "20ide2:m15.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1Y",
+      "pv": "20ide2:m16.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens1Z",
+      "pv": "20ide2:m17.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2RX",
+      "pv": "20ide2:m24.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2RY",
+      "pv": "20ide2:m25.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2RZ",
+      "pv": "20ide2:m26.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2X",
+      "pv": "20ide2:m21.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2Y",
+      "pv": "20ide2:m22.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens2Z",
+      "pv": "20ide2:m23.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3RX",
+      "pv": "20ide2:m32.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3RY",
+      "pv": "20ide2:m33.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3RZ",
+      "pv": "20ide2:m34.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3X",
+      "pv": "20ide2:m29.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3Y",
+      "pv": "20ide2:m30.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens3Z",
+      "pv": "20ide2:m31.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4RX",
+      "pv": "20ide2:m38.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4RY",
+      "pv": "20ide2:m39.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4RZ",
+      "pv": "20ide2:m40.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4X",
+      "pv": "20ide2:m35.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4Y",
+      "pv": "20ide2:m36.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "E_Lens4Z",
+      "pv": "20ide2:m37.RBV",
+      "group": "Motors"
+    },
+    {
+      "name": "FillPattern",
+      "pv": "OPS:message3",
+      "group": "Motors"
+    },
+    {
+      "name": "NextFillInfo",
+      "pv": "OPS:message6",
+      "group": "Motors"
+    },
+    {
+      "name": "RingOperator",
+      "pv": "OPS:message1",
+      "group": "Motors"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "20idPG6s:cam1:ADCoreVersion_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "20idPG6s:cam1:AcquirePeriod_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "20idPG6s:cam1:AcquireTime_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "20idPG6s:cam1:ArrayCounter_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "20idPG6s:cam1:BinX",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "20idPG6s:cam1:BinY",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "20idPG6s:cam1:DataType_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "20idPG6s:cam1:DriverVersion_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "20idPG6s:HDF1:FilePath_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "20idPG6s:cam1:FirmwareVersion_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "20idPG6s:HDF1:FullFileName_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "20idPG6s:cam1:Gain_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "20idPG6s:HDF1:PluginType_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "20idPG6s:cam1:Manufacturer_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "20idPG6s:cam1:MaxSizeX_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "20idPG6s:cam1:MaxSizeY_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetMinX",
+      "pv": "20idPG6s:cam1:MinX",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetMinY",
+      "pv": "20idPG6s:cam1:MinY",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "20idPG6s:cam1:Model_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "20idPG6s:cam1:SDKVersion_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "20idPG6s:HDF1:FileName",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "20idPG6s:cam1:FrameType",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "20idPG6s:cam1:SerialNumber_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSizeX",
+      "pv": "20idPG6s:cam1:SizeX",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetSizeY",
+      "pv": "20idPG6s:cam1:SizeY",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "20idPG6s:cam1:Temperature_RBV",
+      "group": "PG6 Detector"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:ADCoreVersion_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:AcquirePeriod_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:AcquireTime_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:ArrayCounter_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:ArraySizeX_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:ArraySizeY_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetBSX",
+      "pv": "20idmxa1:m4.RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetBSY",
+      "pv": "20idmxa1:m5.RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:BinX_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:BinY_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:DataType_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:DriverVersion_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "PITEC:D:RAD1_5Mh:HDF1:FilePath_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:FirmwareVersion_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "PITEC:D:RAD1_5Mh:HDF1:FullFileName_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:Gain_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "PITEC:D:RAD1_5Mh:HDF1:PluginType_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:Manufacturer_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:MaxSizeX_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:MaxSizeY_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:Model_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "PITEC:D:RAD1_5Mh:Attr1:1:AttrName_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "PITEC:D:RAD1_5Mh:Attr1:2:AttrName_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:SDKVersion_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "PITEC:D:RAD1_5Mh:HDF1:FileName",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:FrameType",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:SerialNumber_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetShieldX",
+      "pv": "20idmxa1:m6.RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "PITEC:D:RAD1_5Mh:cam1:Temperature_RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetX",
+      "pv": "20idmxa1:m8.RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DetY",
+      "pv": "20idmxa1:m7.RBV",
+      "group": "PITEC1 Detector"
+    },
+    {
+      "name": "DDSSlitsHCenter",
+      "pv": "20idhedm:S2Ht2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "DDSSlitsHSize",
+      "pv": "20idhedm:S2Ht2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "DDSSlitsVCenter",
+      "pv": "20idhedm:S2Vt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "DDSSlitsVSize",
+      "pv": "20idhedm:S2Vt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "DUSSlitsHCenter",
+      "pv": "20idhedm:S1Ht2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "DUSSlitsHSize",
+      "pv": "20idhedm:S1Ht2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "DUSSlitsVCenter",
+      "pv": "20idhedm:S1Vt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "DUSSlitsVSize",
+      "pv": "20idhedm:S1Vt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "EDSSlitsHCenter",
+      "pv": "20ide2:KslitEdsHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "EDSSlitsHSize",
+      "pv": "20ide2:KslitEdsHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "EDSSlitsVCenter",
+      "pv": "20ide2:KslitEdsVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "EDSSlitsVSize",
+      "pv": "20ide2:KslitEdsVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "EUSSlitsHCenter",
+      "pv": "20ide2:KslitEusHt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "EUSSlitsHSize",
+      "pv": "20ide2:KslitEusHt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "EUSSlitsVCenter",
+      "pv": "20ide2:KslitEusVt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "EUSSlitsVSize",
+      "pv": "20ide2:KslitEusVt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "T7SlitsHCenter",
+      "pv": "20idd1:S3Ht2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "T7SlitsHSize",
+      "pv": "20idd1:S3Ht2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "T7SlitsVCenter",
+      "pv": "20idd1:S3Vt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "T7SlitsVSize",
+      "pv": "20idd1:S3Vt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "20idVarex2:cam1:ADCoreVersion_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "20idVarex2:cam1:AcquirePeriod_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetAcqTime",
+      "pv": "20idVarex2:cam1:AcquireTime_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "20idVarex2:cam1:ArrayCounter_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "20idVarex2:cam1:ArraySizeX_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "20idVarex2:cam1:ArraySizeY_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "20idVarex2:cam1:BinX_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "20idVarex2:cam1:BinY_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "20idVarex2:cam1:DataType_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "20idVarex2:cam1:DriverVersion_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "20idVarex2:HDF1:FilePath_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "20idVarex2:cam1:FirmwareVersion_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "20idVarex2:HDF1:FullFileName_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetGain",
+      "pv": "20idVarex2:cam1:Gain_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "20idVarex2:HDF1:PluginType_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "20idVarex2:cam1:Manufacturer_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "20idVarex2:cam1:MaxSizeX_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "20idVarex2:cam1:MaxSizeY_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetModel",
+      "pv": "20idVarex2:cam1:Model_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "20idVarex2:Attr1:1:AttrName_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "20idVarex2:Attr1:2:AttrName_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "20idVarex2:cam1:SDKVersion_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "20idVarex2:HDF1:FileName",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "20idVarex2:cam1:FrameType",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "20idVarex2:cam1:SerialNumber_RBV",
+      "group": "Varex Detector"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "20idVarex2:cam1:Temperature_RBV",
+      "group": "Varex Detector"
+    }
+  ]
+}

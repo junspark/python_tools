@@ -1,0 +1,43 @@
+{
+  "settings": {
+    "recipients": [
+      "parkjs@aps.anl.gov",
+      "jun.sang.park@outlook.com"
+    ],
+    "sender": "disk_monitor@your-host.aps.anl.gov",
+    "smtp_host": "apsmail.aps.anl.gov",
+    "smtp_port": 25,
+    "check_interval_sec": 60,
+    "rate_window_min": 10,
+    "alert_cooldown_min": 60,
+    "history_retention_hours": 24,
+    "history_file": "/home/beams3/PARKJS/opt/python_tools/ops/disk_monitor/disk_history.jsonl",
+    "state_file": "/home/beams3/PARKJS/opt/python_tools/ops/disk_monitor/disk_alert_state.json"
+  },
+  "targets": [
+    {
+      "name": "home",
+      "path": "/home/beams/PARKJS",
+      "threshold_pct": 95,
+      "warn_pct": 85
+    },
+    {
+      "name": "data",
+      "path": "/net/s20data",
+      "threshold_pct": 90,
+      "warn_pct": 80
+    },
+    {
+      "name": "s1c",
+      "path": "/home/beams/PARKJS/mnt/s1c",
+      "warn_pct": 85,
+      "threshold_pct": 95
+    },
+    {
+      "name": "s20a",
+      "path": "/home/beams3/PARKJS/mnt/s20a",
+      "warn_pct": 85,
+      "threshold_pct": 95
+    }
+  ]
+}
