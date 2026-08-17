@@ -21,6 +21,7 @@ import json
 import os
 import re
 import shlex
+import stat
 import subprocess
 import sys
 import time
@@ -45,6 +46,29 @@ DEFAULT_RECORDS_DIR = os.path.join(SCRIPT_DIR, "records")
 # ---------------------------------------------------------------------------
 # Remote SSH Execution (for running DM queries from outside firewall)
 # ---------------------------------------------------------------------------
+
+def _ssh_argv(remote_spec):
+    """Common ssh argv prefix for every remote call in this module: reuse a
+    persistent control connection per (user, host, port) via OpenSSH's
+    ControlMaster, so a sequence of calls against the same remote_spec - a
+    Scan does at least two (get_upload_status, get_catalog_files), a
+    checksum-job launch does three (acquire_remote_lock, write_remote_file
+    x2, launch_checksum_job) - pay for one SSH handshake instead of one
+    each. ControlPersist keeps the master open for a while after the last
+    client exits so back-to-back unrelated actions (Scan, then Verify MD5
+    moments later) benefit too. Falls back to a plain new connection if the
+    control socket can't be created (e.g. no ~/.ssh) - ControlMaster=auto
+    degrades gracefully rather than erroring.
+    """
+    return [
+        "ssh",
+        "-o", "ConnectTimeout=10",
+        "-o", "ControlMaster=auto",
+        "-o", "ControlPath=~/.ssh/cm-%r@%h:%p",
+        "-o", "ControlPersist=300",
+        remote_spec,
+    ]
+
 
 def _run_remote_command(remote_host, remote_user, setup_cmd, python_code):
     """Run python_code on remote_host (after sourcing setup_cmd) via SSH,
@@ -79,7 +103,7 @@ def _run_remote_command(remote_host, remote_user, setup_cmd, python_code):
 
     try:
         result = subprocess.run(
-            ["ssh", remote_spec, remote_cmd],
+            _ssh_argv(remote_spec) + [remote_cmd],
             input=python_code,
             capture_output=True,
             text=True,
@@ -92,134 +116,6 @@ def _run_remote_command(remote_host, remote_user, setup_cmd, python_code):
         raise RuntimeError(f"Remote command returned invalid JSON: {result.stdout}")
     except Exception as e:
         raise RuntimeError(f"SSH execution failed: {e}")
-
-
-def get_recent_experiments(limit=10, remote_host=None, remote_user=None, station_configs=None):
-    """
-    Query DM for recent experiments from multiple beamlines.
-    Returns list of (experiment_name, beamline_name) tuples, sorted by recency (most recent first).
-
-    station_configs: list of dicts like [
-        {"name": "s1", "setup_script": "/dm/1id/etc/dm.setup.sh", "remote_host": "egressy"},
-        {"name": "s20", "setup_script": "/dm/20id/etc/dm.setup.sh", "remote_host": "zion"}
-    ]
-    """
-    if station_configs is None:
-        station_configs = [{"name": "s1", "setup_script": "/dm/1id/etc/dm.setup.sh"}]
-
-    all_experiments = []
-    per_station_limit = max(1, limit // len(station_configs))
-
-    for station_config in station_configs:
-        station_name = station_config.get("name", "unknown")
-        setup_script = station_config.get("setup_script", "/dm/1id/etc/dm.setup.sh")
-        # Allow per-station remote_host override
-        station_remote_host = station_config.get("remote_host", remote_host)
-
-        if station_remote_host:
-            python_code = f"""
-import json
-import dm.daq_web_service.api.experimentDaqApi as experimentDaqApi
-try:
-    api = experimentDaqApi.ExperimentDaqApi()
-    records = api.listUploadRecords(queryDict={{}})
-
-    # Group by experiment name, keep MOST RECENT upload record per experiment.
-    # listUploadRecords() records have no 'timestamp' field - the real field
-    # is 'startTime' (an epoch float, when that upload/DAQ job started).
-    exp_dict = {{}}
-    for record in records:
-        exp_name = record.get('experimentName', 'Unknown')
-        exp_start = record.get('startTime', 0)
-        # Only update if this is newer than what we have
-        if exp_name not in exp_dict or exp_start > exp_dict[exp_name].get('startTime', 0):
-            exp_dict[exp_name] = record
-
-    # Sort by upload start time (most recent first)
-    sorted_exps = sorted(exp_dict.items(), key=lambda x: x[1].get('startTime', 0), reverse=True)
-    result = [(exp[0], '{station_name}', exp[1].get('startTime', 0)) for exp in sorted_exps]
-    print(json.dumps(result))
-except Exception as e:
-    print(json.dumps([]))
-"""
-            # Use beamline-specific user if available
-            beamline_user = remote_user
-            if station_name == "s1":
-                beamline_user = "s1iduser"
-            elif station_name == "s20":
-                beamline_user = "s20iduser"
-
-            setup_cmd = f"source {setup_script} && conda activate dm-user"
-            # See _run_remote_command's docstring for both pitfalls this
-            # avoids: collapsing "bash -c <cmd>" into one shell-quoted argv
-            # element (ssh flattens trailing argv with spaces otherwise), and
-            # piping python_code over stdin to `python3 -` instead of
-            # embedding it as `python3 -c {repr(python_code)}` (repr()'s
-            # quotes/escapes are Python syntax, not shell syntax - the shell
-            # strips them without interpreting \n, so python3 would receive a
-            # literal backslash-n and fail with a SyntaxError).
-            remote_cmd = "bash -c {}".format(shlex.quote(setup_cmd + " && python3 -"))
-            try:
-                if beamline_user:
-                    remote_spec = f"{beamline_user}@{station_remote_host}"
-                else:
-                    remote_spec = station_remote_host
-
-                result = subprocess.run(
-                    ["ssh", "-o", "ConnectTimeout=10", "-o", "ControlMaster=auto",
-                     "-o", "ControlPath=~/.ssh/control-%h-%p-%r", "-o", "ControlPersist=300",
-                     remote_spec, remote_cmd],
-                    input=python_code,
-                    capture_output=True,
-                    text=True,
-                    timeout=30
-                )
-                if result.returncode == 0:
-                    experiments = json.loads(result.stdout)
-                    # Already sorted by recency (most recent first) by the
-                    # remote query - cap per station so one busy beamline
-                    # can't crowd the other out of the final merged list.
-                    all_experiments.extend(experiments[:per_station_limit])
-                else:
-                    print(f"SSH error for {station_name}: {result.stderr}", file=sys.stderr)
-            except Exception as e:
-                print(f"SSH exception for {station_name}: {e}", file=sys.stderr)
-                continue
-        else:
-            # Local execution
-            if experimentDaqApi is None:
-                continue
-
-            try:
-                api = experimentDaqApi.ExperimentDaqApi()
-                records = api.listUploadRecords(queryDict={})
-
-                # Group by experiment name, keep MOST RECENT upload record per
-                # experiment. listUploadRecords() records have no 'timestamp'
-                # field - the real field is 'startTime' (an epoch float, when
-                # that upload/DAQ job started).
-                exp_dict = {}
-                for record in records:
-                    exp_name = record.get('experimentName', 'Unknown')
-                    exp_start = record.get('startTime', 0)
-                    # Only update if this is newer than what we have
-                    if exp_name not in exp_dict or exp_start > exp_dict[exp_name].get('startTime', 0):
-                        exp_dict[exp_name] = record
-
-                # Sort by upload start time (most recent first), capped per
-                # station so one busy beamline can't crowd the other out.
-                sorted_exps = sorted(exp_dict.items(), key=lambda x: x[1].get('startTime', 0), reverse=True)
-                capped = sorted_exps[:per_station_limit]
-                all_experiments.extend([(exp[0], station_name, exp[1].get('startTime', 0)) for exp in capped])
-            except:
-                continue
-
-    # Each station's own segment is already sorted by recency (most recent
-    # first) from the per-station capping above. Deliberately not doing a
-    # second, global sort-by-date here: that would interleave stations by
-    # date instead of grouping by station (station_configs' own order, e.g.
-    # s1 before s20) with recency only as the tie-breaker within each group.
-    return [(name, station) for name, station, _ in all_experiments[:limit]]
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +132,231 @@ def load_config(path):
     config["settings"].setdefault("records_dir", DEFAULT_RECORDS_DIR)
 
     return config
+
+
+# ---------------------------------------------------------------------------
+# Checksum job routing & shared records/status (per beamline, not per user)
+# ---------------------------------------------------------------------------
+
+def canonical_local_root(path):
+    """Resolve a (possibly ~-relative, possibly symlinked) local path to its
+    canonical absolute form. E.g. '~/mnt/s1c/<expid>' resolves to the same
+    '/home/s1c/<expid>' regardless of whether it's expanded as parkjs,
+    S1IDUSER, or S20IDUSER - confirmed directly. This is what makes a
+    local_root chosen by whoever launched the GUI still valid once embedded
+    in a checksum job that runs on zion as s1iduser/s20iduser: canonicalize
+    before it's written into a job spec or any remote command, never pass
+    the launching user's own ~-relative or home-prefixed form through.
+    """
+    return os.path.realpath(os.path.expanduser(path))
+
+
+_BEAMLINE_DM_DEFAULTS = {
+    "s1": ("egressy", "s1iduser", "~/bin/dm_setup_1id.sh dm"),
+    "s20": ("zion", "s20iduser", "~/bin/dm_setup_20ide.sh"),
+}
+
+
+def remote_info_for_beamline(config, beamline):
+    """(remote_host, remote_user, setup_script) for beamline's *DM catalog*
+    queries (get_upload_status/get_catalog_files), from settings.remote_hosts/
+    setup_scripts, falling back to the same per-beamline defaults regardless
+    of whether those settings keys are present - so a minimal or stale
+    config still reaches the right DM instance over SSH instead of silently
+    falling back to local execution (which returns empty/error results on
+    any host without a local dm install, not the beamline's actual upload
+    status). Shared by the GUI (DataIntegrityPanel._remote_info_for_beamline)
+    and the CLI (main()) so both route the same way - distinct from
+    remote_identity_for_beamline, which is about where checksum jobs
+    *execute* (always zion), not where DM itself is queried from.
+    """
+    settings = config.get("settings", {})
+    remote_hosts = settings.get("remote_hosts", {})
+    setup_scripts = settings.get("setup_scripts", {})
+    default_host, default_user, default_script = _BEAMLINE_DM_DEFAULTS.get(
+        beamline, (None, None, "/dm/1id/etc/dm.setup.sh"))
+    remote_host = remote_hosts.get(beamline, default_host)
+    setup_script = setup_scripts.get(beamline, default_script)
+    return remote_host, default_user, setup_script
+
+
+def beamline_for_local_root(config, local_root):
+    """Best-effort beamline ("s1"/"s20"/...) for local_root: whichever
+    settings.local_bases entry is a prefix of its canonical path - the same
+    convention discover_local_experiments's callers rely on. None if
+    local_root doesn't fall under any configured base (e.g. a manually
+    added experiment outside s1c/s20a, or a bare/missing local_bases)."""
+    local_bases = config.get("settings", {}).get("local_bases", {})
+    canonical = canonical_local_root(local_root)
+    for beamline, base_dir in local_bases.items():
+        base_canonical = canonical_local_root(base_dir)
+        if canonical == base_canonical or canonical.startswith(base_canonical + os.sep):
+            return beamline
+    return None
+
+
+def remote_identity_for_beamline(config, beamline):
+    """(host, user, remote_base) for where beamline's checksum jobs run and
+    where their shared dm_record/ (records + checksum status) lives, from
+    settings.checksum_hosts. Distinct from get_upload_status/get_catalog_files's
+    routing (settings.remote_hosts/setup_scripts) - that's about reaching
+    DM's catalog service (egressy for s1, zion for s20 today); this is
+    about where the slow local hashing actually executes (always zion,
+    under the beamline's own service account) and where its results are
+    shared, regardless of which account launched the GUI.
+    """
+    entry = config.get("settings", {}).get("checksum_hosts", {}).get(beamline, {})
+    return entry.get("host"), entry.get("user"), entry.get("remote_base")
+
+
+def checksum_records_dir(remote_base):
+    return os.path.join(remote_base, "records")
+
+
+def checksum_status_dir(remote_base):
+    return os.path.join(remote_base, "checksum_status")
+
+
+def checksum_status_path(remote_base, experiment_name):
+    return os.path.join(checksum_status_dir(remote_base), f"{experiment_name}.json")
+
+
+def checksum_unit_name(experiment_name):
+    """Deterministic systemd --user unit name for experiment_name's checksum
+    job - used both to dedupe (systemctl --user is-active <name>) and to
+    launch (systemd-run --user --unit=<name>). systemd-escape --template
+    handles arbitrary expid characters (hyphens, etc.) safely and
+    reversibly; falls back to a simple manual sanitize if systemd-escape
+    isn't on PATH (e.g. running tests on a host without systemd)."""
+    try:
+        result = subprocess.run(
+            ["systemd-escape", "--template=checksum-verify@.service", experiment_name],
+            capture_output=True, text=True, timeout=5, check=True,
+        )
+        return result.stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        sanitized = re.sub(r"[^A-Za-z0-9_.-]", "_", experiment_name)
+        return f"checksum-verify@{sanitized}.service"
+
+
+def _atomic_write_json(path, data):
+    """Write JSON atomically (tmp file + os.replace) so a concurrent reader
+    (the GUI's poll timer, or a peer job counting active workers for the
+    CPU governor) never sees a partially-written file."""
+    Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
+    tmp_path = f"{path}.tmp.{os.getpid()}"
+    with open(tmp_path, "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp_path, path)
+
+
+def write_remote_file(host, user, path, content, timeout=30):
+    """Write content (a string) to path on host as user, via SSH - for
+    anything that needs to land under a beamline's own dm_record/ (job
+    specs, initial status, records) from a process that isn't already
+    running as that account (e.g. Scan/the GUI's checksum-job launcher,
+    both of which run as whoever launched the GUI, not s1iduser/s20iduser).
+    """
+    remote_spec = f"{user}@{host}" if user else host
+    # See _run_remote_command's docstring for why this must travel as one
+    # already shell-quoted string, not separate argv elements: ssh joins
+    # trailing argv with spaces before handing it to the remote shell.
+    remote_cmd = "bash -c {}".format(shlex.quote(
+        "mkdir -p {} && cat > {}".format(shlex.quote(os.path.dirname(path)), shlex.quote(path))
+    ))
+
+    result = subprocess.run(
+        _ssh_argv(remote_spec) + [remote_cmd],
+        input=content,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Remote write to {path} failed: {result.stderr}")
+
+
+def save_record_remote(remote_host, remote_user, records_dir, experiment_name, report):
+    """Like save_record(), but the actual file write happens on remote_host
+    as remote_user via SSH - for callers (Scan, which runs in-process as
+    whoever launched the GUI) that aren't already running as the account
+    that owns records_dir. Mirrors save_record()'s year-bucketing exactly
+    (_exp_records_dirs), so a record's location is identical regardless of
+    whether it was written locally (checksum_worker.py, already running as
+    the right account) or remotely (Scan).
+    """
+    exp_records_dir = _exp_records_dirs(records_dir, experiment_name)[0]
+    timestamp = int(time.time())
+    filepath = os.path.join(exp_records_dir, f"{timestamp}.json")
+    write_remote_file(remote_host, remote_user, filepath, json.dumps(report, indent=2))
+    return filepath
+
+
+def launch_checksum_job(host, user, unit_name, job_spec_path, status_path, worker_script_path):
+    """Launch checksum_worker.py as a detached systemd --user service on
+    host, as user. This is what actually makes the job survive both the
+    SSH session that launched it and the GUI process that triggered it -
+    requires `loginctl enable-linger` for that account (already enabled
+    for s1iduser/s20iduser). --unit (a persistent service, not --scope)
+    keeps the job fully detached from this SSH session's own process tree.
+    """
+    remote_spec = f"{user}@{host}" if user else host
+    remote_cmd = (
+        "systemd-run --user --unit={unit} --collect --slice=checksum-verify.slice "
+        "--description={desc} -- /usr/bin/python3 {script} "
+        "--job-spec {spec} --status-file {status}"
+    ).format(
+        unit=shlex.quote(unit_name),
+        desc=shlex.quote(f"DM checksum verify: {os.path.basename(job_spec_path)}"),
+        script=shlex.quote(worker_script_path),
+        spec=shlex.quote(job_spec_path),
+        status=shlex.quote(status_path),
+    )
+    result = subprocess.run(
+        _ssh_argv(remote_spec) + [remote_cmd],
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to launch checksum job: {result.stderr}")
+
+
+def lock_dir(remote_base, kind, experiment_name):
+    """Path to a per-experiment, per-operation lock directory under a
+    beamline's shared dm_record/ - e.g. .../locks/scan__pokharel_jul26.
+    kind is "scan" or "checksum": a Scan and a Verify MD5 for the same
+    experiment don't conflict with each other (independent operations),
+    but two Scans (or two checksum-job launches) for the same experiment,
+    from different users/GUI instances, do."""
+    return os.path.join(remote_base, "locks", f"{kind}__{experiment_name}")
+
+
+def acquire_remote_lock(host, user, path, timeout=15):
+    """Atomically acquire a lock via `mkdir` on host as user - mkdir either
+    creates the directory or fails with a nonzero exit if it already
+    exists, with no race window, unlike a check-then-write-status-file
+    approach. Returns True if acquired, False if someone else already
+    holds it (a live process crashing without releasing is a known,
+    accepted risk of this simple scheme - not addressed here, matching the
+    rest of this project's "assume good-faith interactive use" posture
+    rather than adding lock-staleness/timeout recovery logic).
+    """
+    remote_spec = f"{user}@{host}" if user else host
+    remote_cmd = "bash -c {}".format(shlex.quote(
+        "mkdir -p {} && mkdir {}".format(shlex.quote(os.path.dirname(path)), shlex.quote(path))
+    ))
+    result = subprocess.run(
+        _ssh_argv(remote_spec) + [remote_cmd],
+        capture_output=True, text=True, timeout=timeout,
+    )
+    return result.returncode == 0
+
+
+def release_remote_lock(host, user, path, timeout=15):
+    remote_spec = f"{user}@{host}" if user else host
+    remote_cmd = "bash -c {}".format(shlex.quote(f"rmdir {shlex.quote(path)}"))
+    subprocess.run(_ssh_argv(remote_spec) + [remote_cmd], capture_output=True, text=True, timeout=timeout)
 
 
 def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=None, remote_user=None,
@@ -480,7 +601,7 @@ def discover_local_experiments(base_dir, limit=3):
             st = os.stat(full_path)
         except OSError:
             continue
-        if not os.path.isdir(full_path):
+        if not stat.S_ISDIR(st.st_mode):
             continue
 
         month = _MONTH_NUMBERS[match.group(1).lower()]
@@ -546,40 +667,51 @@ def compare(local_files, catalog_files):
     return result
 
 
-def verify_checksums(local_root, catalog_files, paths):
+def verify_checksums(local_root, catalog_files, paths, progress_cb=None):
     """
     Explicit checksum verification (MD5) for specific paths.
-    Returns dict {path: "CHECKSUM_MATCH" | "CHECKSUM_MISMATCH"}.
+    Returns dict {path: "CHECKSUM_MATCH" | "CHECKSUM_MISMATCH" |
+    "CHECKSUM_UNKNOWN" | "CHECKSUM_ERROR"}.
+
+    progress_cb(path, index, total, status), if given, is called after each
+    path is processed (index is 1-based, status is that path's just-computed
+    entry in the returned dict) - used by checksum_worker.py to report
+    progress and self-throttle between files without this function needing
+    to know anything about status files or CPU budgets.
     """
     result = {}
+    total = len(paths)
 
-    for path in paths:
+    for index, path in enumerate(paths, start=1):
         if path not in catalog_files:
-            continue
-
-        full_path = os.path.join(local_root, path)
-        if not os.path.isfile(full_path):
             result[path] = "CHECKSUM_UNKNOWN"
-            continue
-
-        expected_md5 = catalog_files[path].get("md5", "").lower()
-        if not expected_md5:
-            result[path] = "CHECKSUM_UNKNOWN"
-            continue
-
-        try:
-            md5_hash = hashlib.md5()
-            with open(full_path, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b""):
-                    md5_hash.update(chunk)
-            computed_md5 = md5_hash.hexdigest()
-
-            if computed_md5 == expected_md5:
-                result[path] = "CHECKSUM_MATCH"
+        else:
+            full_path = os.path.join(local_root, path)
+            if not os.path.isfile(full_path):
+                result[path] = "CHECKSUM_UNKNOWN"
             else:
-                result[path] = "CHECKSUM_MISMATCH"
-        except (OSError, IOError):
-            result[path] = "CHECKSUM_ERROR"
+                # .get("md5", "") only supplies the default when the key is
+                # *absent* - DM can return a present "md5Sum": null
+                # (checksum not computed yet), which .get() passes through
+                # as None verbatim, so this must be checked before calling
+                # .lower() on it.
+                expected_md5 = catalog_files[path].get("md5")
+                if not expected_md5:
+                    result[path] = "CHECKSUM_UNKNOWN"
+                else:
+                    expected_md5 = expected_md5.lower()
+                    try:
+                        md5_hash = hashlib.md5()
+                        with open(full_path, "rb") as f:
+                            for chunk in iter(lambda: f.read(8192), b""):
+                                md5_hash.update(chunk)
+                        computed_md5 = md5_hash.hexdigest()
+                        result[path] = "CHECKSUM_MATCH" if computed_md5 == expected_md5 else "CHECKSUM_MISMATCH"
+                    except (OSError, IOError):
+                        result[path] = "CHECKSUM_ERROR"
+
+        if progress_cb:
+            progress_cb(path, index, total, result[path])
 
     return result
 
@@ -621,6 +753,16 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
     elif local_only_count == total_files:
         sojourner_status = "NOT_ON_SOJOURNER"
         sojourner_summary = "Not on Sojourner yet - no local files found in the DM catalog"
+    elif checksum_mismatch_count > 0:
+        # Checked ahead of FULLY_LANDED/PARTIALLY_LANDED deliberately: those
+        # are derived only from compare()'s size-based comparison, so a
+        # file that size-matched but failed its MD5 (real corruption, or a
+        # DM-side re-write) would otherwise still read as "fully landed" -
+        # confirmed directly: a synthetic report with one CHECKSUM_MISMATCH
+        # among otherwise-MATCHing files came back FULLY_LANDED before this
+        # check existed.
+        sojourner_status = "CHECKSUM_MISMATCH"
+        sojourner_summary = f"{checksum_mismatch_count} file(s) failed checksum verification - possible corruption"
     elif match_count == total_files and remote_only_count == 0:
         sojourner_status = "FULLY_LANDED"
         sojourner_summary = "All local files have landed on Sojourner"
@@ -755,8 +897,6 @@ def main(argv=None):
     settings = config.get("settings", {})
     records_dir = settings.get("records_dir", DEFAULT_RECORDS_DIR)
     station_name = settings.get("station_name", "SOJOURNER")
-    remote_host = settings.get("remote_host")
-    remote_user = settings.get("remote_user")
 
     exp_config = None
     for exp in config.get("experiments", []):
@@ -771,17 +911,28 @@ def main(argv=None):
     if not local_root:
         sys.exit(f"No local_root configured for experiment '{args.experiment}'")
 
+    # settings has no single top-level "remote_host"/"remote_user" - real
+    # configs (see data_integrity_config.json) key these per beamline under
+    # "remote_hosts"/"setup_scripts", exactly like the GUI. Route the same
+    # way it does: an explicit "beamline" on the experiment entry, or
+    # inferred from local_root falling under one of settings.local_bases.
+    beamline = exp_config.get("beamline") or beamline_for_local_root(config, local_root)
+    remote_host, remote_user, setup_script = remote_info_for_beamline(config, beamline)
+
     if not remote_host and experimentDaqApi is None:
         sys.exit(
-            "dm Python API is not available locally and no remote_host configured.\n"
+            "dm Python API is not available locally and no remote host could be "
+            f"determined for experiment '{args.experiment}' (beamline: {beamline!r}).\n"
             "Either:\n"
             "  1. Source dm.setup.sh and activate dm-user environment\n"
-            "  2. Configure 'remote_host' in settings to run DM queries via SSH\n"
+            "  2. Add a 'beamline' key to this experiment's config entry, or set "
+            "settings.local_bases so local_root's beamline can be inferred, and "
+            "configure settings.remote_hosts/setup_scripts for it\n"
         )
 
     if args.command == "check":
-        upload_status = get_upload_status(args.experiment, station_name, remote_host, remote_user)
-        catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user)
+        upload_status = get_upload_status(args.experiment, station_name, remote_host, remote_user, setup_script)
+        catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user, setup_script)
         local_files = scan_local_files(local_root)
         comparison = compare(local_files, catalog_files)
 
@@ -794,8 +945,8 @@ def main(argv=None):
         print(f"Recommend deletion: {report['recommend_deletion']}")
 
     elif args.command == "verify-checksums":
-        upload_status = get_upload_status(args.experiment, station_name, remote_host, remote_user)
-        catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user)
+        upload_status = get_upload_status(args.experiment, station_name, remote_host, remote_user, setup_script)
+        catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user, setup_script)
         local_files = scan_local_files(local_root)
         comparison = compare(local_files, catalog_files)
 

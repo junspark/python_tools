@@ -36,40 +36,46 @@ sys.path.insert(0, os.path.join(OPS_DIR, "pv_logger"))
 import dm_integrity_gui as dig
 
 
+def _write_config_with_fake_experiments(tmpdir):
+    """A config whose local_bases point entirely inside tmpdir, with one
+    correctly-named (matches dm_integrity._EXPERIMENT_NAME_RE) experiment
+    directory per beamline. Discovery (_discover_and_populate_experiments)
+    reads directly from settings.local_bases, NOT from the static
+    "experiments" list - a config that omits local_bases would fall back to
+    the real ~/mnt/s1c, ~/mnt/s20a mounts and make row counts depend on
+    whatever experiments happen to exist on the machine running the test,
+    rather than on anything this test controls.
+    """
+    s1_base = os.path.join(tmpdir, "s1c")
+    s20_base = os.path.join(tmpdir, "s20a")
+    os.makedirs(os.path.join(s1_base, "test_jan24"))
+    os.makedirs(os.path.join(s20_base, "test_jan24"))
+
+    config_path = os.path.join(tmpdir, "config.json")
+    config = {
+        "settings": {
+            "station_name": "SOJOURNER",
+            "records_dir": os.path.join(tmpdir, "records"),
+            "local_bases": {"s1": s1_base, "s20": s20_base},
+            "experiments_per_beamline": 3,
+        },
+    }
+    with open(config_path, "w") as f:
+        json.dump(config, f)
+    return config_path
+
+
 def test_data_integrity_panel():
     """Test DataIntegrityPanel standalone."""
     print("Testing DataIntegrityPanel...", end=" ")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        config_path = os.path.join(tmpdir, "config.json")
-        config = {
-            "settings": {
-                "station_name": "SOJOURNER",
-                "records_dir": os.path.join(tmpdir, "records")
-            },
-            "experiments": [
-                {
-                    "name": "exp1",
-                    "local_root": tmpdir,
-                    "dataset": None,
-                    "running": True
-                },
-                {
-                    "name": "exp2",
-                    "local_root": tmpdir,
-                    "dataset": None,
-                    "running": False
-                }
-            ]
-        }
-
-        with open(config_path, "w") as f:
-            json.dump(config, f)
+        config_path = _write_config_with_fake_experiments(tmpdir)
 
         app = QtWidgets.QApplication([])
 
         panel = dig.DataIntegrityPanel(config_path, show_font_control=True)
-        assert panel.table_widget.rowCount() == 2, "Should have 2 experiment rows"
+        assert panel.table_widget.rowCount() == 2, "Should have 1 row per beamline (2 total)"
 
         panel.set_font_size(12)
 
@@ -83,24 +89,7 @@ def test_data_integrity_window():
     print("Testing DataIntegrityWindow...", end=" ")
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        config_path = os.path.join(tmpdir, "config.json")
-        config = {
-            "settings": {
-                "station_name": "SOJOURNER",
-                "records_dir": os.path.join(tmpdir, "records")
-            },
-            "experiments": [
-                {
-                    "name": "exp1",
-                    "local_root": tmpdir,
-                    "dataset": None,
-                    "running": False
-                }
-            ]
-        }
-
-        with open(config_path, "w") as f:
-            json.dump(config, f)
+        config_path = _write_config_with_fake_experiments(tmpdir)
 
         app = QtWidgets.QApplication([])
 

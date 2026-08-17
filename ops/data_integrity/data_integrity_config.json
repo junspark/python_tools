@@ -11,14 +11,20 @@
       "s20": "~/bin/dm_setup_20ide.sh"
     },
     "local_root_templates": {
-      "s1": "/home/beams/PARKJS/mnt/s1c/{expid}",
-      "s20": "/home/beams3/PARKJS/mnt/s20a/{expid}"
+      "s1": "~/mnt/s1c/{expid}",
+      "s20": "~/mnt/s20a/{expid}"
     },
     "local_bases": {
-      "s1": "/home/beams/PARKJS/mnt/s1c",
-      "s20": "/home/beams3/PARKJS/mnt/s20a"
+      "s1": "~/mnt/s1c",
+      "s20": "~/mnt/s20a"
     },
-    "experiments_per_beamline": 3
+    "experiments_per_beamline": 3,
+    "checksum_hosts": {
+      "s1":  {"host": "zion", "user": "s1iduser", "remote_base": "/home/beams/S1IDUSER/dm_record"},
+      "s20": {"host": "zion", "user": "s20iduser", "remote_base": "/home/beams/S20IDUSER/dm_record"}
+    },
+    "checksum_cpu_budget": 0.20,
+    "checksum_poll_interval_sec": 4
   },
   "experiments": [
     {

@@ -8,3 +8,4 @@ ops/disk_monitor/disk_history.jsonl
 ops/disk_monitor/disk_alert_state.json
 ops/disk_monitor/disk_monitor_cron.log
 ops/pv_logger/pv_alert_state.json
+ops/ops_gui_prefs.json

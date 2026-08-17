@@ -16,6 +16,7 @@ Usage
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -39,12 +40,47 @@ except ImportError:
 
 DEFAULT_FONT_SIZE = 10
 
+# Remembers window size/position and font size across restarts. Deliberately
+# separate from disk_monitor/pv_logger/data_integrity's own config files -
+# font size and window geometry are properties of this combined shell, not
+# of any one tool, and the three tabs' configs shouldn't need to agree on a
+# single font size just because they happen to be viewed together here.
+PREFS_PATH = os.path.join(SCRIPT_DIR, "ops_gui_prefs.json")
+
+
+def _load_prefs():
+    try:
+        with open(PREFS_PATH) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_prefs(prefs):
+    try:
+        with open(PREFS_PATH, "w") as f:
+            json.dump(prefs, f, indent=2)
+    except OSError:
+        pass  # best-effort - a stale/unwritable prefs file shouldn't block using the GUI
+
 
 class OpsGuiWindow(QtWidgets.QMainWindow):
     def __init__(self, disk_config, pv_config, di_config):
         super().__init__()
         self.setWindowTitle("Ops")
-        self.resize(1000, 500)
+
+        self._prefs = _load_prefs()
+
+        # Width/height only, deliberately not position: this same prefs
+        # file is read from whatever computer you log in from (shared
+        # home directory), and a saved absolute screen position (or
+        # restoreGeometry()'s full blob, which bundles position and even
+        # which screen) can land off-screen entirely on a different
+        # monitor layout. Let the window manager place it; just remember
+        # how big it was.
+        width = self._prefs.get("width", 1000)
+        height = self._prefs.get("height", 500)
+        self.resize(width, height)
 
         # Each panel normally has its own "Font size" control; suppress
         # all and drive them from one control here instead, so there's a
@@ -63,16 +99,27 @@ class OpsGuiWindow(QtWidgets.QMainWindow):
         toolbar.addWidget(QtWidgets.QLabel(" Font size: "))
         self.font_size_spin = QtWidgets.QSpinBox()
         self.font_size_spin.setRange(6, 24)
-        self.font_size_spin.setValue(DEFAULT_FONT_SIZE)
+        self.font_size_spin.setValue(self._prefs.get("font_size", DEFAULT_FONT_SIZE))
         self.font_size_spin.valueChanged.connect(self.set_font_size)
         toolbar.addWidget(self.font_size_spin)
 
-        self.set_font_size(DEFAULT_FONT_SIZE)
+        self.set_font_size(self.font_size_spin.value())
 
     def set_font_size(self, size):
         self.disk_panel.set_font_size(size)
         self.pv_panel.set_font_size(size)
         self.di_panel.set_font_size(size)
+        self._prefs["font_size"] = size
+        _save_prefs(self._prefs)
+
+    def closeEvent(self, event):
+        # Window size is only worth persisting once, on exit - saving on
+        # every resize event would mean constant disk writes while the
+        # user is just dragging the window.
+        self._prefs["width"] = self.width()
+        self._prefs["height"] = self.height()
+        _save_prefs(self._prefs)
+        super().closeEvent(event)
 
 
 def _parse_args(argv=None):
