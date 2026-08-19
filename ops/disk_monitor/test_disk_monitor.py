@@ -61,10 +61,33 @@ def test_top_level_breakdown_bad_path():
     print("✓")
 
 
+def test_spawn_du_cancellable():
+    """The GUI needs to be able to kill a scan mid-flight (see
+    disk_monitor_gui.py's _TopFoldersWorker.cancel) - exercise that same
+    spawn-then-kill sequence directly against a real, large-ish temp
+    directory, confirming the process actually dies and communicate()
+    returns instead of hanging."""
+    print("Testing spawn_du() can be killed before it finishes...", end=" ")
+
+    with tempfile.TemporaryDirectory() as td:
+        sub = os.path.join(td, "sub")
+        os.makedirs(sub)
+        with open(os.path.join(sub, "data.bin"), "wb") as f:
+            f.write(b"\0" * 10_000)
+
+        proc = dm.spawn_du(td)
+        proc.kill()
+        stdout, stderr = proc.communicate(timeout=10)
+        assert proc.returncode != 0
+
+    print("✓")
+
+
 if __name__ == "__main__":
     try:
         test_top_level_breakdown()
         test_top_level_breakdown_bad_path()
+        test_spawn_du_cancellable()
         print("\nAll tests passed! ✓")
     except Exception as e:
         print(f"\nTest failed: {e}")

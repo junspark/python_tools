@@ -100,49 +100,35 @@ def sample_usage(path):
 # Top-level folder breakdown ("what's actually taking up the space")
 # ---------------------------------------------------------------------------
 
-def top_level_breakdown(path, top_n=5, timeout_sec=1800):
-    """
-    The top_n largest immediate subdirectories of path, each with its size
-    and most recent modification time - a starting point for "what's safe
-    to delete", which sample_usage()'s single free/used/percent number for
-    the whole filesystem can't answer on its own.
-
-    Shells out to `du` (GNU coreutils) rather than a manual os.walk: it's
-    already the well-tested tool for exactly this on a beamline-scale
-    (multi-TB, sometimes millions-of-files) mount, and --time gets the
-    recursive "most recent mtime of anything under here" in the same pass
-    that computes size, with no separate walk needed. --time-style=+%s
-    prints that as a raw Unix epoch (one bare integer) specifically to
-    avoid parsing a locale-dependent date format.
-
-    This is expensive - du still has to walk each subdirectory's entire
-    contents to size it, so it costs roughly what a full recursive walk of
-    path would, even though only top-level entries are reported. Meant to
-    be called on demand (a GUI button, an ad hoc CLI run), never on
-    disk_monitor's own check/monitor polling cadence.
-
-    Returns [{"name", "path", "size_bytes", "mtime"}, ...] sorted largest
-    first, capped to top_n. mtime is a Unix epoch float, or None if du
-    couldn't report one for that entry (seen with an empty directory, or
-    one where every file inside is unreadable). Raises RuntimeError if du
-    itself can't be run at all or times out - a nonzero exit from du alone
-    (common on shared mounts: at least one permission-denied subdirectory)
-    is not treated as fatal, since du still prints sizes for everything it
-    *could* read.
+def spawn_du(path):
+    """Start `du --max-depth=1 --time ...` over path and return the Popen
+    handle, without waiting for it - split out of top_level_breakdown() so
+    a caller that needs to cancel a long-running scan (disk_monitor_gui.py,
+    where du over a multi-TB mount can run for many minutes) can hold onto
+    the process and kill it early, instead of being stuck inside a single
+    blocking subprocess.run() call with no way to interrupt it. Raises
+    RuntimeError if `du` itself isn't on PATH.
     """
     try:
-        result = subprocess.run(
+        return subprocess.Popen(
             ["du", "--max-depth=1", "-b", "--time", "--time-style=+%s", path],
-            capture_output=True, text=True, timeout=timeout_sec,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
     except FileNotFoundError:
         raise RuntimeError("`du` command not found")
-    except subprocess.TimeoutExpired:
-        raise RuntimeError(f"du timed out after {timeout_sec}s scanning {path}")
 
+
+def _parse_du_output(stdout, path):
+    """Parse `du --max-depth=1 -b --time --time-style=+%s <path>`'s stdout
+    into breakdown entries (see top_level_breakdown for the return shape) -
+    shared between top_level_breakdown's blocking call and the GUI's
+    cancelable one. --time-style=+%s prints each entry's most recent
+    modification time as a raw Unix epoch integer specifically to avoid
+    parsing a locale-dependent date format.
+    """
     canonical_path = os.path.realpath(path)
     entries = []
-    for line in result.stdout.splitlines():
+    for line in stdout.splitlines():
         parts = line.split("\t")
         if len(parts) != 3:
             continue
@@ -164,10 +150,54 @@ def top_level_breakdown(path, top_n=5, timeout_sec=1800):
             "mtime": mtime,
         })
 
-    if not entries and result.returncode != 0 and not result.stdout.strip():
-        raise RuntimeError(f"du failed for {path}: {result.stderr.strip()}")
-
     entries.sort(key=lambda e: e["size_bytes"], reverse=True)
+    return entries
+
+
+def top_level_breakdown(path, top_n=5, timeout_sec=1800):
+    """
+    The top_n largest immediate subdirectories of path, each with its size
+    and most recent modification time - a starting point for "what's safe
+    to delete", which sample_usage()'s single free/used/percent number for
+    the whole filesystem can't answer on its own.
+
+    Shells out to `du` (GNU coreutils, via spawn_du) rather than a manual
+    os.walk: it's already the well-tested tool for exactly this on a
+    beamline-scale (multi-TB, sometimes millions-of-files) mount, and
+    --time gets the recursive "most recent mtime of anything under here"
+    in the same pass that computes size, with no separate walk needed.
+
+    This is expensive - du still has to walk each subdirectory's entire
+    contents to size it, so it costs roughly what a full recursive walk of
+    path would, even though only top-level entries are reported. Meant to
+    be called on demand (a GUI button, an ad hoc CLI run), never on
+    disk_monitor's own check/monitor polling cadence. The CLI's Ctrl-C
+    kills this blocking call along with its du child normally; a caller
+    that needs to cancel a scan started earlier (the GUI) should use
+    spawn_du()/_parse_du_output() directly instead - see
+    disk_monitor_gui.py's _TopFoldersWorker.
+
+    Returns [{"name", "path", "size_bytes", "mtime"}, ...] sorted largest
+    first, capped to top_n. mtime is a Unix epoch float, or None if du
+    couldn't report one for that entry (seen with an empty directory, or
+    one where every file inside is unreadable). Raises RuntimeError if du
+    itself can't be run at all or times out - a nonzero exit from du alone
+    (common on shared mounts: at least one permission-denied subdirectory)
+    is not treated as fatal, since du still prints sizes for everything it
+    *could* read.
+    """
+    proc = spawn_du(path)
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout_sec)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.communicate()
+        raise RuntimeError(f"du timed out after {timeout_sec}s scanning {path}")
+
+    entries = _parse_du_output(stdout, path)
+    if not entries and proc.returncode != 0 and not stdout.strip():
+        raise RuntimeError(f"du failed for {path}: {stderr.strip()}")
+
     return entries[:top_n]
 
 

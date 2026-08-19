@@ -79,10 +79,17 @@ def _cron_status(script_path):
 
 
 class _TopFoldersWorker(QtCore.QObject):
-    """Runs dm.top_level_breakdown() off the GUI thread - it shells out to
-    `du` over the target's entire tree, which on a multi-TB beamline mount
-    can take anywhere from seconds to tens of minutes; running it inline
-    would freeze the whole GUI for that whole time."""
+    """Runs `du` over the target's entire tree off the GUI thread, via
+    dm.spawn_du()/_parse_du_output() rather than the CLI's blocking
+    dm.top_level_breakdown() - this needs to hold onto the live Popen so
+    cancel() (see TopFoldersDialog._cancel_and_wait) can kill it early. On
+    a multi-TB beamline mount this can run for many minutes; running it
+    inline would freeze the whole GUI for that whole time, and letting Qt
+    tear down a QThread while du is still running underneath it prints
+    "QThread: Destroyed while thread is still running" and can hang/crash
+    - confirmed directly by closing this dialog mid-scan on s20a before
+    cancel() existed.
+    """
 
     finished = QtCore.pyqtSignal(list)
     error = QtCore.pyqtSignal(str)
@@ -91,23 +98,54 @@ class _TopFoldersWorker(QtCore.QObject):
         super().__init__()
         self.path = path
         self.top_n = top_n
+        self._proc = None
+        self._cancelled = False
 
     def run(self):
+        if self._cancelled:
+            return
         try:
-            entries = dm.top_level_breakdown(self.path, top_n=self.top_n)
+            proc = dm.spawn_du(self.path)
         except RuntimeError as e:
             self.error.emit(str(e))
             return
+        self._proc = proc
+        stdout, stderr = proc.communicate()
+
+        if self._cancelled:
+            # cancel() already killed the process and this dialog is on
+            # its way out - nothing left to report to, and touching UI
+            # signals here would race with the dialog tearing itself down.
+            return
+
+        if proc.returncode != 0 and not stdout.strip():
+            self.error.emit(f"du failed for {self.path}: {stderr.strip()}")
+            return
+
+        entries = dm._parse_du_output(stdout, self.path)[: self.top_n]
         self.finished.emit(entries)
+
+    def cancel(self):
+        """Called from the GUI thread (see _cancel_and_wait) when the
+        dialog is closing before the scan finished - kill the still-running
+        du subprocess so run()'s communicate() call returns immediately
+        instead of leaving du (and this worker's thread) running for
+        however much longer the target's full tree walk would otherwise
+        take. Safe to call whether or not du has started yet: the
+        _cancelled flag makes run() a no-op if it hasn't spawned du yet."""
+        self._cancelled = True
+        if self._proc is not None and self._proc.poll() is None:
+            self._proc.kill()
 
 
 class TopFoldersDialog(QtWidgets.QDialog):
     """Shows the largest top-level subdirectories of one monitored target,
     each with its size and most recent modification time (recursively) -
     a starting point for deciding what's safe to clean up. Scans in the
-    background (see _TopFoldersWorker); this dialog can be closed while a
-    scan is still running without leaving anything dangling, since the
-    worker thread is owned by this dialog and only ever emits back to it.
+    background (see _TopFoldersWorker); closing this dialog (Close button,
+    Escape, or window close) before the scan finishes cancels it and waits
+    for the worker thread to actually stop first, rather than letting Qt
+    destroy a QThread that's still running underneath it.
     """
 
     def __init__(self, parent, name, path, top_n=5):
@@ -140,6 +178,30 @@ class TopFoldersDialog(QtWidgets.QDialog):
         self._worker.error.connect(self._thread.quit)
         self._thread.finished.connect(self._thread.deleteLater)
         self._thread.start()
+
+    def _cancel_and_wait(self):
+        """Stop a still-running scan cooperatively before this dialog is
+        actually allowed to close: kill the du subprocess (see
+        _TopFoldersWorker.cancel), then block briefly for the worker
+        thread to notice and exit. A bounded wait, not an unconditional
+        one - if du is wedged on a hung NFS mount (uninterruptible I/O
+        wait, where even SIGKILL can't land until the syscall returns),
+        this gives up after 5s and lets the dialog close anyway rather
+        than freezing the GUI indefinitely; the thread will still finish
+        and clean itself up whenever du actually exits, just later.
+        """
+        if self._thread.isRunning():
+            self._worker.cancel()
+            self._thread.quit()
+            self._thread.wait(5000)
+
+    def reject(self):
+        self._cancel_and_wait()
+        super().reject()
+
+    def closeEvent(self, event):
+        self._cancel_and_wait()
+        super().closeEvent(event)
 
     def _on_finished(self, entries):
         if not entries:
