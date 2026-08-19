@@ -27,6 +27,10 @@ import sys
 import time
 from pathlib import Path
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
+import remote_job as rj
+
 try:
     import dm.cat_web_service.api.datasetCatApi as datasetCatApi
     import dm.cat_web_service.api.fileCatApi as fileCatApi
@@ -38,7 +42,6 @@ except ImportError:
     experimentDaqApi = None
 
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CONFIG_PATH = os.path.join(SCRIPT_DIR, "data_integrity_config.json")
 DEFAULT_RECORDS_DIR = os.path.join(SCRIPT_DIR, "records")
 
@@ -46,77 +49,6 @@ DEFAULT_RECORDS_DIR = os.path.join(SCRIPT_DIR, "records")
 # ---------------------------------------------------------------------------
 # Remote SSH Execution (for running DM queries from outside firewall)
 # ---------------------------------------------------------------------------
-
-def _ssh_argv(remote_spec):
-    """Common ssh argv prefix for every remote call in this module: reuse a
-    persistent control connection per (user, host, port) via OpenSSH's
-    ControlMaster, so a sequence of calls against the same remote_spec - a
-    Scan does at least two (get_upload_status, get_catalog_files), a
-    checksum-job launch does three (acquire_remote_lock, write_remote_file
-    x2, launch_checksum_job) - pay for one SSH handshake instead of one
-    each. ControlPersist keeps the master open for a while after the last
-    client exits so back-to-back unrelated actions (Scan, then Verify MD5
-    moments later) benefit too. Falls back to a plain new connection if the
-    control socket can't be created (e.g. no ~/.ssh) - ControlMaster=auto
-    degrades gracefully rather than erroring.
-    """
-    return [
-        "ssh",
-        "-o", "ConnectTimeout=10",
-        "-o", "ControlMaster=auto",
-        "-o", "ControlPath=~/.ssh/cm-%r@%h:%p",
-        "-o", "ControlPersist=300",
-        remote_spec,
-    ]
-
-
-def _run_remote_command(remote_host, remote_user, setup_cmd, python_code):
-    """Run python_code on remote_host (after sourcing setup_cmd) via SSH,
-    returning its stdout parsed as JSON.
-
-    Two separate SSH/shell pitfalls, both avoided here:
-
-    1. ssh doesn't preserve argv boundaries remotely - any trailing arguments
-       after the host are joined with spaces into a single string and handed
-       to the remote shell, so passing ["bash", "-c", cmd] as three separate
-       argv elements silently drops cmd's own quoting once it crosses the
-       wire (the remote shell only takes the first word - "source" - as -c's
-       argument, treating the rest as bash's positional parameters instead).
-       Fixed by collapsing "bash -c <cmd>" into one already shell-quoted
-       string before it ever reaches ssh's argv.
-
-    2. python_code is a multi-line Python source string, not shell text.
-       Embedding it as `python3 -c {repr(python_code)}` puts Python's own
-       quote/escape syntax (from repr()) into a shell argument; the shell
-       strips repr()'s quote characters as its own quoting and does not
-       interpret its \\n escapes, so python3 ends up receiving a literal
-       backslash-n instead of a newline - a SyntaxError. Fixed by running
-       `python3 -` and piping python_code in over stdin, so it never has to
-       survive a shell-quoting round trip at all.
-    """
-    if remote_user:
-        remote_spec = f"{remote_user}@{remote_host}"
-    else:
-        remote_spec = remote_host
-
-    remote_cmd = "bash -c {}".format(shlex.quote(setup_cmd + " && python3 -"))
-
-    try:
-        result = subprocess.run(
-            _ssh_argv(remote_spec) + [remote_cmd],
-            input=python_code,
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"Remote command failed: {result.stderr}")
-        return json.loads(result.stdout)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"Remote command returned invalid JSON: {result.stdout}")
-    except Exception as e:
-        raise RuntimeError(f"SSH execution failed: {e}")
-
 
 # ---------------------------------------------------------------------------
 # Config
@@ -138,17 +70,15 @@ def load_config(path):
 # Checksum job routing & shared records/status (per beamline, not per user)
 # ---------------------------------------------------------------------------
 
-def canonical_local_root(path):
-    """Resolve a (possibly ~-relative, possibly symlinked) local path to its
-    canonical absolute form. E.g. '~/mnt/s1c/<expid>' resolves to the same
-    '/home/s1c/<expid>' regardless of whether it's expanded as parkjs,
-    S1IDUSER, or S20IDUSER - confirmed directly. This is what makes a
-    local_root chosen by whoever launched the GUI still valid once embedded
-    in a checksum job that runs on zion as s1iduser/s20iduser: canonicalize
-    before it's written into a job spec or any remote command, never pass
-    the launching user's own ~-relative or home-prefixed form through.
-    """
-    return os.path.realpath(os.path.expanduser(path))
+# canonical_local_root, _atomic_write_json, write_remote_file,
+# launch_checksum_job, lock_dir, acquire_remote_lock, release_remote_lock
+# used to be defined here directly - now thin wrappers around remote_job.py
+# (see that module's docstring), extracted so pv_logger.py's persistent
+# jobs can reuse the same SSH/locking plumbing instead of a second copy.
+# Kept as wrappers with their original names/signatures, rather than
+# updating every di.<name> call site in dm_integrity_gui.py, since this is
+# a behavior-preserving refactor of already-relied-upon production code.
+canonical_local_root = rj.canonical_path
 
 
 _BEAMLINE_DM_DEFAULTS = {
@@ -224,56 +154,12 @@ def checksum_status_path(remote_base, experiment_name):
 def checksum_unit_name(experiment_name):
     """Deterministic systemd --user unit name for experiment_name's checksum
     job - used both to dedupe (systemctl --user is-active <name>) and to
-    launch (systemd-run --user --unit=<name>). systemd-escape --template
-    handles arbitrary expid characters (hyphens, etc.) safely and
-    reversibly; falls back to a simple manual sanitize if systemd-escape
-    isn't on PATH (e.g. running tests on a host without systemd)."""
-    try:
-        result = subprocess.run(
-            ["systemd-escape", "--template=checksum-verify@.service", experiment_name],
-            capture_output=True, text=True, timeout=5, check=True,
-        )
-        return result.stdout.strip()
-    except (OSError, subprocess.CalledProcessError):
-        sanitized = re.sub(r"[^A-Za-z0-9_.-]", "_", experiment_name)
-        return f"checksum-verify@{sanitized}.service"
+    launch (systemd-run --user --unit=<name>)."""
+    return rj.systemd_unit_name("checksum-verify@.service", experiment_name)
 
 
-def _atomic_write_json(path, data):
-    """Write JSON atomically (tmp file + os.replace) so a concurrent reader
-    (the GUI's poll timer, or a peer job counting active workers for the
-    CPU governor) never sees a partially-written file."""
-    Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
-    tmp_path = f"{path}.tmp.{os.getpid()}"
-    with open(tmp_path, "w") as f:
-        json.dump(data, f, indent=2)
-    os.replace(tmp_path, path)
-
-
-def write_remote_file(host, user, path, content, timeout=30):
-    """Write content (a string) to path on host as user, via SSH - for
-    anything that needs to land under a beamline's own dm_record/ (job
-    specs, initial status, records) from a process that isn't already
-    running as that account (e.g. Scan/the GUI's checksum-job launcher,
-    both of which run as whoever launched the GUI, not s1iduser/s20iduser).
-    """
-    remote_spec = f"{user}@{host}" if user else host
-    # See _run_remote_command's docstring for why this must travel as one
-    # already shell-quoted string, not separate argv elements: ssh joins
-    # trailing argv with spaces before handing it to the remote shell.
-    remote_cmd = "bash -c {}".format(shlex.quote(
-        "mkdir -p {} && cat > {}".format(shlex.quote(os.path.dirname(path)), shlex.quote(path))
-    ))
-
-    result = subprocess.run(
-        _ssh_argv(remote_spec) + [remote_cmd],
-        input=content,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-    )
-    if result.returncode != 0:
-        raise RuntimeError(f"Remote write to {path} failed: {result.stderr}")
+_atomic_write_json = rj.atomic_write_json
+write_remote_file = rj.write_remote_file
 
 
 def save_record_remote(remote_host, remote_user, records_dir, experiment_name, report):
@@ -297,66 +183,24 @@ def launch_checksum_job(host, user, unit_name, job_spec_path, status_path, worke
     host, as user. This is what actually makes the job survive both the
     SSH session that launched it and the GUI process that triggered it -
     requires `loginctl enable-linger` for that account (already enabled
-    for s1iduser/s20iduser). --unit (a persistent service, not --scope)
-    keeps the job fully detached from this SSH session's own process tree.
+    for s1iduser/s20iduser).
     """
-    remote_spec = f"{user}@{host}" if user else host
-    remote_cmd = (
-        "systemd-run --user --unit={unit} --collect --slice=checksum-verify.slice "
-        "--description={desc} -- /usr/bin/python3 {script} "
-        "--job-spec {spec} --status-file {status}"
-    ).format(
-        unit=shlex.quote(unit_name),
-        desc=shlex.quote(f"DM checksum verify: {os.path.basename(job_spec_path)}"),
+    command = "/usr/bin/python3 {script} --job-spec {spec} --status-file {status}".format(
         script=shlex.quote(worker_script_path),
         spec=shlex.quote(job_spec_path),
         status=shlex.quote(status_path),
     )
-    result = subprocess.run(
-        _ssh_argv(remote_spec) + [remote_cmd],
-        capture_output=True,
-        text=True,
-        timeout=15,
+    rj.launch_detached_job(
+        host, user, unit_name,
+        description=f"DM checksum verify: {os.path.basename(job_spec_path)}",
+        command=command,
+        slice_name="checksum-verify.slice",
     )
-    if result.returncode != 0:
-        raise RuntimeError(f"Failed to launch checksum job: {result.stderr}")
 
 
-def lock_dir(remote_base, kind, experiment_name):
-    """Path to a per-experiment, per-operation lock directory under a
-    beamline's shared dm_record/ - e.g. .../locks/scan__pokharel_jul26.
-    kind is "scan" or "checksum": a Scan and a Verify MD5 for the same
-    experiment don't conflict with each other (independent operations),
-    but two Scans (or two checksum-job launches) for the same experiment,
-    from different users/GUI instances, do."""
-    return os.path.join(remote_base, "locks", f"{kind}__{experiment_name}")
-
-
-def acquire_remote_lock(host, user, path, timeout=15):
-    """Atomically acquire a lock via `mkdir` on host as user - mkdir either
-    creates the directory or fails with a nonzero exit if it already
-    exists, with no race window, unlike a check-then-write-status-file
-    approach. Returns True if acquired, False if someone else already
-    holds it (a live process crashing without releasing is a known,
-    accepted risk of this simple scheme - not addressed here, matching the
-    rest of this project's "assume good-faith interactive use" posture
-    rather than adding lock-staleness/timeout recovery logic).
-    """
-    remote_spec = f"{user}@{host}" if user else host
-    remote_cmd = "bash -c {}".format(shlex.quote(
-        "mkdir -p {} && mkdir {}".format(shlex.quote(os.path.dirname(path)), shlex.quote(path))
-    ))
-    result = subprocess.run(
-        _ssh_argv(remote_spec) + [remote_cmd],
-        capture_output=True, text=True, timeout=timeout,
-    )
-    return result.returncode == 0
-
-
-def release_remote_lock(host, user, path, timeout=15):
-    remote_spec = f"{user}@{host}" if user else host
-    remote_cmd = "bash -c {}".format(shlex.quote(f"rmdir {shlex.quote(path)}"))
-    subprocess.run(_ssh_argv(remote_spec) + [remote_cmd], capture_output=True, text=True, timeout=timeout)
+lock_dir = rj.lock_dir
+acquire_remote_lock = rj.acquire_remote_lock
+release_remote_lock = rj.release_remote_lock
 
 
 def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=None, remote_user=None,
@@ -394,7 +238,7 @@ except Exception as e:
     print(json.dumps({{"status": "error", "n_files": 0, "n_completed": 0, "n_errors": -1, "upload_complete": False, "error_msg": str(e)}}))
 """
         setup_cmd = f"source {setup_script} && conda activate dm-user"
-        return _run_remote_command(remote_host, remote_user, setup_cmd, python_code)
+        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code)
 
     # Local execution
     if experimentDaqApi is None:
@@ -496,7 +340,7 @@ except Exception as e:
     print(json.dumps({{}}))
 """
         setup_cmd = f"source {setup_script} && conda activate dm-user"
-        return _run_remote_command(remote_host, remote_user, setup_cmd, python_code)
+        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code)
 
     # Local execution
     if fileCatApi is None or datasetCatApi is None:
