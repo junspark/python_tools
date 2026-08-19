@@ -78,6 +78,92 @@ def _cron_status(script_path):
     return "Cron: unknown"
 
 
+class _TopFoldersWorker(QtCore.QObject):
+    """Runs dm.top_level_breakdown() off the GUI thread - it shells out to
+    `du` over the target's entire tree, which on a multi-TB beamline mount
+    can take anywhere from seconds to tens of minutes; running it inline
+    would freeze the whole GUI for that whole time."""
+
+    finished = QtCore.pyqtSignal(list)
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self, path, top_n):
+        super().__init__()
+        self.path = path
+        self.top_n = top_n
+
+    def run(self):
+        try:
+            entries = dm.top_level_breakdown(self.path, top_n=self.top_n)
+        except RuntimeError as e:
+            self.error.emit(str(e))
+            return
+        self.finished.emit(entries)
+
+
+class TopFoldersDialog(QtWidgets.QDialog):
+    """Shows the largest top-level subdirectories of one monitored target,
+    each with its size and most recent modification time (recursively) -
+    a starting point for deciding what's safe to clean up. Scans in the
+    background (see _TopFoldersWorker); this dialog can be closed while a
+    scan is still running without leaving anything dangling, since the
+    worker thread is owned by this dialog and only ever emits back to it.
+    """
+
+    def __init__(self, parent, name, path, top_n=5):
+        super().__init__(parent)
+        self.setWindowTitle(f"Top folders in '{name}'")
+        self.resize(600, 300)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status_label = QtWidgets.QLabel(f"Scanning {path} ...")
+        layout.addWidget(self.status_label)
+
+        self.table = QtWidgets.QTableWidget(0, 3)
+        self.table.setHorizontalHeaderLabels(["Folder", "Size (GB)", "Last updated"])
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        layout.addWidget(self.table)
+
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        layout.addWidget(buttons)
+
+        self._thread = QtCore.QThread(self)
+        self._worker = _TopFoldersWorker(path, top_n)
+        self._worker.moveToThread(self._thread)
+        self._thread.started.connect(self._worker.run)
+        self._worker.finished.connect(self._on_finished)
+        self._worker.error.connect(self._on_error)
+        self._worker.finished.connect(self._thread.quit)
+        self._worker.error.connect(self._thread.quit)
+        self._thread.finished.connect(self._thread.deleteLater)
+        self._thread.start()
+
+    def _on_finished(self, entries):
+        if not entries:
+            self.status_label.setText("No subdirectories found (or none were readable).")
+            return
+
+        self.status_label.setText(f"{len(entries)} largest subdirectories, by size:")
+        self.table.setRowCount(len(entries))
+        for row, entry in enumerate(entries):
+            size_gb = entry["size_bytes"] / dm.GB
+            mtime = entry["mtime"]
+            mtime_str = (
+                QtCore.QDateTime.fromSecsSinceEpoch(int(mtime)).toString(QtCore.Qt.TextDate)
+                if mtime is not None else "unknown"
+            )
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(entry["name"]))
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem("{:.2f}".format(size_gb)))
+            self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(mtime_str))
+        self.table.resizeColumnsToContents()
+
+    def _on_error(self, message):
+        self.status_label.setText(f"Scan failed: {message}")
+
+
 class AddTargetDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -162,6 +248,7 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         toolbar.addAction("Remove selected", self.remove_selected)
         toolbar.addAction("Edit recipients...", self.edit_recipients)
         toolbar.addAction("Send test email", self.send_test_email)
+        toolbar.addAction("Top folders...", self.show_top_folders)
 
         toolbar.addSeparator()
         self.cron_label = QtWidgets.QLabel(" Cron: checking... ")
@@ -314,6 +401,25 @@ class DiskMonitorPanel(QtWidgets.QWidget):
             QtWidgets.QMessageBox.information(self, "Test email", "Test alert sent (or printed to console).")
         else:
             QtWidgets.QMessageBox.critical(self, "Test email failed", "Failed to send test email; see console.")
+
+    def show_top_folders(self):
+        """Open TopFoldersDialog for the selected row's target (or the
+        first target if none selected) - same row-selection convention as
+        send_test_email above, and the same row-index-matches-cfg[targets]-
+        order assumption refresh() relies on."""
+        targets = self.cfg.get("targets", [])
+        if not targets:
+            QtWidgets.QMessageBox.warning(self, "No targets", "No monitored paths configured.")
+            return
+
+        rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
+        row = rows[0] if rows else 0
+        if row >= len(targets):
+            row = 0
+        target = targets[row]
+
+        dialog = TopFoldersDialog(self, target["name"], target["path"])
+        dialog.exec_()
 
 
 class DiskMonitorWindow(QtWidgets.QMainWindow):

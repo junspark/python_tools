@@ -31,6 +31,7 @@ import os
 import shutil
 import smtplib
 import socket
+import subprocess
 import sys
 import time
 from email.mime.text import MIMEText
@@ -93,6 +94,81 @@ def sample_usage(path):
     total, used, free = shutil.disk_usage(path)
     percent = (used / total * 100.0) if total else 0.0
     return total, used, free, percent
+
+
+# ---------------------------------------------------------------------------
+# Top-level folder breakdown ("what's actually taking up the space")
+# ---------------------------------------------------------------------------
+
+def top_level_breakdown(path, top_n=5, timeout_sec=1800):
+    """
+    The top_n largest immediate subdirectories of path, each with its size
+    and most recent modification time - a starting point for "what's safe
+    to delete", which sample_usage()'s single free/used/percent number for
+    the whole filesystem can't answer on its own.
+
+    Shells out to `du` (GNU coreutils) rather than a manual os.walk: it's
+    already the well-tested tool for exactly this on a beamline-scale
+    (multi-TB, sometimes millions-of-files) mount, and --time gets the
+    recursive "most recent mtime of anything under here" in the same pass
+    that computes size, with no separate walk needed. --time-style=+%s
+    prints that as a raw Unix epoch (one bare integer) specifically to
+    avoid parsing a locale-dependent date format.
+
+    This is expensive - du still has to walk each subdirectory's entire
+    contents to size it, so it costs roughly what a full recursive walk of
+    path would, even though only top-level entries are reported. Meant to
+    be called on demand (a GUI button, an ad hoc CLI run), never on
+    disk_monitor's own check/monitor polling cadence.
+
+    Returns [{"name", "path", "size_bytes", "mtime"}, ...] sorted largest
+    first, capped to top_n. mtime is a Unix epoch float, or None if du
+    couldn't report one for that entry (seen with an empty directory, or
+    one where every file inside is unreadable). Raises RuntimeError if du
+    itself can't be run at all or times out - a nonzero exit from du alone
+    (common on shared mounts: at least one permission-denied subdirectory)
+    is not treated as fatal, since du still prints sizes for everything it
+    *could* read.
+    """
+    try:
+        result = subprocess.run(
+            ["du", "--max-depth=1", "-b", "--time", "--time-style=+%s", path],
+            capture_output=True, text=True, timeout=timeout_sec,
+        )
+    except FileNotFoundError:
+        raise RuntimeError("`du` command not found")
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(f"du timed out after {timeout_sec}s scanning {path}")
+
+    canonical_path = os.path.realpath(path)
+    entries = []
+    for line in result.stdout.splitlines():
+        parts = line.split("\t")
+        if len(parts) != 3:
+            continue
+        size_str, mtime_str, entry_path = parts
+        if os.path.realpath(entry_path) == canonical_path:
+            # du's own line for path itself (its total, including any
+            # files directly inside it that aren't folded into a
+            # subdirectory) - not one of "its top-level folders".
+            continue
+        try:
+            size_bytes = int(size_str)
+        except ValueError:
+            continue
+        mtime = float(mtime_str) if mtime_str != "?" else None
+        entries.append({
+            "name": os.path.basename(entry_path.rstrip("/")),
+            "path": entry_path,
+            "size_bytes": size_bytes,
+            "mtime": mtime,
+        })
+
+    if not entries and result.returncode != 0 and not result.stdout.strip():
+        raise RuntimeError(f"du failed for {path}: {result.stderr.strip()}")
+
+    entries.sort(key=lambda e: e["size_bytes"], reverse=True)
+    return entries[:top_n]
 
 
 # ---------------------------------------------------------------------------
@@ -376,6 +452,37 @@ def cmd_monitor(args):
     return 0
 
 
+def cmd_top_folders(args):
+    if args.target:
+        cfg = load_config(args.config)
+        target = next((t for t in cfg["targets"] if t["name"] == args.target), None)
+        if target is None:
+            sys.exit(f"No target named '{args.target}' in {args.config}")
+        path = target["path"]
+    else:
+        path = args.path
+
+    print(f"Scanning {path} (walks the whole tree to size each subdirectory - may take a while)...")
+    try:
+        entries = top_level_breakdown(path, top_n=args.top)
+    except RuntimeError as e:
+        sys.exit(str(e))
+
+    if not entries:
+        print("No subdirectories found (or none were readable).")
+        return 0
+
+    print("{:<40} {:>10}  {}".format("FOLDER", "SIZE", "LAST UPDATED"))
+    for e in entries:
+        size_str = "{:.1f} GB".format(e["size_bytes"] / GB)
+        mtime_str = (
+            time.strftime("%Y-%m-%d %H:%M", time.localtime(e["mtime"]))
+            if e["mtime"] is not None else "unknown"
+        )
+        print("{:<40} {:>10}  {}".format(e["name"], size_str, mtime_str))
+    return 0
+
+
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Monitor disk usage/fill-rate and email alerts.",
@@ -395,6 +502,17 @@ def _parse_args(argv=None):
     monitor_p = subparsers.add_parser("monitor", parents=[common], help="Loop, printing a status table")
     monitor_p.add_argument("--interval", type=float, default=60, help="Seconds between checks")
     monitor_p.set_defaults(func=cmd_monitor)
+
+    top_p = subparsers.add_parser(
+        "top-folders",
+        help="Largest top-level subdirectories of a path, with each one's last-modified time")
+    top_p.add_argument("--config", default=DEFAULT_CONFIG_PATH,
+                        help="Path to config JSON (only needed with --target)")
+    target_group = top_p.add_mutually_exclusive_group(required=True)
+    target_group.add_argument("--path", help="Directory to scan directly")
+    target_group.add_argument("--target", help="Name of a configured target to scan its path")
+    top_p.add_argument("--top", type=int, default=5, help="How many largest subdirectories to show")
+    top_p.set_defaults(func=cmd_top_folders)
 
     return parser.parse_args(argv)
 

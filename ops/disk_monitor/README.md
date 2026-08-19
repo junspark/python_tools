@@ -103,6 +103,14 @@ python disk_monitor.py check --test-email
 
 # Continuous colored status table, refreshed every 30s, until Ctrl-C
 python disk_monitor.py monitor --interval 30
+
+# Largest top-level subdirectories of a target, with each one's most
+# recent modification time - "what's actually taking up the space, and
+# is it stale enough to delete?" Walks the whole tree (same cost as `du`
+# itself), so this is a deliberate, on-demand command, not something
+# check/monitor ever run automatically.
+python disk_monitor.py top-folders --target s1c
+python disk_monitor.py top-folders --path /any/directory --top 10
 ```
 
 ### Recommended deployment: cron
@@ -129,6 +137,17 @@ python disk_monitor_gui.py --config disk_monitor_config.json
 - **Edit recipients...** — comma-separated list of alert email addresses.
 - **Send test email** — sends (or prints, if `recipients` is empty) a test
   alert for the selected row, or the first target if none selected.
+- **Top folders...** — for the selected row's target (or the first target
+  if none selected), scans in the background and shows its top 5 largest
+  immediate subdirectories, each with its size and most recent
+  modification time anywhere underneath it (via `du --time` - see
+  `top_level_breakdown()` in `disk_monitor.py`). Meant to answer "what's
+  actually filling this up, and is any of it old enough to be safe to
+  delete" - a single overall used/free percentage can't tell you that.
+  This walks the target's entire tree (same cost as the CLI's
+  `top-folders`), so on a multi-TB mount it can take a while; the scan
+  runs off the GUI thread so the rest of the panel keeps working while
+  you wait, and the dialog can be closed at any time.
 - **Cron: ...** — a best-effort, read-only health check of the unattended
   `check` cron job, refreshed every cycle:
   - `Cron: OK` — `crond`/`cron` service is active and a crontab entry
