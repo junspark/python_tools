@@ -98,6 +98,42 @@ def test_build_report():
     print("✓")
 
 
+def test_diff_directories():
+    """A whole subdirectory with zero presence in the catalog should be
+    named directly, not just implied by its files' individual LOCAL_ONLY
+    statuses."""
+    print("Testing diff_directories()...", end=" ")
+
+    comparison = {
+        "top.dat": "MATCH",
+        "landed/a.dat": "MATCH",
+        "landed/sub/b.dat": "MATCH",
+        "never_uploaded/c.dat": "LOCAL_ONLY",
+        "never_uploaded/d.dat": "LOCAL_ONLY",
+        "cleaned_up/e.dat": "REMOTE_ONLY",
+    }
+
+    missing_dirs, extra_dirs = di.diff_directories(comparison)
+
+    assert missing_dirs == ["never_uploaded"], missing_dirs
+    assert extra_dirs == ["cleaned_up"], extra_dirs
+    # A directory with at least one MATCH/SIZE_MISMATCH file is never
+    # "missing", even nested ones.
+    assert "landed" not in missing_dirs
+    assert "landed/sub" not in missing_dirs
+
+    report = di.build_report(
+        "test_exp",
+        {"upload_complete": False},
+        comparison,
+    )
+    assert report["directory_stats"]["missing"] == ["never_uploaded"]
+    assert report["directory_stats"]["extra"] == ["cleaned_up"]
+    assert "never_uploaded" in report["sojourner_summary"]
+
+    print("✓")
+
+
 def test_verify_checksums():
     """Test MD5 checksum verification."""
     print("Testing verify_checksums()...", end=" ")
@@ -199,6 +235,7 @@ if __name__ == "__main__":
     try:
         test_compare()
         test_build_report()
+        test_diff_directories()
         test_verify_checksums()
         test_save_and_list_records()
         test_scan_local_files()

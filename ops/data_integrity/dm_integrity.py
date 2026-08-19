@@ -511,6 +511,50 @@ def compare(local_files, catalog_files):
     return result
 
 
+def _ancestor_dirs(rel_path):
+    """Every ancestor directory of rel_path, e.g. 'a/b/c.h5' -> {'a', 'a/b'}
+    (not including rel_path itself or the root)."""
+    dirs = set()
+    parent = os.path.dirname(rel_path)
+    while parent:
+        dirs.add(parent)
+        parent = os.path.dirname(parent)
+    return dirs
+
+
+def diff_directories(comparison):
+    """
+    Directory-level rollup of compare()'s per-file result: which
+    subdirectories exist on one side but have *no* files represented at all
+    on the other, derived from the ancestor directories of each path already
+    classified by compare() (so this needs no separate directory listing -
+    an empty local directory, which contributes no path to comparison at
+    all, is correctly never flagged as "missing": there's nothing to have
+    landed).
+
+    This is the gap compare()'s per-file MATCH/LOCAL_ONLY/etc. status
+    doesn't surface on its own: an entire subdirectory that never got
+    uploaded currently only shows up as N separate LOCAL_ONLY files, with
+    nothing calling out that they share a parent that's wholly absent from
+    Sojourner - easy to miss in a long file list, obvious once named.
+
+    Returns (missing_dirs, extra_dirs) as sorted lists - missing_dirs exist
+    locally but have zero presence in the DM catalog; extra_dirs are the
+    reverse (present in the catalog, absent locally - e.g. a local copy
+    that's since been cleaned up).
+    """
+    local_dirs = set()
+    remote_dirs = set()
+    for path, status in comparison.items():
+        dirs = _ancestor_dirs(path)
+        if status in ("MATCH", "SIZE_MISMATCH", "LOCAL_ONLY"):
+            local_dirs |= dirs
+        if status in ("MATCH", "SIZE_MISMATCH", "REMOTE_ONLY"):
+            remote_dirs |= dirs
+
+    return sorted(local_dirs - remote_dirs), sorted(remote_dirs - local_dirs)
+
+
 def verify_checksums(local_root, catalog_files, paths, progress_cb=None):
     """
     Explicit checksum verification (MD5) for specific paths.
@@ -577,6 +621,8 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
     good_files = match_count
     bad_files = size_mismatch_count + local_only_count + remote_only_count + checksum_mismatch_count
 
+    missing_dirs, extra_dirs = diff_directories(comparison)
+
     recommend_deletion = (
         upload_status.get("upload_complete", False) and
         local_only_count == 0 and
@@ -613,6 +659,15 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
     else:
         sojourner_status = "PARTIALLY_LANDED"
         sojourner_summary = f"Partially landed on Sojourner: {match_count}/{total_files} files match"
+        # Worth calling out specifically here (and not in the
+        # NOT_ON_SOJOURNER branch above, where *every* local directory is
+        # trivially "missing" and saying so would just be noise): this is
+        # the case where some files landed and others didn't, so a caller
+        # sharing a parent directory with zero presence in the catalog is
+        # a real, easy-to-miss structural gap - not just one-off file drops.
+        if missing_dirs:
+            dirs_shown = ", ".join(missing_dirs[:3]) + ("..." if len(missing_dirs) > 3 else "")
+            sojourner_summary += f" ({len(missing_dirs)} whole subdirector{'y' if len(missing_dirs) == 1 else 'ies'} not on Sojourner at all: {dirs_shown})"
 
     report = {
         "experiment_name": experiment_name,
@@ -627,6 +682,10 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
             "local_only": local_only_count,
             "remote_only": remote_only_count,
             "checksum_mismatch": checksum_mismatch_count,
+        },
+        "directory_stats": {
+            "missing": missing_dirs,
+            "extra": extra_dirs,
         },
         "comparison": comparison,
         "checksum_results": checksum_results,
@@ -643,6 +702,23 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
     }
 
     return report
+
+
+def _print_directory_stats(report):
+    """Print missing/extra directories from a report's directory_stats, if
+    any - shared by both `check` and `verify-checksums`' CLI output (see
+    diff_directories)."""
+    dir_stats = report.get("directory_stats", {})
+    missing_dirs = dir_stats.get("missing", [])
+    extra_dirs = dir_stats.get("extra", [])
+    if missing_dirs:
+        print(f"Whole subdirectories missing from Sojourner ({len(missing_dirs)}):")
+        for d in missing_dirs:
+            print(f"  {d}")
+    if extra_dirs:
+        print(f"Whole subdirectories on Sojourner but not found locally ({len(extra_dirs)}):")
+        for d in extra_dirs:
+            print(f"  {d}")
 
 
 def _year_for_experiment(experiment_name):
@@ -787,6 +863,7 @@ def main(argv=None):
         print(f"Upload status: {upload_status['status']}")
         print(f"Files: {report['file_stats']['good']} good / {report['file_stats']['bad']} bad")
         print(f"Recommend deletion: {report['recommend_deletion']}")
+        _print_directory_stats(report)
 
     elif args.command == "verify-checksums":
         upload_status = get_upload_status(args.experiment, station_name, remote_host, remote_user, setup_script)
@@ -804,6 +881,7 @@ def main(argv=None):
         print(f"Checksums verified: {sum(1 for s in checksum_results.values() if s == 'CHECKSUM_MATCH')} match")
         print(f"Checksums failed: {sum(1 for s in checksum_results.values() if s == 'CHECKSUM_MISMATCH')} mismatch")
         print(f"Recommend deletion: {report['recommend_deletion']}")
+        _print_directory_stats(report)
 
     elif args.command == "history":
         records = list_records(records_dir, args.experiment)
