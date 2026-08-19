@@ -1,10 +1,19 @@
 # Data Integrity Monitor
 
-Verifies that data uploaded from s1c (hutch-local staging) to APS Data Management (Sojourner) is complete and uncorrupted. Provides lightweight (file size/existence) and on-demand (MD5 checksum) integrity checks, plus timestamped JSON records per experiment.
+Verifies that data staged locally at s1c/s20a has landed correctly on APS
+Data Management (Sojourner). Provides a lightweight (file size/existence)
+**Scan** and a slower, on-demand **Verify MD5** checksum check, plus
+timestamped JSON records per experiment. Verify MD5 runs as a detached job
+on `zion` that survives closing the GUI and is shared across everyone who
+uses this tool - see "Persistent Checksum Jobs" below.
 
 ## Setup
 
-**Important:** This tool requires the APS Data Management (DM) Python API, which is **not** part of the shared `ops` conda environment. The DM API must be activated via beamline-specific setup:
+**Important:** The GUI and the CLI's DM catalog queries need the APS Data
+Management (DM) Python API, which is **not** part of the shared `ops`
+conda environment. When running the CLI locally (no `remote_hosts`
+configured for the relevant beamline), source the beamline's DM setup
+first:
 
 ```bash
 # Example for 1-ID (path may differ for your beamline)
@@ -12,15 +21,19 @@ source /dm/1id/etc/dm.setup.sh
 conda activate dm-user
 ```
 
-Once activated, the shared `ops` environment can be used for the GUI and CLI:
+In practice, the GUI doesn't need this on the machine it runs on: DM
+queries are routed over SSH to a beamline-appropriate host
+(`settings.remote_hosts`/`setup_scripts`, e.g. `egressy` for s1,
+`zion` for s20) that already has DM set up, so the GUI itself only needs
+the shared `ops` environment:
 
 ```bash
 conda activate ops
-python dm_integrity.py check --config data_integrity_config.json --experiment expname
 python dm_integrity_gui.py
 ```
 
-If the DM environment is not set up, both the CLI and GUI will fail with a clear error pointing to this prerequisite.
+`checksum_worker.py` (the detached MD5 job, see below) is stdlib-only -
+it needs neither `ops` nor the DM environment on `zion`.
 
 ## Configuration
 
@@ -30,28 +43,202 @@ If the DM environment is not set up, both the CLI and GUI will fail with a clear
 {
   "settings": {
     "station_name": "SOJOURNER",
-    "records_dir": "./records"
+    "records_dir": "/home/beams/PARKJS/ops_record",
+    "remote_hosts": {"s1": "egressy", "s20": "zion"},
+    "setup_scripts": {
+      "s1": "~/bin/dm_setup_1id.sh dm",
+      "s20": "~/bin/dm_setup_20ide.sh"
+    },
+    "local_root_templates": {
+      "s1": "~/mnt/s1c/{expid}",
+      "s20": "~/mnt/s20a/{expid}"
+    },
+    "local_bases": {"s1": "~/mnt/s1c", "s20": "~/mnt/s20a"},
+    "experiments_per_beamline": 3,
+    "checksum_hosts": {
+      "s1":  {"host": "zion", "user": "s1iduser", "remote_base": "/home/beams/S1IDUSER/dm_record"},
+      "s20": {"host": "zion", "user": "s20iduser", "remote_base": "/home/beams/S20IDUSER/dm_record"}
+    },
+    "checksum_cpu_budget": 0.20,
+    "checksum_poll_interval_sec": 4
   },
-  "experiments": [
-    {
-      "name": "experiment_name",
-      "local_root": "/home/beams/PARKJS/mnt/s1c/experiment_name",
-      "dataset": null,
-      "running": false
-    }
-  ]
+  "experiments": []
 }
 ```
 
-- **`station_name`**: DM storage system name (default: "SOJOURNER" for APS)
-- **`records_dir`**: Directory for timestamped JSON reports; auto-created per experiment
-- **`experiments`** list:
-  - **`name`**: Experiment name (as used in DM)
-  - **`local_root`**: Local staging directory (typically under `/home/beams/PARKJS/mnt/s1c/`)
-  - **`dataset`** (optional): Specific dataset within the experiment; if omitted, checks all files
-  - **`running`** (optional): If `true`, experiment name is shown in **bold** in the GUI to indicate active collection
+- **`station_name`**: DM storage system name (currently unused by the DM
+  API calls themselves - kept for future use/labeling)
+- **`records_dir`**: legacy, flat, per-launching-account records location
+  from before records moved under each beamline's own account (see
+  "Shared Records" below). Old records saved here remain visible in
+  History; nothing new is written here.
+- **`remote_hosts`** / **`setup_scripts`**: per-beamline (`s1`/`s20`)
+  host and DM-setup-sourcing command for *DM catalog queries*
+  (`get_upload_status`/`get_catalog_files`), reached over SSH. Both the
+  GUI and the CLI route through these (`dm_integrity.remote_info_for_beamline`)
+  - if a beamline is missing here, hardcoded defaults
+  (`egressy`/`s1iduser` for s1, `zion`/`s20iduser` for s20) are used.
+- **`local_root_templates`**: per-beamline convention path used when
+  Scan/Verify MD5 needs a local root that discovery didn't already supply
+  (e.g. a manually-added experiment).
+- **`local_bases`**: per-beamline staging directories the GUI scans
+  directly to build the experiment list (see "How Experiments Are Found"
+  below). `~`-relative so the same config works whether the GUI is
+  launched as `parkjs`, `S1IDUSER`, or `S20IDUSER` - all three resolve to
+  the same real path.
+- **`experiments_per_beamline`**: how many of each beamline's most-recent
+  experiments to show (default 3, so 6 rows total for 2 beamlines).
+- **`checksum_hosts`**: per-beamline `host`/`user`/`remote_base` for where
+  Verify MD5 jobs actually *execute* and where their shared records/status
+  live - see "Persistent Checksum Jobs". Distinct from `remote_hosts`
+  above (that's for the fast DM catalog queries only).
+- **`checksum_cpu_budget`**: aggregate CPU budget, as a fraction of one
+  core (e.g. `0.20` = 20% of one core, `systemd`'s own `CPUQuota`
+  convention), shared across *all* concurrently-running checksum jobs on
+  `zion`, both beamlines combined.
+- **`checksum_poll_interval_sec`**: how often the GUI re-reads a tracked
+  checksum job's status file to update its progress display.
+- **`experiments`**: no longer read for discovery (see below) - the GUI
+  populates it in-memory as experiments are discovered, purely so
+  Scan/Verify MD5 don't need to re-resolve a local root they already know.
+  Not written back to the file.
+
+## How Experiments Are Found
+
+The GUI does **not** query DM/Sojourner to build its list. On startup it
+scans `local_bases["s1"]` and `local_bases["s20"]` directly, keeping only
+subdirectories whose name matches the real experiment-ID convention -
+exactly `<piname>_<mon><yy>` (e.g. `park_may26`), not suffixed variants
+like `brown_jul26_bc`. Recency is taken from the month/year encoded in the
+name (not directory mtime, which can be skewed by unrelated backup
+processes touching old folders), most-recent first, capped at
+`experiments_per_beamline` per beamline. The table groups all of one
+beamline's rows before the next beamline's.
+
+This means: no SSH/DM round-trip just to open the tab, an experiment shows
+up the moment there's local data even before anything's uploaded, and an
+experiment whose name doesn't follow the convention won't be
+auto-discovered (add it to the config's `experiments` list manually if
+needed). Upload Status/Files start as `---` for every row - nothing is
+checked against DM until you click **Scan** or **Verify MD5** on that row,
+or a Verify MD5 job for it is already running/queued (see below).
+
+## GUI Usage
+
+```bash
+python dm_integrity_gui.py          # standalone
+python ../ops_gui.py                # combined with disk_monitor and pv_logger, as a tab
+```
+
+Each row has three actions:
+
+- **Scan**: fast, size/existence-only comparison (no hashing). Queries DM
+  upload status + file catalog over SSH, walks the local directory,
+  classifies every file as `MATCH`/`SIZE_MISMATCH`/`LOCAL_ONLY`/`REMOTE_ONLY`,
+  and saves a timestamped record. This is what fills in Upload
+  Status/Files and colors the row.
+- **Verify MD5**: launches the slower checksum pass on top of Scan's
+  matched files - see "Persistent Checksum Jobs" below. Grayed out while
+  a job for that experiment is already queued/running (locally tracked,
+  or reattached from a job someone else launched).
+- **History**: last 10 saved records for that experiment (from both the
+  new per-beamline location and the legacy flat one).
+
+Row coloring (`Files` column and beyond):
+- **Green**: fully landed, upload complete, no problems - safe to delete
+- **Red**: a real problem - `SIZE_MISMATCH`, `REMOTE_ONLY`, or
+  `CHECKSUM_MISMATCH` present (checked ahead of green/yellow, so it can't
+  be masked by an otherwise-good status)
+- **Yellow**: `NOT_ON_SOJOURNER` - the expected state for a
+  currently-running experiment, not necessarily a problem
+- **Orange**: some other non-critical "bad" count (rare)
+- **Blue**: a Verify MD5 job is queued/running for this row
+
+Below the table, a per-beamline rollup line tallies whatever's already
+been Scanned/Verified among the displayed rows, e.g.:
+
+```
+s1: 2/3 scanned - 1 on Sojourner, 1 not, 0 mismatch  |  s20: 1/3 scanned - 0 on Sojourner, 0 not, 1 mismatch
+```
+
+Rows not yet Scanned this session simply don't count yet (reflected in
+the "N/M scanned" prefix) - nothing is auto-scanned to fill this in.
+
+Font size (when run via `ops_gui.py`, one control drives all three tabs)
+and window size persist across restarts, saved in `ops_gui_prefs.json`
+next to `ops_gui.py`; window *position* deliberately does not persist,
+since the same prefs file is read from whichever computer you log in
+from, and a saved absolute position can land off-screen on a different
+monitor layout.
+
+## Persistent Checksum Jobs
+
+Verify MD5 is not a `QThread` inside the GUI process - it launches
+`checksum_worker.py` as a detached `systemd --user` service on `zion`,
+under `s1iduser` (for s1c-based experiments) or `s20iduser` (for
+s20a-based experiments), via `systemd-run --user --unit=checksum-verify@<expid>.service --collect`.
+This means:
+
+- **Survives closing the GUI.** `loginctl enable-linger` is enabled for
+  both service accounts, so the job keeps running even with no active
+  login. Reopening the GUI (yours or a colleague's) re-discovers a
+  running job for that experiment from its status file - a plain local
+  file read, no SSH - and shows live progress immediately.
+- **Never double-launched.** An atomic `mkdir`-based lock
+  (`<remote_base>/locks/checksum__<expid>`) is held while a launch is
+  being set up, and the status file is checked for an existing
+  QUEUED/RUNNING job first, so two GUI instances (or two users) clicking
+  Verify MD5 on the same experiment at once only ever start one job. Scan
+  has the same protection, under its own `scan__<expid>` lock (a Scan and
+  a Verify MD5 for the same experiment don't conflict with each other).
+- **CPU-limited, cooperatively.** `zion`'s `cpu` cgroup controller isn't
+  delegated to user sessions, so `systemd`'s own `CPUQuota` is a no-op
+  there. Instead, `checksum_worker.py` paces itself: it counts other
+  currently-RUNNING checksum jobs (across **both** beamlines, by globbing
+  both `checksum_status/` directories) and sleeps enough to keep its own
+  share of `settings.checksum_cpu_budget` fair as that peer count changes.
+  `--collect` on the systemd-run call additionally ensures a
+  finished/failed job's transient unit is garbage-collected automatically,
+  rather than lingering and blocking a future launch under the same
+  deterministic unit name.
+
+### Shared Records
+
+Both Scan and Verify MD5 results are shared across whoever runs this GUI
+- your own account, a colleague's, or directly as `s1iduser`/`s20iduser`
+- not private to whoever happens to launch it. They live per-beamline,
+under each service account's own home:
+
+```
+~s1iduser/dm_record/
+  records/<year>/<expid>/<timestamp>.json   # Scan + Verify MD5 reports, s1 experiments
+  checksum_status/<expid>.json              # in-progress/last-known Verify MD5 status
+  checksum_status/<expid>.jobspec           # Verify MD5 job input (not read as history)
+  locks/                                    # scan__<expid>, checksum__<expid>
+~s20iduser/dm_record/
+  ...                                       # same layout, s20 experiments
+```
+
+Both accounts' homes are world-readable, so any GUI instance can poll
+status/history via a plain read regardless of who launched it; only
+*writing* needs to happen as the owning account. Scan (which still runs
+in-process, as whoever launched the GUI) writes its result there over
+SSH (`save_record_remote`); `checksum_worker.py` writes locally since it
+already runs as the right account.
+
+`settings.records_dir` (default `/home/beams/PARKJS/ops_record`) is the
+older, pre-this-feature, single-account location - still checked by
+History for old records, but nothing new is saved there.
 
 ## CLI Usage
+
+The GUI is the primary interface; the CLI below is a manual/scriptable
+fallback and is not otherwise invoked by anything in this repo. It reads
+`local_root` from the config's `experiments` list (add entries manually -
+the GUI's discovery is in-memory only and isn't written back to the
+file), and infers the beamline (for DM routing) either from an explicit
+`"beamline"` key on that entry or from which `local_bases` entry
+`local_root` falls under.
 
 ### Lightweight comparison (size/existence only)
 
@@ -62,7 +249,6 @@ python dm_integrity.py check \
   [--dataset datasetname]
 ```
 
-Output example:
 ```
 Experiment: expname
 Upload status: done
@@ -70,7 +256,16 @@ Files: 125 good / 0 bad
 Recommend deletion: True
 ```
 
-### MD5 checksum verification (on-demand, slower)
+If an entire subdirectory has zero presence in the DM catalog (not just a
+few stray files), it's called out separately rather than only showing up
+as a wall of individual `LOCAL_ONLY` entries:
+
+```
+Whole subdirectories missing from Sojourner (1):
+  reduced_data/rerun2
+```
+
+### MD5 checksum verification (on-demand, slower, runs in-process for the CLI)
 
 ```bash
 python dm_integrity.py verify-checksums \
@@ -78,13 +273,16 @@ python dm_integrity.py verify-checksums \
   --experiment expname
 ```
 
-Output example:
 ```
 Experiment: expname
 Checksums verified: 125 match
 Checksums failed: 0 mismatch
 Recommend deletion: True
 ```
+
+Note: unlike the GUI's Verify MD5, the CLI's `verify-checksums` hashes
+in-process (no detached job, no CPU governor) - it's meant for scripted/
+one-off use, not for large experiments you'd want to walk away from.
 
 ### History of past checks
 
@@ -94,43 +292,18 @@ python dm_integrity.py history \
   --experiment expname
 ```
 
-Output example:
 ```
 Records for experiment 'expname':
   2026-08-05 14:23:15: 125 good / 0 bad (recommend: True)
   2026-08-05 13:55:42: 125 good / 0 bad (recommend: True)
 ```
 
-## GUI Usage
-
-### Standalone
-
-```bash
-python dm_integrity_gui.py
-```
-
-### Combined with disk_monitor and pv_logger
-
-See `../ops_gui.py`.
-
-## Dashboard View
-
-The GUI shows a **dashboard of the 10 most recent experiments** (sorted by experiment name, most recent first):
-
-- **Expid column**: Bold font indicates currently-running experiment
-- **Upload Status**: Pending/Running/Done/Failed
-- **Files column**: Shows "X good / Y bad" with color coding:
-  - **Green**: All files match, upload complete — safe to delete
-  - **Yellow**: Upload in progress or minor issues requiring attention
-  - **Red**: Actual problems (file mismatches, checksums don't match)
-  - **Orange**: Non-critical missing files (e.g., Thumb.db)
-- **Check button**: Runs lightweight size/existence comparison, updates row and saves record
-- **Verify button**: Runs MD5 checksum verification on matching files (slower, on-demand)
-- **History button**: Shows past 10 records for this experiment
+(The CLI's `history` only reads `records_dir`, not the GUI's per-beamline
+shared location - use the GUI's History button for the full picture.)
 
 ## JSON Report Schema
 
-Each check/verify run saves a timestamped JSON report under `records/<experiment_name>/<timestamp>.json`:
+Each Scan/Verify MD5 run saves a timestamped JSON report:
 
 ```json
 {
@@ -153,96 +326,99 @@ Each check/verify run saves a timestamped JSON report under `records/<experiment
     "remote_only": 0,
     "checksum_mismatch": 0
   },
+  "directory_stats": {
+    "missing": [],
+    "extra": []
+  },
   "comparison": {
     "path/to/file1.dat": "MATCH",
-    "path/to/file2.dat": "MATCH",
     "path/to/orphan.tmp": "LOCAL_ONLY"
   },
   "checksum_results": {
-    "path/to/file1.dat": "CHECKSUM_MATCH",
-    "path/to/file2.dat": "CHECKSUM_MATCH"
+    "path/to/file1.dat": "CHECKSUM_MATCH"
   },
+  "sojourner_status": "FULLY_LANDED",
+  "sojourner_summary": "All local files have landed on Sojourner",
   "recommend_deletion": true,
   "recommendation_reason": "Upload complete and all files match (checksums verified)"
 }
 ```
 
-### File Status Values
+### `sojourner_status` values
 
-- **MATCH**: File exists locally and on DM, sizes are equal
-- **SIZE_MISMATCH**: File exists on both, but sizes differ
-- **LOCAL_ONLY**: File staged locally but not (yet) in DM catalog
-- **REMOTE_ONLY**: File in DM catalog but not on local staging (likely already deleted locally)
-- **CHECKSUM_MATCH**: MD5 hash matches DM's catalog value
-- **CHECKSUM_MISMATCH**: MD5 hash differs from DM's catalog value
-- **CHECKSUM_UNKNOWN**: File size matches but no checksum data available
+- **`NO_LOCAL_FILES`**: nothing found locally to compare
+- **`NOT_ON_SOJOURNER`**: every local file is `LOCAL_ONLY` - not uploaded
+  yet (the expected state for a currently-running experiment)
+- **`CHECKSUM_MISMATCH`**: at least one file failed MD5 verification -
+  checked ahead of the two below, so a checksum failure on an
+  otherwise-size-matched file isn't reported as fully landed
+- **`FULLY_LANDED`**: every file matches, nothing missing on either side
+- **`PARTIALLY_LANDED`**: some mix of matches, mismatches, or files only
+  on one side
+
+### `directory_stats`
+
+A rollup derived from `comparison`, not a separate directory listing (see
+`diff_directories` in `dm_integrity.py`): `"missing"` lists subdirectories
+that exist locally but have *zero* files represented anywhere in the DM
+catalog - a stronger, more specific signal than a pile of individual
+`LOCAL_ONLY` files, which is all that would otherwise show that an entire
+subdirectory never got uploaded. `"extra"` is the mirror image (present in
+the catalog, absent locally - e.g. a local copy that's since been cleaned
+up). A local directory with no files in it at all is never listed here in
+either direction - there's nothing to have landed, so it isn't a gap.
+`PARTIALLY_LANDED`'s `sojourner_summary` mentions `"missing"` directly when
+non-empty; `NOT_ON_SOJOURNER` doesn't repeat it, since in that case *every*
+local directory is trivially "missing" and saying so would just be noise.
+
+### File status values (`comparison`/`checksum_results`)
+
+- **MATCH** / **SIZE_MISMATCH**: exists on both sides, sizes equal/differ
+- **LOCAL_ONLY**: staged locally but not (yet) in DM's catalog
+- **REMOTE_ONLY**: in DM's catalog but not found locally (already deleted
+  locally, or never landed where expected - worth checking which)
+- **CHECKSUM_MATCH** / **CHECKSUM_MISMATCH** / **CHECKSUM_UNKNOWN**: MD5
+  agrees / disagrees / wasn't available to compare
 
 ### Deletion Safety
 
-`"recommend_deletion": true` **only if**:
-1. Upload is complete (`status == "done"` and `nProcessingErrors == 0`)
-2. All files are `MATCH` (no `SIZE_MISMATCH`, `LOCAL_ONLY`, or `REMOTE_ONLY`)
-3. If checksums were verified, all must be `CHECKSUM_MATCH`
-4. No files are flagged `CHECKSUM_MISMATCH`
-
-**This tool only recommends—it never deletes.** Use the report to make safe deletion decisions.
-
-## How It Works
-
-### Lightweight Check (default)
-
-1. Queries DM's upload status via `ExperimentDaqApi.listUploadRecords()`
-2. Fetches remote file metadata (name, size, MD5) via `FileCatApi.getExperimentFiles()`
-3. Scans local staging directory recursively via `os.walk()`
-4. Compares: file exists on both sides? If so, are sizes equal?
-5. Classifies each file and builds a summary report
-6. Saves report as timestamped JSON
-
-### Checksum Verification (explicit, slower)
-
-1. After lightweight compare, MD5-hashes only the files marked `MATCH`
-2. Compares computed hashes against DM's catalog values
-3. Updates report with checksum results
-4. If all hashes match and upload is complete, sets `recommend_deletion: true`
-
-### Multi-Check History
-
-Each experiment may have many records (daily checks, before major deletions, etc.). The GUI and CLI history commands show the 10 most recent, so you can track how file status evolves over time.
-
-## DM API Details (for troubleshooting)
-
-The tool uses three main DM web service APIs:
-
-- **`dm.daq_web_service.api.experimentDaqApi.ExperimentDaqApi.listUploadRecords(queryDict={"experimentName": name})`**
-  - Returns upload history; tool picks the latest record
-  - `status` values: `"pending"`, `"running"`, `"finalizing"`, `"done"`, `"failed"`, `"aborted"`
-  - Tool considers upload complete iff `status == "done"` and `nProcessingErrors == 0`
-
-- **`dm.cat_web_service.api.fileCatApi.FileCatApi.getExperimentFiles(experimentName)`**
-  - Returns list of `FileMetadata` dicts; each has `fileSize`, `md5Sum`, `experimentFilePath`
-  - Reflects metadata captured at upload time (not live stat)
-
-- **`dm.ds_web_service.api.fileDsApi.FileDsApi.statFile(..., retrieveMd5Sum=True)`**
-  - Not currently used by this tool; available for future live re-verification if needed
+`"recommend_deletion": true` only if upload is complete, no
+`SIZE_MISMATCH`/`LOCAL_ONLY`/`REMOTE_ONLY`/`CHECKSUM_MISMATCH` exists.
+**This tool only informs and recommends - it never touches or deletes
+local files.**
 
 ## Troubleshooting
 
+**A row's Verify MD5 stays grayed out indefinitely / never finishes**
+- Check `~<user>iduser/dm_record/checksum_status/<expid>.json` on `zion`
+  directly for its `state` and `error_message`.
+- If it's stuck at `QUEUED` with no progress ever, check for a lingering
+  failed unit blocking relaunch: `ssh s1iduser@zion systemctl --user status checksum-verify@<expid>.service`.
+  `launch_checksum_job` passes `--collect` specifically so finished/failed
+  units clean themselves up rather than getting stuck this way; if you
+  still see one, `systemctl --user reset-failed checksum-verify@<expid>.service`
+  clears it manually.
+- A job legitimately reading a very large file (tens of GB) can show
+  `checked_files` unchanged for a while - that's expected I/O-bound
+  behavior, not a hang; check `/proc/<pid>/fd` on `zion` if in doubt.
+
 **"dm Python API is required but is not installed..."**
-- Source the beamline's `dm.setup.sh` and activate `dm-user` conda environment before running
+- Source the beamline's `dm.setup.sh` and activate `dm-user` first, or
+  configure `remote_hosts`/`setup_scripts` for that beamline so the query
+  runs over SSH instead.
 
 **No experiments appear in the GUI**
-- Check `data_integrity_config.json` is in the same directory as the script, or pass `--config /path/to/config.json`
-- Verify the `experiments` list in config is not empty
+- Check `settings.local_bases` points at real, readable directories, and
+  that at least one subdirectory matches the `<piname>_<mon><yy>` naming
+  convention.
 
-**Check/Verify buttons don't work**
-- Ensure DM environment is still active (in a separate terminal, `conda activate dm-user` is still running)
-- Check error message in status bar at bottom of panel
-
-**Records not saved**
-- Verify `records_dir` in config exists or is writable
+**Records not saved / History empty**
+- For Scan/Verify MD5 results: confirm `settings.checksum_hosts` has an
+  entry for the row's beamline with a reachable `host`/`user`.
+- Older records: confirm `settings.records_dir` is readable.
 
 ## Notes
 
-- **Non-destructive**: This tool only informs and recommends. It never touches local files or issues delete commands. You decide what to do based on the report.
-- **Standalone or combined**: Can run as `dm_integrity_gui.py` alone or as a tab in `../ops_gui.py` alongside disk_monitor and pv_logger.
-- **Experimental on this host**: This dev machine has only a 20ID DM station setup, not 1ID. Real end-to-end testing with a live 1-ID experiment happens on a 1-ID DM-enabled host.
+- **Non-destructive**: informs and recommends only.
+- **Standalone or combined**: `dm_integrity_gui.py` alone, or as a tab in
+  `../ops_gui.py`.
