@@ -7,13 +7,21 @@ Given a master list of every PV ever used across experimental setups
 the current experiment, logs only those to a wide time-series CSV on an
 interval, and alerts (email) if a PV that was online drops offline mid-run.
 
-No dependency on APSpy/SPEC - only pyepics + the standard library, so this
-works the same way regardless of which beamline/host it's run from.
+No pyepics dependency - reads PVs by shelling out to the `caget` CLI
+(EPICS Base, e.g. the facility-wide /APSshare/epics install) via a bounded
+thread pool, one process per PV. This is deliberate, not a stopgap: neither
+egressy nor zion (the hosts this tool's persistent jobs actually run on -
+see pv_logger_gui.py) have a working pyepics install or internet access to
+get one, and a single `caget` call given multiple PV names prints nothing
+at all for any of them if even one times out (confirmed directly) - unsafe
+for this tool's normal "some online, some not" operating condition. See
+settings.caget_path.
 
 Subcommands
 -----------
 list-pvs  Probe the master list and print an ONLINE/OFFLINE report. No logging.
-start     Discover, then log on an interval until Ctrl-C.
+start     Discover, then log on an interval until Ctrl-C (or SIGTERM, e.g.
+          `systemctl --user stop` on a detached job - see --status-file).
 
 Usage examples
 --------------
@@ -25,30 +33,33 @@ Usage examples
 import argparse
 import json
 import os
+import signal
 import smtplib
 import socket
+import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from email.mime.text import MIMEText
 
-try:
-    import epics
-except ImportError:
-    sys.exit(
-        "pyepics is required but is not installed.\n"
-        "Install it with:  pip install pyepics\n"
-        "(it's included in the shared 'ops' conda environment; see ../../environment.yml)"
-    )
-
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
+import remote_job as rj
+
 DEFAULT_CONFIG_PATH = os.path.join(SCRIPT_DIR, "pv_master_list_s1.json")
 DEFAULT_STATE_PATH = os.path.join(SCRIPT_DIR, "pv_alert_state.json")
+# The facility-wide shared EPICS Base install (identical mount on every
+# beamline host, confirmed on both egressy and zion) - not a per-account
+# install, so no setup/activation step is needed before this tool runs.
+DEFAULT_CAGET_PATH = "/APSshare/epics/base-7.0.10/bin/rhel9-x86_64/caget"
+MAX_CAGET_WORKERS = 64
 
 OFFLINE_MARKER = "OFFLINE"
 
 _DEFAULT_SETTINGS = {
     "log_interval_sec": 5,
     "connect_timeout_sec": 2.0,
+    "caget_path": DEFAULT_CAGET_PATH,
     "recipients": [],
     "sender": "pv_logger@{host}".format(host=socket.gethostname()),
     "smtp_host": "apsmail.aps.anl.gov",
@@ -106,35 +117,106 @@ def filter_pvs_by_devices(pv_defs, selected_devices):
 
 
 # ---------------------------------------------------------------------------
+# Persistent remote job routing (pv_logger_gui.py launches this CLI's own
+# `start` subcommand as a detached systemd --user job on settings.remote_job's
+# host/user - the actual caget/writing runs there, not wherever the GUI is)
+# ---------------------------------------------------------------------------
+
+def pv_logger_status_dir(remote_base):
+    return os.path.join(remote_base, "status")
+
+
+def pv_logger_status_path(remote_base, beamline):
+    return os.path.join(pv_logger_status_dir(remote_base), f"{beamline}.json")
+
+
+def pv_logger_unit_name(beamline):
+    """Deterministic systemd --user unit name for beamline's PV-logging job
+    - one per beamline (not per-experiment, unlike checksum jobs), since
+    only one logger should ever run per beamline at a time."""
+    return rj.systemd_unit_name("pv-logger@.service", beamline)
+
+
+# Thin pass-throughs so pv_logger_gui.py only ever needs `import pv_logger
+# as pl` (matching dm_integrity.py's own convention) rather than also
+# importing remote_job directly.
+canonical_path = rj.canonical_path
+lock_dir = rj.lock_dir
+acquire_remote_lock = rj.acquire_remote_lock
+release_remote_lock = rj.release_remote_lock
+write_remote_file = rj.write_remote_file
+launch_detached_job = rj.launch_detached_job
+run_shell_command = rj.run_shell_command
+
+
+# ---------------------------------------------------------------------------
 # Discovery
 # ---------------------------------------------------------------------------
 
-def discover_pvs(pv_defs, timeout_sec):
+def _caget_one(caget_path, pv_name, timeout_sec):
+    """Read one PV via a single `caget -t` subprocess call - terse mode
+    (value only, no echoed name) so there's nothing to strip/parse beyond
+    the trailing newline. Returns the value string, or None if the PV
+    didn't respond within timeout_sec (nonzero exit, e.g. "Channel connect
+    timed out") or the process itself couldn't be run.
+
+    Deliberately one process per PV rather than batching multiple PV names
+    into a single caget call: confirmed directly that a mixed batch (some
+    online, some not) prints nothing at all for *any* of them once even one
+    PV in that call times out - unsafe given this tool's normal "some
+    online, some offline" operating condition.
     """
-    Probe every {name, pv} definition for connectivity, in parallel - total
-    wall time is bounded by timeout_sec regardless of how many PVs end up
-    offline (each epics.PV() kicks off an async CA search; we then poll all
-    of them together instead of waiting out the full timeout serially per
-    PV, which would be timeout_sec * offline_count).
+    try:
+        result = subprocess.run(
+            [caget_path, "-t", "-w", str(timeout_sec), pv_name],
+            capture_output=True, text=True, timeout=timeout_sec + 2,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    value = result.stdout.strip()
+    return value if value else None
 
-    Returns (online: {name: epics.PV}, offline: [{name, pv, group}]).
+
+def _caget_many(caget_path, pv_by_name, timeout_sec):
+    """Read many PVs concurrently, each via its own _caget_one call in a
+    bounded thread pool - total wall time is bounded by timeout_sec
+    regardless of how many end up offline, the same property the old
+    pyepics-based implementation had via async connection objects, just
+    achieved with subprocess calls instead of persistent CA monitors.
+    Returns {name: value_or_None}.
     """
-    pending = [
-        (entry, epics.PV(entry["pv"], connection_timeout=timeout_sec, auto_monitor=True))
-        for entry in pv_defs
-    ]
+    if not pv_by_name:
+        return {}
+    with ThreadPoolExecutor(max_workers=min(MAX_CAGET_WORKERS, len(pv_by_name))) as pool:
+        futures = {
+            name: pool.submit(_caget_one, caget_path, pv_name, timeout_sec)
+            for name, pv_name in pv_by_name.items()
+        }
+        return {name: future.result() for name, future in futures.items()}
 
-    deadline = time.time() + timeout_sec
-    while time.time() < deadline:
-        if all(pv_obj.connected for _, pv_obj in pending):
-            break
-        time.sleep(0.05)
 
+def discover_pvs(pv_defs, timeout_sec, caget_path=DEFAULT_CAGET_PATH):
+    """
+    Probe every {name, pv} definition for connectivity, in parallel via a
+    bounded thread pool of `caget` calls - total wall time is bounded by
+    timeout_sec regardless of how many PVs end up offline.
+
+    Returns (online: {name: entry}, offline: [entry, ...]) - online's
+    values are the plain PV-definition dicts ({name, pv, group}), not live
+    connection objects: there's no persistent connection to hold with this
+    approach, every read is an independent process (see sample()).
+    """
+    pv_by_name = {entry["name"]: entry["pv"] for entry in pv_defs}
+    values = _caget_many(caget_path, pv_by_name, timeout_sec)
+
+    entries_by_name = {entry["name"]: entry for entry in pv_defs}
     online = {}
     offline = []
-    for entry, pv_obj in pending:
-        if pv_obj.connected:
-            online[entry["name"]] = pv_obj
+    for name, entry in entries_by_name.items():
+        if values.get(name) is not None:
+            online[name] = entry
         else:
             offline.append(entry)
 
@@ -144,7 +226,7 @@ def discover_pvs(pv_defs, timeout_sec):
 def format_discovery_report(online, offline):
     lines = ["{} of {} PVs online".format(len(online), len(online) + len(offline)), ""]
     for name in sorted(online):
-        lines.append("  [ONLINE ] {:<40} {}".format(name, online[name].pvname))
+        lines.append("  [ONLINE ] {:<40} {}".format(name, online[name]["pv"]))
     for entry in sorted(offline, key=lambda e: e["name"]):
         lines.append("  [OFFLINE] {:<40} {}".format(entry["name"], entry["pv"]))
     return "\n".join(lines)
@@ -154,19 +236,25 @@ def format_discovery_report(online, offline):
 # Sampling
 # ---------------------------------------------------------------------------
 
-def sample(online_pvs):
+def sample(online_pv_defs, timeout_sec, caget_path=DEFAULT_CAGET_PATH):
     """
-    Read every PV that was online at discovery time.
+    Read every PV that was online at discovery time - a fresh `caget` call
+    per PV each cycle (no persistent connection/subscription to reuse,
+    unlike pyepics' cached CA monitors - see the module docstring for why).
 
     Returns (values: {name: value or OFFLINE_MARKER}, currently_offline:
-    [name]) - currently_offline lists every PV that isn't connected right
-    now, whether it just dropped or has been down since a prior cycle.
+    [name]) - currently_offline lists every PV that didn't respond this
+    cycle, whether it just dropped or has been down since a prior one.
     """
+    pv_by_name = {name: entry["pv"] for name, entry in online_pv_defs.items()}
+    raw_values = _caget_many(caget_path, pv_by_name, timeout_sec)
+
     values = {}
     currently_offline = []
-    for name, pv_obj in online_pvs.items():
-        if pv_obj.connected:
-            values[name] = pv_obj.get()
+    for name in online_pv_defs:
+        value = raw_values.get(name)
+        if value is not None:
+            values[name] = value
         else:
             values[name] = OFFLINE_MARKER
             currently_offline.append(name)
@@ -184,6 +272,7 @@ def write_header(csv_path, names, device_selection=None):
     If device_selection is provided, write it as a comment for audit trail."""
     if os.path.exists(csv_path):
         return
+    os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
     with open(csv_path, "w") as f:
         if device_selection:
             f.write("# Devices: {}\n".format(", ".join(device_selection)))
@@ -296,22 +385,48 @@ def process_drop_alerts(cfg, currently_offline, csv_path, dry_run=False):
 
 def cmd_list_pvs(args):
     cfg = load_config(args.config)
-    online, offline = discover_pvs(cfg["pvs"], cfg["settings"]["connect_timeout_sec"])
+    online, offline = discover_pvs(cfg["pvs"], cfg["settings"]["connect_timeout_sec"], cfg["settings"]["caget_path"])
     print(format_discovery_report(online, offline))
     return 0
+
+
+_stop_requested = False
+
+
+def _handle_sigterm(signum, frame):
+    # Set a flag rather than exiting the process directly - cmd_start's
+    # loop checks this so it can write a clean STOPPED status (see
+    # --status-file) before actually exiting, the same "cooperative
+    # cancellation" pattern data_integrity/checksum_worker.py uses for its
+    # own detached jobs. Without this, `systemctl --user stop` on a
+    # persistent PV-logging job would just kill it mid-cycle with no
+    # record of a clean shutdown.
+    global _stop_requested
+    _stop_requested = True
 
 
 def cmd_start(args):
     cfg = load_config(args.config)
     if args.interval is not None:
         cfg["settings"]["log_interval_sec"] = args.interval
+    caget_path = cfg["settings"]["caget_path"]
+    connect_timeout_sec = cfg["settings"]["connect_timeout_sec"]
+    status_file = args.status_file
 
-    print("Discovering PVs (timeout {}s)...".format(cfg["settings"]["connect_timeout_sec"]))
-    online, offline = discover_pvs(cfg["pvs"], cfg["settings"]["connect_timeout_sec"])
+    signal.signal(signal.SIGTERM, _handle_sigterm)
+
+    print("Discovering PVs (timeout {}s)...".format(connect_timeout_sec))
+    online, offline = discover_pvs(cfg["pvs"], connect_timeout_sec, caget_path)
     print(format_discovery_report(online, offline))
 
     if not online:
         print("No PVs online - nothing to log.", file=sys.stderr)
+        if status_file:
+            rj.atomic_write_json(status_file, {
+                "state": "FAILED",
+                "error_message": "No PVs online at discovery time",
+                "finished_at": time.time(),
+            })
         return 1
 
     names = sorted(online)
@@ -324,19 +439,60 @@ def cmd_start(args):
         ok = send_drop_alert(cfg, [names[0]], args.outfile, dry_run=args.dry_run)
         return 0 if ok else 1
 
+    started_at = time.time()
+
+    def _write_status(state, currently_offline=(), error_message=None):
+        if not status_file:
+            return
+        payload = {
+            "state": state,
+            "outfile": args.outfile,
+            "started_at": started_at,
+            "updated_at": time.time(),
+            "online_count": len(online) - len(currently_offline),
+            "total_count": len(online) + len(offline),
+            "currently_offline": sorted(currently_offline),
+        }
+        if error_message is not None:
+            payload["error_message"] = error_message
+        rj.atomic_write_json(status_file, payload)
+
+    _write_status("RUNNING")
+
     interval = cfg["settings"]["log_interval_sec"]
     print("Logging every {}s to {}. Ctrl-C to stop.".format(interval, args.outfile))
     try:
-        while True:
+        while not _stop_requested:
             now = time.time()
-            values, currently_offline = sample(online)
+            values, currently_offline = sample(online, connect_timeout_sec, caget_path)
             write_row(args.outfile, names, values, now)
             dropped = process_drop_alerts(cfg, currently_offline, args.outfile, dry_run=args.dry_run)
             if dropped:
                 print("Alert sent for offline PV(s): {}".format(", ".join(dropped)))
-            time.sleep(interval)
+            _write_status("RUNNING", currently_offline)
+
+            # Sleep in small chunks so a SIGTERM (a remote `systemctl --user
+            # stop`) is noticed promptly rather than waiting out however
+            # much of log_interval_sec is left.
+            slept = 0.0
+            while slept < interval and not _stop_requested:
+                chunk = min(0.5, interval - slept)
+                time.sleep(chunk)
+                slept += chunk
     except KeyboardInterrupt:
         print("\nStopped.")
+    except Exception as e:
+        # Broad on purpose: as a detached remote job, nothing else is
+        # watching this process - an uncaught exception here would
+        # otherwise crash silently, leaving the status file stuck at a
+        # stale "RUNNING" forever (the GUI has no way to tell a crashed
+        # job from a slow one) - the same stuck-status class of bug this
+        # project already hit and fixed once for checksum jobs.
+        print("PV logging crashed: {}".format(e), file=sys.stderr)
+        _write_status("FAILED", error_message=str(e)[:2000])
+        return 1
+
+    _write_status("STOPPED")
     return 0
 
 
@@ -359,6 +515,9 @@ def _parse_args(argv=None):
     start_p.add_argument("--dry-run", action="store_true", help="Print alert emails instead of sending")
     start_p.add_argument("--test-email", action="store_true",
                           help="Force-send a test drop-alert for the first online PV")
+    start_p.add_argument("--status-file", default=None,
+                          help="Write live JSON status here (state/online-count/currently-offline) - "
+                               "used when this runs as a detached remote job so a GUI can poll it")
     start_p.set_defaults(func=cmd_start)
 
     return parser.parse_args(argv)

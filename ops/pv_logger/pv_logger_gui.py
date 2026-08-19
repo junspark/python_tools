@@ -15,9 +15,13 @@ Usage
 """
 
 import argparse
+import json
 import os
+import shlex
 import sys
 import time
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 import pv_logger as pl
 
@@ -39,11 +43,84 @@ STATUS_COLORS = {
     "stopped": "#e0e0e0",
 }
 
+# Device-type groupings for the Start-new-experiment checklist, so related
+# groups (e.g. the 8 different furnace groups, scattered across the
+# alphabet under names like "FZHANG COLD SINTER FURNACE"/"RF Furnace"/
+# "SUTER-BASIL FURNACE") land together instead of a flat alphabetical list
+# of ~80 groups. Presentation-only - doesn't touch the master list's own
+# "group" field or PV filtering, which still key off the group name
+# exactly as before. A group name not listed here (e.g. one a rename just
+# created) falls into the "Other" catch-all category rather than being
+# dropped, so this mapping can lag behind the master lists without
+# breaking anything - just showing up uncategorized until updated.
+DEVICE_CATEGORIES = [
+    ("Detectors", [
+        "GE/Pilatus DETECTOR", "Pilatus", "PIXIRAD2", "NF DET", "Tomo det",
+        "Detectors (armed state)", "DETECTORS frame number", "BSE1 Detector", "BSE2 Detector",
+        "D3 Detector", "D4-1 Detector", "D4-2 Detector", "GH2 Detector", "PG6 Detector",
+        "PITEC1 Detector", "Varex Detector",
+    ]),
+    ("Optics / Lenses", [
+        "LENSES", "LENSES IN B CRL, upstream", "LENSES IN B VERTICAL FOCUS",
+        "LENSES IN E Horizontal FOCUS", "LENSES IN E VERTICAL FOCUS", "LENGELER LENSES IN B",
+        "CRL LENSES IN DS C", "C-HUTCH LENSES", "E-HUTCH LENSES", "US CRL LENSES IN B",
+    ]),
+    ("Monochromators", ["HEM", "HEM (Monochromator)", "HRM", "HRM (Analyzer)", "Monochromator"]),
+    ("Slits", ["Slits"]),
+    ("Scalers / Ion Chambers", [
+        "C Scaler (raw channels)", "E Scaler (raw channels)",
+        "IC from scaler1 in 1id", "IC from scaler1 in 1ide", "Ion Chamber",
+    ]),
+    ("Furnaces / Heating", [
+        "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",
+        "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
+        "SUTER-BASIL FURNACE",
+    ]),
+    ("Load Frames / Mechanical Testing", [
+        "Compact loadframe", "Compact loadframe UL / DESY", "meimei psylotech load frame",
+        "MTS", "MTS - BIAXIAL", "MTS+RAMS1+OXYGON setup", "RAMS1", "RAMS3", "OWIS compression type",
+    ]),
+    ("Sample Stages / Motors", [
+        "Aero setup", "AM chamber setup", "C 4-Circle Stage", "E HL-SMS",
+        "MAMC setup", "NIST BOULDER CONNOLLY H2 CHAMBER", "Motors",
+    ]),
+    ("Sensors / Environmental", [
+        "KEYENCE", "TILT SENSORS", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE",
+    ]),
+    ("Beam / Storage Ring", ["Beam positions", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters"]),
+    ("Lab Equipment", ["LANL CHILLER", "LANL WELDER", "AGILENT FUNC GEN"]),
+    ("Shutters / Shields / Foils", ["Shields", "Shutters", "Foils. attens"]),
+    ("Software / Misc", [
+        "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
+        "write_parfile_general.mac (misc, review before use)", "Calculation/Software", "Miscellaneous",
+    ]),
+]
+
+_CATEGORY_FOR_GROUP = {
+    group: category for category, groups in DEVICE_CATEGORIES for group in groups
+}
+
+_OTHER_CATEGORY = "Other"
+
+
+def _category_for_device(device):
+    return _CATEGORY_FOR_GROUP.get(device, _OTHER_CATEGORY)
+
 
 class StartExperimentDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, default_dir="", devices=None):
+    def __init__(self, parent=None, default_dir="", devices=None, pv_defs=None, config_path=None):
+        """pv_defs/config_path: the live master-list pv entries and the
+        file they came from, so a rename here can actually rewrite the
+        shared 'group' field on every matching PV entry and persist it -
+        renaming a device is a permanent, shared edit to the master list
+        (pv_master_list_s1.json/s20.json), not just a label change in this
+        dialog. Both are optional (rename is simply unavailable without
+        them) so this class stays usable in isolation/tests.
+        """
         super().__init__(parent)
         self.setWindowTitle("Start new experiment")
+        self._pv_defs = pv_defs
+        self._config_path = config_path
 
         self.outfile_edit = QtWidgets.QLineEdit()
         browse_btn = QtWidgets.QPushButton("Browse...")
@@ -59,26 +136,27 @@ class StartExperimentDialog(QtWidgets.QDialog):
 
         # Device checklist
         self.device_checks = {}
+        self._device_scroll = None
+        self.device_group = None
         if devices:
-            device_group = QtWidgets.QGroupBox("Select devices to monitor:")
-            device_layout = QtWidgets.QVBoxLayout()
+            self.device_group = QtWidgets.QGroupBox("Select devices to monitor:")
+            self.device_group.setLayout(QtWidgets.QVBoxLayout())
 
-            for device in devices:
-                checkbox = QtWidgets.QCheckBox(device)
-                checkbox.setChecked(True)  # All checked by default
-                self.device_checks[device] = checkbox
-                device_layout.addWidget(checkbox)
+            filter_row = QtWidgets.QHBoxLayout()
+            self.device_filter_edit = QtWidgets.QLineEdit()
+            self.device_filter_edit.setPlaceholderText("Filter devices...")
+            self.device_filter_edit.textChanged.connect(self._apply_device_filter)
+            check_all_btn = QtWidgets.QPushButton("Check All")
+            check_all_btn.clicked.connect(lambda: self._set_visible_devices_checked(True))
+            uncheck_all_btn = QtWidgets.QPushButton("Uncheck All")
+            uncheck_all_btn.clicked.connect(lambda: self._set_visible_devices_checked(False))
+            filter_row.addWidget(self.device_filter_edit)
+            filter_row.addWidget(check_all_btn)
+            filter_row.addWidget(uncheck_all_btn)
+            self.device_group.layout().addLayout(filter_row)
 
-            device_scroll = QtWidgets.QScrollArea()
-            device_scroll.setWidgetResizable(True)
-            device_widget = QtWidgets.QWidget()
-            device_widget.setLayout(device_layout)
-            device_scroll.setWidget(device_widget)
-            device_scroll.setMaximumHeight(150)
-
-            device_group.setLayout(QtWidgets.QVBoxLayout())
-            device_group.layout().addWidget(device_scroll)
-            form.addRow(device_group)
+            checked = {device: True for device in devices}
+            self._rebuild_device_checklist(devices, checked)
 
         buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
@@ -87,13 +165,174 @@ class StartExperimentDialog(QtWidgets.QDialog):
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.addLayout(form)
+        if self.device_group is not None:
+            layout.addWidget(self.device_group, 1)
         layout.addWidget(buttons)
+        self.resize(500, 500)
+
+    def _rebuild_device_checklist(self, devices, checked_state):
+        """(Re)build the scrollable checkbox list from scratch - used both
+        at construction and after a rename, so a rename's new sort
+        position and any devices merged together by it are reflected
+        correctly rather than patched in place. checked_state carries
+        forward whatever was checked before the rebuild.
+
+        Devices are grouped under DEVICE_CATEGORIES headers (in that
+        list's order, "Other" last for anything unmapped), alphabetical
+        within each category - related groups (e.g. every furnace) land
+        together instead of a single flat alphabetical list of ~80 names.
+        """
+        if self._device_scroll is not None:
+            self.device_group.layout().removeWidget(self._device_scroll)
+            self._device_scroll.deleteLater()
+
+        self.device_checks = {}
+        self._category_headers = {}
+        by_category = {}
+        for device in devices:
+            by_category.setdefault(_category_for_device(device), []).append(device)
+
+        category_order = [c for c, _ in DEVICE_CATEGORIES if c in by_category]
+        if _OTHER_CATEGORY in by_category:
+            category_order.append(_OTHER_CATEGORY)
+
+        device_layout = QtWidgets.QVBoxLayout()
+        for category in category_order:
+            header = QtWidgets.QLabel(category)
+            bold_font = header.font()
+            bold_font.setBold(True)
+            header.setFont(bold_font)
+            device_layout.addWidget(header)
+            self._category_headers[category] = header
+
+            # Case-insensitive, so mixed ALL-CAPS/Title Case/lowercase
+            # device names (real examples here: "NF DET", "Pilatus",
+            # "SUTER-BASIL FURNACE", "Shields") land in true alphabetical
+            # order within the category rather than plain ASCII order,
+            # where every uppercase letter sorts before every lowercase one.
+            for device in sorted(by_category[category], key=str.lower):
+                checkbox = QtWidgets.QCheckBox(device)
+                checkbox.setChecked(checked_state.get(device, True))
+                checkbox.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+                checkbox.customContextMenuRequested.connect(
+                    lambda pos, d=device: self._show_device_context_menu(d))
+                self.device_checks[device] = checkbox
+                device_layout.addWidget(checkbox)
+
+        device_widget = QtWidgets.QWidget()
+        device_widget.setLayout(device_layout)
+        self._device_scroll = QtWidgets.QScrollArea()
+        self._device_scroll.setWidgetResizable(True)
+        self._device_scroll.setWidget(device_widget)
+        # Deliberately no setMaximumHeight() here - the checklist is given
+        # the outer layout's whole stretch (see layout.addWidget in
+        # __init__), so resizing the dialog taller actually shows more
+        # devices instead of leaving blank space above a capped-height
+        # scroll area (confirmed directly: a 150px cap left most of a tall
+        # dialog empty above just 4 visible rows).
+        self.device_group.layout().addWidget(self._device_scroll)
+
+        # Map device -> category once, reused by _apply_device_filter to
+        # know which header to hide/show without recomputing it every
+        # keystroke.
+        self._device_category = {device: _category_for_device(device) for device in devices}
+
+        if hasattr(self, "device_filter_edit"):
+            self._apply_device_filter(self.device_filter_edit.text())
+
+    def _show_device_context_menu(self, device):
+        checkbox = self.device_checks.get(device)
+        if checkbox is None:
+            return
+        menu = QtWidgets.QMenu(self)
+        rename_action = menu.addAction("Rename...")
+        if rename_action == menu.exec_(QtGui.QCursor.pos()):
+            self._rename_device(device)
+
+    def _rename_device(self, old_name):
+        """Rename a device group, persisting to the master list file this
+        dialog's devices came from (self._pv_defs/_config_path) - renames
+        the shared 'group' field on every PV entry using old_name, so this
+        affects every future run and anyone else using this tool, not just
+        this dialog. Unavailable (silently) if the dialog wasn't given
+        pv_defs/config_path - e.g. in isolation/tests.
+        """
+        if self._pv_defs is None or not self._config_path:
+            return
+
+        new_name, ok = QtWidgets.QInputDialog.getText(
+            self, "Rename Device", "New name:", text=old_name)
+        new_name = new_name.strip()
+        if not ok or not new_name or new_name == old_name:
+            return
+
+        if new_name in self.device_checks:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Merge devices?",
+                f"A device named '{new_name}' already exists. Rename "
+                f"'{old_name}' into it? This merges all of '{old_name}'s "
+                f"PVs under '{new_name}' in the master list.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
+
+        renamed_entries = [entry for entry in self._pv_defs if entry.get("group") == old_name]
+        for entry in renamed_entries:
+            entry["group"] = new_name
+
+        try:
+            # Re-read the file directly (not pl.load_config, which merges
+            # in _DEFAULT_SETTINGS) so a save here only ever touches "pvs" -
+            # settings already on disk, and anything else in the file,
+            # come back out exactly as they went in.
+            with open(self._config_path) as f:
+                on_disk = json.load(f)
+            on_disk["pvs"] = self._pv_defs
+            pl.save_config(on_disk, self._config_path)
+        except (OSError, ValueError) as e:
+            for entry in renamed_entries:
+                entry["group"] = old_name
+            QtWidgets.QMessageBox.critical(
+                self, "Rename failed", f"Could not save master list: {e}")
+            return
+
+        checked_state = {device: cb.isChecked() for device, cb in self.device_checks.items()}
+        was_checked = checked_state.pop(old_name, True)
+        checked_state[new_name] = checked_state.get(new_name, False) or was_checked
+        self._rebuild_device_checklist(list(checked_state.keys()), checked_state)
 
     def _browse(self):
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, "Output CSV", self._default_dir, "CSV files (*.csv)")
         if path:
             self.outfile_edit.setText(path)
+
+    def _apply_device_filter(self, text):
+        """Hide checkboxes whose device name doesn't contain text
+        (case-insensitive substring). Paired with Check All/Uncheck All
+        acting only on visible checkboxes (see _set_visible_devices_checked),
+        this is how similarly-named devices (e.g. everything with "LENSES"
+        in the name) get selected together: filter, then Check All.
+
+        Also hides a category header once none of its devices match, so
+        filtering doesn't leave a dangling "Furnaces / Heating" label
+        sitting above zero visible checkboxes.
+        """
+        needle = text.strip().lower()
+        visible_categories = set()
+        for device, checkbox in self.device_checks.items():
+            visible = not needle or needle in device.lower()
+            checkbox.setVisible(visible)
+            if visible:
+                visible_categories.add(self._device_category.get(device))
+
+        for category, header in self._category_headers.items():
+            header.setVisible(category in visible_categories)
+
+    def _set_visible_devices_checked(self, checked):
+        for checkbox in self.device_checks.values():
+            if checkbox.isVisible():
+                checkbox.setChecked(checked)
 
     def outfile(self):
         return self.outfile_edit.text().strip()
@@ -102,6 +341,79 @@ class StartExperimentDialog(QtWidgets.QDialog):
         """Return list of checked device names."""
         return [device for device, checkbox in self.device_checks.items()
                 if checkbox.isChecked()]
+
+
+class _PvLoggerLaunchWorker(QtCore.QObject):
+    """Prepares and launches a detached PV-logging job on the beamline's
+    remote_job host, off the GUI thread (the job spec write + launch is a
+    handful of SSH round-trips). Mirrors dm_integrity_gui.py's
+    _ChecksumLaunchWorker - this worker's own job ends the moment the
+    launch succeeds; pv_logger.py's own `start` subcommand is the actual
+    logging process from then on, detached and independent of this GUI.
+    """
+
+    launched = QtCore.pyqtSignal(dict)
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self, beamline, host, user, remote_base, outfile, filtered_cfg, selected_devices):
+        super().__init__()
+        self.beamline = beamline
+        self.host = host
+        self.user = user
+        self.remote_base = remote_base
+        self.outfile = outfile
+        self.filtered_cfg = filtered_cfg
+        self.selected_devices = selected_devices
+
+    def run(self):
+        # Same atomic-mkdir-lock guard rail as Scan/Verify MD5: the
+        # status-file pre-check on the GUI thread is a fast common-case
+        # filter, but it's check-then-act across different users'/sessions'
+        # own GUI instances - this lock closes that race properly. Only
+        # needs to cover the launch sequence itself, not the job's whole
+        # runtime.
+        lock_path = pl.lock_dir(self.remote_base, "pvlogger", self.beamline)
+        if not pl.acquire_remote_lock(self.host, self.user, lock_path):
+            self.error.emit(f"PV logging for '{self.beamline}' is already starting/running elsewhere.")
+            return
+
+        try:
+            status_path = pl.pv_logger_status_path(self.remote_base, self.beamline)
+            try:
+                with open(status_path) as f:
+                    existing = json.load(f)
+                if existing.get("state") == "RUNNING":
+                    self.error.emit(f"PV logging for '{self.beamline}' is already running (started by another user or session).")
+                    return
+            except (OSError, json.JSONDecodeError):
+                pass
+
+            job_spec_path = os.path.join(pl.pv_logger_status_dir(self.remote_base), f"{self.beamline}.jobspec")
+            unit_name = pl.pv_logger_unit_name(self.beamline)
+            worker_script_path = os.path.join(SCRIPT_DIR, "pv_logger.py")
+
+            pl.write_remote_file(self.host, self.user, job_spec_path, json.dumps(self.filtered_cfg, indent=2))
+
+            command = (
+                "/usr/bin/python3 {script} start --config {spec} --outfile {outfile} --status-file {status}"
+            ).format(
+                script=shlex.quote(worker_script_path),
+                spec=shlex.quote(job_spec_path),
+                outfile=shlex.quote(self.outfile),
+                status=shlex.quote(status_path),
+            )
+            pl.launch_detached_job(
+                self.host, self.user, unit_name,
+                description=f"PV logger: {self.beamline} ({', '.join(self.selected_devices[:3])}{'...' if len(self.selected_devices) > 3 else ''})",
+                command=command,
+                slice_name="pv-logger.slice",
+            )
+
+            self.launched.emit({"beamline": self.beamline, "outfile": self.outfile})
+        except Exception as e:
+            self.error.emit(str(e))
+        finally:
+            pl.release_remote_lock(self.host, self.user, lock_path)
 
 
 class PVLoggerPanel(QtWidgets.QWidget):
@@ -117,12 +429,9 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.base_config_dir = os.path.dirname(config_path)
         self.cfg = pl.load_config(config_path)
 
-        self.online = {}
-        self.offline_at_start = []
-        self.outfile = None
-        self.start_time = None
         self.running = False
         self.current_beamline = "s1"
+        self._launch_workers = {}  # beamline -> (QThread, _PvLoggerLaunchWorker), kept alive while launching
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -173,27 +482,42 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
         self.set_font_size(DEFAULT_FONT_SIZE)
 
+        # Polls the current beamline's remote status file - PV logging now
+        # runs as a detached job on that beamline's remote_job host (see
+        # start_experiment), so this GUI never touches EPICS or the CSV
+        # file itself once a job is running; it only reads back what the
+        # job already wrote. Always running (not just while self.running
+        # is True) so it can pick up a job someone else started, or a
+        # transition to STOPPED/FAILED, the same reattachment idea
+        # data_integrity's checksum jobs use.
         self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.tick)
+        self.timer.timeout.connect(self._poll_pv_logger_status)
+        poll_ms = int(self.cfg.get("settings", {}).get("log_interval_sec", 5) * 1000)
+        self.timer.start(max(poll_ms, 1000))
+        self._poll_pv_logger_status()
 
     def _on_beamline_changed(self, beamline_name):
-        """Load config for selected beamline."""
-        if self.running:
-            QtWidgets.QMessageBox.warning(self, "Monitoring active",
-                                         "Cannot switch beamlines while monitoring is running.")
-            self.beamline_combo.blockSignals(True)
-            self.beamline_combo.setCurrentText(self.current_beamline)
-            self.beamline_combo.blockSignals(False)
-            return
-
+        """Load config for selected beamline. Switching is always allowed,
+        even mid-run - unlike the old in-process timer design, a running
+        PV-logging job is now detached on its own remote host and keeps
+        going regardless of what this GUI is currently looking at; the
+        poll timer just starts watching a different beamline's status file
+        and re-reattaches on switching back, the same as a fresh launch."""
         self.current_beamline = beamline_name
 
-        # Try to load beamline-specific config
         config_file = os.path.join(self.base_config_dir, f"pv_master_list_{beamline_name}.json")
 
         if os.path.exists(config_file):
             try:
                 self.cfg = pl.load_config(config_file)
+                # This is the actual switch - every other method (start_
+                # experiment's device list, saving recipients, etc.) reads
+                # self.config_path, not a separate "current beamline" field,
+                # so without this line they silently kept acting on
+                # whichever file the panel happened to be constructed with,
+                # regardless of this combo box (confirmed directly: s1 and
+                # s20 showed the identical device checklist).
+                self.config_path = config_file
                 self.status_bar.showMessage(f"Switched to {beamline_name}")
             except Exception as e:
                 self.status_bar.showMessage(f"Error loading {beamline_name} config: {str(e)}")
@@ -203,6 +527,8 @@ class PVLoggerPanel(QtWidgets.QWidget):
             self.cfg = pl.load_config(self.config_path)
             self.status_bar.showMessage(f"Using default PV list for {beamline_name}")
 
+        self._poll_pv_logger_status()
+
     def _paint_status(self, running):
         text = "RUNNING" if running else "STOPPED"
         color = STATUS_COLORS["running"] if running else STATUS_COLORS["stopped"]
@@ -211,13 +537,35 @@ class PVLoggerPanel(QtWidgets.QWidget):
         palette.setColor(QtGui.QPalette.Window, QtGui.QColor(color))
         self.status_label.setPalette(palette)
 
+    def _remote_job_info(self):
+        """(host, user, remote_base) for the current beamline's persistent
+        PV-logging job, from settings.remote_job - None, None, None if not
+        configured (e.g. an older config file that predates this)."""
+        remote_job = self.cfg.get("settings", {}).get("remote_job", {})
+        return remote_job.get("host"), remote_job.get("user"), remote_job.get("remote_base")
+
     def start_experiment(self):
+        host, user, remote_base = self._remote_job_info()
+        if not remote_base:
+            QtWidgets.QMessageBox.critical(
+                self, "Not configured",
+                f"No settings.remote_job configured for '{self.current_beamline}' - "
+                "can't launch a PV-logging job.")
+            return
+
+        if self.running:
+            QtWidgets.QMessageBox.warning(
+                self, "Already running",
+                f"PV logging is already running for '{self.current_beamline}'. Stop it first.")
+            return
+
         # Load config and get all available devices
         self.cfg = pl.load_config(self.config_path)
         all_devices = pl.get_all_devices(self.cfg["pvs"])
 
         # Show dialog with device checklist
-        dialog = StartExperimentDialog(self, devices=all_devices)
+        dialog = StartExperimentDialog(
+            self, devices=all_devices, pv_defs=self.cfg["pvs"], config_path=self.config_path)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
@@ -231,68 +579,125 @@ class PVLoggerPanel(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self, "No devices selected", "Select at least one device to monitor.")
             return
 
-        # Filter PVs to only those in selected devices
+        # Canonicalize so a path chosen here (as whoever launched the GUI)
+        # still resolves correctly once the job runs remotely as
+        # user@host - the exact same reasoning data_integrity's Verify MD5
+        # jobs use for local_root (see remote_job.canonical_path).
+        outfile = pl.canonical_path(outfile)
+
+        # Filter PVs to only those in selected devices, and package them
+        # with a snapshot of settings as this job's config - written to
+        # the remote host and passed as --config, so pv_logger.py's start
+        # subcommand needs no new argument surface for device filtering.
         filtered_pvs = pl.filter_pvs_by_devices(self.cfg["pvs"], selected_devices)
-        self.status_bar.showMessage(f"Discovering PVs in {len(selected_devices)} device(s)...")
-        QtWidgets.QApplication.processEvents()
+        job_settings = dict(self.cfg["settings"])
+        # Override the default state_file (a path under parkjs's own repo
+        # checkout, not writable by s1iduser/s20iduser) with one under this
+        # beamline's own remote_base - confirmed directly: without this,
+        # the remote job crashes with a PermissionError the moment any
+        # monitored PV goes offline and process_drop_alerts tries to
+        # persist alert-cooldown state.
+        job_settings["state_file"] = os.path.join(remote_base, "pv_alert_state.json")
+        job_cfg = {"settings": job_settings, "pvs": filtered_pvs}
 
-        online, offline = pl.discover_pvs(filtered_pvs, self.cfg["settings"]["connect_timeout_sec"])
-        if not online:
-            QtWidgets.QMessageBox.critical(self, "No PVs online", "No PVs from selected devices are online.")
-            self.status_bar.showMessage("Discovery found 0 PVs online.")
-            return
+        beamline = self.current_beamline
+        self.status_bar.showMessage(f"Launching PV logging for '{beamline}' on {host}...")
 
-        names = sorted(online)
-        pl.write_header(outfile, names, device_selection=selected_devices)
-        skipped_path = pl.write_skipped_report(outfile, offline) if offline else None
+        thread = QtCore.QThread(self)
+        worker = _PvLoggerLaunchWorker(beamline, host, user, remote_base, outfile, job_cfg, selected_devices)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.launched.connect(lambda status: self._on_pv_logger_launched(beamline, status))
+        worker.error.connect(lambda msg: self._on_pv_logger_launch_error(beamline, msg))
+        worker.launched.connect(thread.quit)
+        worker.error.connect(thread.quit)
+        thread.finished.connect(thread.deleteLater)
+        self._launch_workers[beamline] = (thread, worker)
+        thread.start()
 
-        self.online = online
-        self.offline_at_start = offline
-        self.outfile = outfile
-        self.start_time = time.time()
-        self.running = True
+    def _on_pv_logger_launched(self, beamline, status):
+        self._launch_workers.pop(beamline, None)
+        self.status_bar.showMessage(
+            f"PV logging for '{beamline}' launched on remote host (running in background, survives closing this GUI)")
+        self._poll_pv_logger_status()
 
-        self._paint_status(running=True)
-        self.info_label.setText(
-            "{} of {} PVs online (from {} devices)  |  Output: {}".format(
-                len(online), len(online) + len(offline), len(selected_devices), outfile))
-        msg = "Started at {}".format(time.ctime(self.start_time))
-        if skipped_path:
-            msg += "  |  Offline-at-start list: {}".format(skipped_path)
-        self.status_bar.showMessage(msg)
-
-        self.offline_table.setRowCount(0)
-        self.stop_action.setEnabled(True)
-
-        self.timer.start(int(self.cfg["settings"]["log_interval_sec"] * 1000))
-        self.tick()
+    def _on_pv_logger_launch_error(self, beamline, msg):
+        self._launch_workers.pop(beamline, None)
+        self.status_bar.showMessage(f"Failed to launch PV logging for '{beamline}': {msg}")
+        QtWidgets.QMessageBox.critical(self, "Launch failed", msg)
 
     def stop_monitoring(self):
-        self.timer.stop()
-        self.running = False
-        self._paint_status(running=False)
-        self.stop_action.setEnabled(False)
-        self.status_bar.showMessage("Stopped at {}".format(time.ctime()))
+        host, user, remote_base = self._remote_job_info()
+        if not remote_base:
+            return
+        unit_name = pl.pv_logger_unit_name(self.current_beamline)
+        try:
+            pl.run_shell_command(host, user, f"systemctl --user stop {unit_name}")
+        except RuntimeError as e:
+            QtWidgets.QMessageBox.critical(self, "Stop failed", str(e))
+            return
+        self.status_bar.showMessage(f"Stop requested for '{self.current_beamline}' - waiting for it to finish the current cycle...")
+        self._poll_pv_logger_status()
 
-    def tick(self):
-        if not self.online:
+    def _poll_pv_logger_status(self):
+        """Re-read the current beamline's remote status file (plain local
+        read - beamline service accounts' homes are on the same shared
+        filesystem this GUI runs from, no SSH needed to read, only to
+        write) and repaint. This is the entire reattachment mechanism too:
+        a job started from a since-closed GUI, or a colleague's own GUI
+        instance, shows up here exactly the same way as one this session
+        launched itself.
+        """
+        host, user, remote_base = self._remote_job_info()
+        if not remote_base:
             return
 
-        now = time.time()
-        values, currently_offline = pl.sample(self.online)
-        pl.write_row(self.outfile, sorted(self.online), values, now)
-        dropped = pl.process_drop_alerts(self.cfg, currently_offline, self.outfile)
+        status_path = pl.pv_logger_status_path(remote_base, self.current_beamline)
+        try:
+            with open(status_path) as f:
+                status = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            if self.running:
+                self.running = False
+                self._paint_status(running=False)
+                self.stop_action.setEnabled(False)
+            return
 
-        self.offline_table.setRowCount(len(currently_offline))
-        pv_by_name = {name: pv_obj.pvname for name, pv_obj in self.online.items()}
-        for row, name in enumerate(sorted(currently_offline)):
-            self.offline_table.setItem(row, 0, QtWidgets.QTableWidgetItem(name))
-            self.offline_table.setItem(row, 1, QtWidgets.QTableWidgetItem(pv_by_name.get(name, "")))
+        state = status.get("state")
+        if state == "RUNNING":
+            self.running = True
+            self._paint_status(running=True)
+            self.stop_action.setEnabled(True)
 
-        msg = "Last write: {}".format(time.ctime(now))
-        if dropped:
-            msg += "  |  Alert email sent for: {}".format(", ".join(dropped))
-        self.status_bar.showMessage(msg)
+            total = status.get("total_count", 0)
+            online_count = status.get("online_count", 0)
+            currently_offline = status.get("currently_offline", [])
+            self.info_label.setText(
+                "{} of {} PVs online  |  Output: {}".format(online_count, total, status.get("outfile", "?")))
+
+            name_to_pv = {entry["name"]: entry["pv"] for entry in self.cfg.get("pvs", [])}
+            self.offline_table.setRowCount(len(currently_offline))
+            for row, name in enumerate(currently_offline):
+                self.offline_table.setItem(row, 0, QtWidgets.QTableWidgetItem(name))
+                self.offline_table.setItem(row, 1, QtWidgets.QTableWidgetItem(name_to_pv.get(name, "")))
+
+            updated_at = status.get("updated_at")
+            if updated_at:
+                self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
+        else:
+            was_running = self.running
+            self.running = False
+            self._paint_status(running=False)
+            self.stop_action.setEnabled(False)
+            if was_running:
+                if state == "FAILED":
+                    self.status_bar.showMessage(
+                        "PV logging failed for '{}': {}".format(
+                            self.current_beamline, status.get("error_message", "unknown error")))
+                elif state == "STOPPED":
+                    finished_at = status.get("finished_at", time.time())
+                    self.status_bar.showMessage(
+                        "PV logging for '{}' stopped at {}".format(self.current_beamline, time.ctime(finished_at)))
 
     def set_font_size(self, size):
         font = QtWidgets.QApplication.instance().font()

@@ -6,7 +6,13 @@
     "sender": "pv_logger@your-host.aps.anl.gov",
     "smtp_host": "apsmail.aps.anl.gov",
     "smtp_port": 25,
-    "alert_cooldown_min": 60
+    "alert_cooldown_min": 60,
+    "state_file": "/home/beams/PARKJS/opt/python_tools/ops/pv_logger/pv_alert_state.json",
+    "remote_job": {
+      "host": "egressy",
+      "user": "s1iduser",
+      "remote_base": "/home/beams/S1IDUSER/pv_logger"
+    }
   },
   "pvs": [
     {
@@ -2803,6 +2809,481 @@
       "name": "NumImages_RBV (s1_pixirad2)",
       "pv": "s1_pixirad2:cam1:NumImages_RBV",
       "group": "write_parfile_general.mac (misc, review before use)"
+    },
+    {
+      "name": "A White Beam H size (mm)",
+      "pv": "1ida:Slit1Ht2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "A White Beam H pos (mm)",
+      "pv": "1ida:Slit1Ht2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "A White Beam V size (mm)",
+      "pv": "1ida:Slit1Vt2.C",
+      "group": "Slits"
+    },
+    {
+      "name": "A White Beam V pos (mm)",
+      "pv": "1ida:Slit1Vt2.D",
+      "group": "Slits"
+    },
+    {
+      "name": "C keyence1",
+      "pv": "1id:Keyence:1:ch1.VAL",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "C keyence2",
+      "pv": "1id:Keyence:1:ch2.VAL",
+      "group": "KEYENCE"
+    },
+    {
+      "name": "bpm_c2 (mm)",
+      "pv": "1ide2:S2:scaler2_calc3.VAL",
+      "group": "HRM"
+    },
+    {
+      "name": "bpm_e2 (mm)",
+      "pv": "1ide2:S2:scaler2_calc5.VAL",
+      "group": "HRM"
+    },
+    {
+      "name": "ID Energy (keV)",
+      "pv": "S01ID:DSID:EnergyM.VAL",
+      "group": "Beam positions"
+    },
+    {
+      "name": "HEM Th1",
+      "pv": "1idHEM:m1.RBV",
+      "group": "HEM"
+    },
+    {
+      "name": "HEM Th2",
+      "pv": "1idHEM:m4.RBV",
+      "group": "HEM"
+    },
+    {
+      "name": "HEM Z2",
+      "pv": "1idHEM:m8.RBV",
+      "group": "HEM"
+    },
+    {
+      "name": "HEM Chi2",
+      "pv": "1idHEM:m7.RBV",
+      "group": "HEM"
+    },
+    {
+      "name": "C 4C th",
+      "pv": "1idc:m74.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C phi",
+      "pv": "1idc:m75.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotX",
+      "pv": "1idc:m76.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotY1",
+      "pv": "1idcAMCI:m6.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotY2",
+      "pv": "1idcAMCI:m2.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotY3",
+      "pv": "1idcAMCI:m3.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotZ1",
+      "pv": "1idcAMCI:m4.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C 4C RotZ2",
+      "pv": "1idcAMCI:m5.RBV",
+      "group": "C 4-Circle Stage"
+    },
+    {
+      "name": "C Lens1 X",
+      "pv": "1idc:m99.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens1 Y",
+      "pv": "1idc:m100.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens1 Z",
+      "pv": "1idc:m101.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens1 RX",
+      "pv": "1idc:m102.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens1 RY",
+      "pv": "1idc:m103.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens1 RZ",
+      "pv": "1idc:m104.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 X",
+      "pv": "1idc:m65.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 Y",
+      "pv": "1idc:m66.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 Z",
+      "pv": "1idc:m67.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 RX",
+      "pv": "1idc:m68.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 RY",
+      "pv": "1idc:m69.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens2 RZ",
+      "pv": "1idc:m70.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens7 Z",
+      "pv": "1idc:m45.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "C Lens7 RX",
+      "pv": "1idc:m46.RBV",
+      "group": "C-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens1 X",
+      "pv": "1ide1:m117.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens1 RY",
+      "pv": "1ide1:m119.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens1 RZ",
+      "pv": "1ide1:m31.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens2 X",
+      "pv": "1ide1:m118.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens2 RY",
+      "pv": "1ide1:m120.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens3 Y",
+      "pv": "1ide1:m89.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens3 Z",
+      "pv": "1ide1:m81.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens3 RX",
+      "pv": "1ide1:m44.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens3 RZ",
+      "pv": "1ide1:m45.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens4 Y",
+      "pv": "1ide1:m114.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens4 Z",
+      "pv": "1ide1:m115.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens4 RX",
+      "pv": "1ide1:m116.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "E Lens4 RZ",
+      "pv": "1ide1:m84.RBV",
+      "group": "E-HUTCH LENSES"
+    },
+    {
+      "name": "C Scaler1 T",
+      "pv": "1id:S1:scaler1.T",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S2",
+      "pv": "1id:S1:scaler1.S2",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S3",
+      "pv": "1id:S1:scaler1.S3",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S3 sens",
+      "pv": "1id:A1sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S4",
+      "pv": "1id:S1:scaler1.S4",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S4 sens",
+      "pv": "1id:A2sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S5",
+      "pv": "1id:S1:scaler1.S5",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S5 sens",
+      "pv": "1id:A3sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S6",
+      "pv": "1id:S1:scaler1.S6",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S6 sens",
+      "pv": "1id:A4sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S7",
+      "pv": "1id:S1:scaler1.S7",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S7 sens",
+      "pv": "1id:A5sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S8",
+      "pv": "1id:S1:scaler1.S8",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S8 sens",
+      "pv": "1id:A6sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S9",
+      "pv": "1id:S1:scaler1.S9",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S9 sens",
+      "pv": "1id:A7sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S10",
+      "pv": "1id:S1:scaler1.S10",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S10 sens",
+      "pv": "1id:A8sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S11",
+      "pv": "1id:S1:scaler1.S11",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S11 sens",
+      "pv": "1id:A9sens_num.VAL",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S12",
+      "pv": "1id:S1:scaler1.S12",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S13",
+      "pv": "1id:S1:scaler1.S13",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S14",
+      "pv": "1id:S1:scaler1.S14",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S15",
+      "pv": "1id:S1:scaler1.S15",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S16",
+      "pv": "1id:S1:scaler1.S16",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "C Scaler1 S17",
+      "pv": "1id:S1:scaler1.S17",
+      "group": "C Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 T",
+      "pv": "1ide2:S2:scaler2.T",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S1",
+      "pv": "1ide2:S2:scaler2.S1",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S2",
+      "pv": "1ide2:S2:scaler2.S2",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S3",
+      "pv": "1ide2:S2:scaler2.S3",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S4",
+      "pv": "1ide2:S2:scaler2.S4",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S5",
+      "pv": "1ide2:S2:scaler2.S5",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S6",
+      "pv": "1ide2:S2:scaler2.S6",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S7",
+      "pv": "1ide2:S2:scaler2.S7",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S8",
+      "pv": "1ide2:S2:scaler2.S8",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S9",
+      "pv": "1ide2:S2:scaler2.S9",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "E Scaler1 S10",
+      "pv": "1ide2:S2:scaler2.S10",
+      "group": "E Scaler (raw channels)"
+    },
+    {
+      "name": "Active SMS",
+      "pv": "1ide1:userStringCalc10.II",
+      "group": "Experiment Identifiers"
+    },
+    {
+      "name": "Active Technique",
+      "pv": "1ide1:userStringCalc10.JJ",
+      "group": "Experiment Identifiers"
+    },
+    {
+      "name": "Experiment ID",
+      "pv": "1ide1:userStringCalc10.KK",
+      "group": "Experiment Identifiers"
+    },
+    {
+      "name": "Active DMS",
+      "pv": "1ide1:userStringCalc10.LL",
+      "group": "Experiment Identifiers"
+    },
+    {
+      "name": "Active SE",
+      "pv": "1ide1:userStringCalc10.HH",
+      "group": "Experiment Identifiers"
+    },
+    {
+      "name": "Ring operator",
+      "pv": "OPS:message1",
+      "group": "Storage Ring Status"
+    },
+    {
+      "name": "Fill pattern",
+      "pv": "OPS:message3",
+      "group": "Storage Ring Status"
+    },
+    {
+      "name": "Next fill info",
+      "pv": "OPS:message6",
+      "group": "Storage Ring Status"
+    },
+    {
+      "name": "Date/time end",
+      "pv": "S:IOC:timeOfDayForm1SI",
+      "group": "Storage Ring Status"
+    },
+    {
+      "name": "E HLSMS samY2",
+      "pv": "1idcAMCI:m16.RBV",
+      "group": "E HL-SMS"
     }
   ]
 }

@@ -6,7 +6,13 @@
     "sender": "pv_logger@your-host.aps.anl.gov",
     "smtp_host": "apsmail.aps.anl.gov",
     "smtp_port": 25,
-    "alert_cooldown_min": 60
+    "alert_cooldown_min": 60,
+    "state_file": "/home/beams/PARKJS/opt/python_tools/ops/pv_logger/pv_alert_state.json",
+    "remote_job": {
+      "host": "zion",
+      "user": "s20iduser",
+      "remote_base": "/home/beams/S20IDUSER/pv_logger"
+    }
   },
   "pvs": [
     {
@@ -2283,6 +2289,36 @@
       "name": "DetTemperature",
       "pv": "20idVarex2:cam1:Temperature_RBV",
       "group": "Varex Detector"
+    },
+    {
+      "name": "Fly start pos",
+      "pv": "20idhedmA:PSOFly1:startPos",
+      "group": "Scan Parameters"
+    },
+    {
+      "name": "Fly end pos",
+      "pv": "20idhedmA:PSOFly1:endPos",
+      "group": "Scan Parameters"
+    },
+    {
+      "name": "Fly delta time",
+      "pv": "20idhedmA:PSOFly1:deltaTime",
+      "group": "Scan Parameters"
+    },
+    {
+      "name": "Fly scan delta",
+      "pv": "20idhedmA:PSOFly1:scanDelta",
+      "group": "Scan Parameters"
+    },
+    {
+      "name": "Fly slew speed",
+      "pv": "20idhedmA:PSOFly1:slewSpeed",
+      "group": "Scan Parameters"
+    },
+    {
+      "name": "Fly motor name",
+      "pv": "20idhedmA:PSOFly1:motorName",
+      "group": "Scan Parameters"
     }
   ]
 }
