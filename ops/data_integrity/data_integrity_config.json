@@ -68,6 +68,12 @@
       "beamline": "s20",
       "local_root": "/home/s20a/sangid_nov25",
       "dataset": null
+    },
+    {
+      "name": "bucsek_oct25",
+      "beamline": "s1",
+      "local_root": "/home/s1c/bucsek_oct25",
+      "dataset": null
     }
   ]
 }
