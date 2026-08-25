@@ -17,6 +17,7 @@ Usage
 import argparse
 import json
 import os
+import re
 import shlex
 import sys
 import time
@@ -42,6 +43,33 @@ STATUS_COLORS = {
     "running": "#c8f7c5",
     "stopped": "#e0e0e0",
 }
+
+# Remembers the last PV selection used per beamline, keyed by PV "name"
+# (not the raw PV string, and not device group - matches the granularity
+# selected_pvs() now works at, and the same key read_logged_pv_names()
+# pulls back out of a CSV's header row, so both the auto-remember and
+# load-from-CSV paths feed the same representation). Deliberately its own
+# small file rather than a key inside pv_master_list_s1/s20.json - this
+# is ephemeral GUI convenience state, not part of the curated PV list
+# those files hold.
+_SELECTION_PREFS_PATH = os.path.join(SCRIPT_DIR, "pv_logger_selection_prefs.json")
+
+
+def _load_selection_prefs():
+    try:
+        with open(_SELECTION_PREFS_PATH) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_selection_prefs(prefs):
+    try:
+        with open(_SELECTION_PREFS_PATH, "w") as f:
+            json.dump(prefs, f, indent=2)
+    except OSError:
+        pass  # best-effort - a stale/unwritable prefs file shouldn't block starting a logging run
+
 
 def _center_on_parent(dialog, parent):
     """Explicitly position dialog over parent's current on-screen geometry
@@ -244,8 +272,56 @@ def _category_for_device(device):
     return _CATEGORY_FOR_GROUP.get(device, _OTHER_CATEGORY)
 
 
+_T_NUMBER_RE = re.compile(r"[Tt](\d+)")
+_CURRENT_NUMBER_RE = re.compile(r"Current(\d+)", re.IGNORECASE)
+
+
+def _pv_sort_key(entry):
+    """Order a device's per-PV checkboxes by hardware address (T-unit,
+    then Current channel) rather than raw master-list/alphabetical order -
+    confirmed directly that alphabetical-by-name scrambles a hutch's ion
+    chambers relative to their actual T1/T2/T3 wiring (e.g. "IC7D" sorting
+    next to "IC8D" alphabetically, while both actually being T3 Current1/
+    Current2, next to unrelated T1/T2 entries in between). Falls back to
+    plain alphabetical-by-name for anything that doesn't match this T<n>/
+    Current<n> convention (most devices don't use it at all) - those
+    entries carry no T/Current number to sort by, so they end up ordered
+    only by name, exactly as before this existed.
+    """
+    pv = entry.get("pv", "")
+    name = entry.get("name", "") or ""
+    t_match = _T_NUMBER_RE.search(pv)
+    current_match = _CURRENT_NUMBER_RE.search(pv)
+    t_num = int(t_match.group(1)) if t_match else float("inf")
+    current_num = int(current_match.group(1)) if current_match else float("inf")
+    return (t_num, current_num, name.lower())
+
+
+class _GroupCheckBox(QtWidgets.QCheckBox):
+    """Tristate checkbox for a device group, whose PartiallyChecked state
+    is only ever set programmatically (to indicate "some but not all of
+    this device's PVs are individually selected") - never reachable by
+    clicking it directly. Qt's own tristate checkboxes cycle through all
+    three states on click by default, which would let a click land on
+    "partially checked" with no sensible meaning as a deliberate user
+    action here; overriding nextCheckState() (the standard, documented way
+    to customize what a click does to a QCheckBox) keeps a click strictly
+    a Checked/Unchecked toggle - "select all of this device's PVs" /
+    "select none of them" - while still allowing the partial indicator to
+    be shown as a passive reflection of the individual PV checkboxes
+    underneath.
+    """
+
+    def nextCheckState(self):
+        if self.checkState() == QtCore.Qt.Unchecked:
+            self.setCheckState(QtCore.Qt.Checked)
+        else:
+            self.setCheckState(QtCore.Qt.Unchecked)
+
+
 class StartExperimentDialog(QtWidgets.QDialog):
-    def __init__(self, parent=None, default_dir="", devices=None, pv_defs=None, config_path=None):
+    def __init__(self, parent=None, default_dir="", devices=None, pv_defs=None, config_path=None,
+                 initial_selected_pv_names=None):
         """pv_defs/config_path: the live master-list pv entries and the
         file they came from, so a rename here can actually rewrite the
         shared 'group' field on every matching PV entry and persist it -
@@ -253,11 +329,25 @@ class StartExperimentDialog(QtWidgets.QDialog):
         (pv_master_list_s1.json/s20.json), not just a label change in this
         dialog. Both are optional (rename is simply unavailable without
         them) so this class stays usable in isolation/tests.
+
+        initial_selected_pv_names: PV "name" values to start pre-checked
+        (everything else starts unchecked) - the caller's own remembered-
+        last-selection or loaded-from-CSV state. None (not just empty)
+        means "no persisted selection to restore", falling back to the
+        original default of everything checked - an empty set/list would
+        instead mean "start with nothing checked", a real, different
+        state (e.g. deliberately restoring an all-unchecked past run).
         """
         super().__init__(parent)
         self.setWindowTitle("Start new experiment")
         self._pv_defs = pv_defs
         self._config_path = config_path
+        self._devices = devices or []
+        # Guards the group<->per-PV checkbox sync (_on_group_checkbox_changed/
+        # _on_pv_checkbox_changed) against re-entrant cascades: each side
+        # sets this while it drives the other side's checkboxes, so that
+        # drive doesn't itself trigger the first side's handler again.
+        self._syncing_checks = False
 
         self.outfile_edit = QtWidgets.QLineEdit()
         browse_btn = QtWidgets.QPushButton("Browse...")
@@ -292,8 +382,25 @@ class StartExperimentDialog(QtWidgets.QDialog):
             filter_row.addWidget(uncheck_all_btn)
             self.device_group.layout().addLayout(filter_row)
 
+            if pv_defs is not None:
+                # Only meaningful with pv_defs in hand (need the master
+                # list to match CSV column names back to actual PV
+                # entries) - same "unavailable in isolation/tests"
+                # pattern already used for rename.
+                load_csv_row = QtWidgets.QHBoxLayout()
+                load_csv_btn = QtWidgets.QPushButton("Load selection from CSV...")
+                load_csv_btn.clicked.connect(self._load_selection_from_csv)
+                load_csv_row.addWidget(load_csv_btn)
+                load_csv_row.addStretch()
+                self.device_group.layout().addLayout(load_csv_row)
+
             checked = {device: True for device in devices}
-            self._rebuild_device_checklist(devices, checked)
+            pv_checked_state = None
+            if initial_selected_pv_names is not None:
+                selected_names = set(initial_selected_pv_names)
+                pv_checked_state = {name: (name in selected_names)
+                                     for entry in (pv_defs or []) for name in [entry.get("name")] if name}
+            self._rebuild_device_checklist(devices, checked, pv_checked_state)
 
         buttons = QtWidgets.QDialogButtonBox(
             QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
@@ -307,12 +414,23 @@ class StartExperimentDialog(QtWidgets.QDialog):
         layout.addWidget(buttons)
         self.resize(500, 500)
 
-    def _rebuild_device_checklist(self, devices, checked_state):
+    def _rebuild_device_checklist(self, devices, checked_state, pv_checked_state=None):
         """(Re)build the scrollable checkbox list from scratch - used both
         at construction and after a rename, so a rename's new sort
         position and any devices merged together by it are reflected
         correctly rather than patched in place. checked_state carries
         forward whatever was checked before the rebuild.
+
+        pv_checked_state: optional {pv_name: bool} for per-PV initial
+        state (from __init__'s initial_selected_pv_names, or _rename_
+        device's own capture of whatever was checked before the rename) -
+        when given, a device with per-PV detail derives ITS group
+        checkbox's initial tri-state from these values (so a partial
+        restored selection shows correctly as PartiallyChecked right
+        away) instead of every PV just following checked_state's whole-
+        device value. None (the rebuild-callers' original default before
+        this existed) means "no per-PV information available", falling
+        back to every PV matching its device's checked_state entry.
 
         Devices are grouped under DEVICE_CATEGORIES headers (in that
         list's order, "Other" last for anything unmapped), alphabetical
@@ -323,7 +441,27 @@ class StartExperimentDialog(QtWidgets.QDialog):
             self.device_group.layout().removeWidget(self._device_scroll)
             self._device_scroll.deleteLater()
 
+        # device -> [pv_entry, ...] (the actual {name, pv, group} dicts,
+        # not just display strings - selected_pvs() needs the real entries
+        # to build the job's PV list) for the expandable per-PV checkboxes
+        # below. None (not just empty) when this dialog was built without
+        # pv_defs (e.g. in isolation/tests, same case _rename_device is
+        # already unavailable for), so the disclosure triangle and per-PV
+        # checkboxes are skipped entirely rather than shown with nothing
+        # real to check - that dialog falls back to whole-device
+        # selection only, exactly like before this feature existed.
+        pvs_by_device = None
+        if self._pv_defs is not None:
+            pvs_by_device = {}
+            for entry in self._pv_defs:
+                group = entry.get("group")
+                if group:
+                    pvs_by_device.setdefault(group, []).append(entry)
+
         self.device_checks = {}
+        self._pv_checks = {}  # device -> [(pv_entry, checkbox), ...], only for devices with per-PV detail
+        self._device_rows = {}  # device -> the row widget _apply_device_filter shows/hides as a unit
+        self._device_toggles = {}  # device -> its disclosure QToolButton, so a PV-only filter match can auto-expand it
         self._category_headers = {}
         by_category = {}
         for device in devices:
@@ -348,13 +486,109 @@ class StartExperimentDialog(QtWidgets.QDialog):
             # order within the category rather than plain ASCII order,
             # where every uppercase letter sorts before every lowercase one.
             for device in sorted(by_category[category], key=str.lower):
-                checkbox = QtWidgets.QCheckBox(device)
+                device_pvs = pvs_by_device.get(device, []) if pvs_by_device is not None else []
+                device_pvs = sorted(device_pvs, key=_pv_sort_key)
+
+                checkbox = _GroupCheckBox(device) if device_pvs else QtWidgets.QCheckBox(device)
                 checkbox.setChecked(checked_state.get(device, True))
                 checkbox.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
                 checkbox.customContextMenuRequested.connect(
                     lambda pos, d=device: self._show_device_context_menu(d))
                 self.device_checks[device] = checkbox
-                device_layout.addWidget(checkbox)
+
+                row = QtWidgets.QWidget()
+                row_layout = QtWidgets.QVBoxLayout(row)
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                row_layout.setSpacing(0)
+
+                check_row = QtWidgets.QHBoxLayout()
+                check_row.setContentsMargins(0, 0, 0, 0)
+                if device_pvs:
+                    # Expandable, not always-shown: showing every PV for
+                    # every device inline (some groups - furnaces, motors -
+                    # have dozens) would make the list far too long to
+                    # scan; a disclosure triangle keeps it compact by
+                    # default while still letting anyone check exactly
+                    # which PVs a device name actually covers, on demand.
+                    toggle = QtWidgets.QToolButton()
+                    toggle.setArrowType(QtCore.Qt.RightArrow)
+                    toggle.setCheckable(True)
+                    toggle.setAutoRaise(True)
+                    toggle.setFixedWidth(20)
+                    check_row.addWidget(toggle)
+                    self._device_toggles[device] = toggle
+                else:
+                    toggle = None
+                    spacer = QtWidgets.QLabel()
+                    spacer.setFixedWidth(20)
+                    check_row.addWidget(spacer)
+                check_row.addWidget(checkbox)
+                check_row.addStretch()
+                row_layout.addLayout(check_row)
+
+                if device_pvs:
+                    checkbox.setTristate(True)
+                    group_checked = checked_state.get(device, True)
+
+                    pv_row_widgets = []
+                    detail = QtWidgets.QWidget()
+                    detail_layout = QtWidgets.QVBoxLayout(detail)
+                    detail_layout.setContentsMargins(28, 0, 0, 4)
+                    detail_layout.setSpacing(2)
+                    for entry in device_pvs:
+                        label = f"{entry.get('name')}: {entry.get('pv')}" if entry.get("name") else entry.get("pv", "")
+                        pv_checkbox = QtWidgets.QCheckBox(label)
+                        pv_checkbox.setChecked(
+                            pv_checked_state.get(entry.get("name"), group_checked)
+                            if pv_checked_state is not None else group_checked)
+                        pv_checkbox.stateChanged.connect(
+                            lambda _state, d=device: self._on_pv_checkbox_changed(d))
+                        detail_layout.addWidget(pv_checkbox)
+                        pv_row_widgets.append((entry, pv_checkbox))
+                    self._pv_checks[device] = pv_row_widgets
+
+                    # Derive the group checkbox's own initial tri-state
+                    # from the PVs just built, rather than trusting
+                    # checked_state.get(device, True) blindly - a
+                    # restored partial selection (some but not all of
+                    # this device's PVs) needs to show as
+                    # PartiallyChecked immediately, not as fully Checked/
+                    # Unchecked until the user happens to touch one PV
+                    # and trigger _on_pv_checkbox_changed's recompute.
+                    if pv_checked_state is not None:
+                        checked_count = sum(1 for _e, cb in pv_row_widgets if cb.isChecked())
+                        if checked_count == 0:
+                            checkbox.setCheckState(QtCore.Qt.Unchecked)
+                        elif checked_count == len(pv_row_widgets):
+                            checkbox.setCheckState(QtCore.Qt.Checked)
+                        else:
+                            checkbox.setCheckState(QtCore.Qt.PartiallyChecked)
+
+                    detail.setVisible(False)
+                    row_layout.addWidget(detail)
+                    toggle.toggled.connect(
+                        lambda checked, d=detail, t=toggle: (
+                            d.setVisible(checked),
+                            t.setArrowType(QtCore.Qt.DownArrow if checked else QtCore.Qt.RightArrow)))
+
+                    checkbox.stateChanged.connect(
+                        lambda state, d=device: self._on_group_checkbox_changed(d, state))
+
+                self._device_rows[device] = row
+                device_layout.addWidget(row)
+
+        # Without this, filtering down to just a few visible devices
+        # visibly stretched each remaining row to fill the vertical space
+        # freed up by all the hidden ones - confirmed directly (a filtered
+        # BSE1/BSE2 pair went from a normal ~30px row height to ~556px
+        # each). Each device is wrapped in a plain QWidget() "row"
+        # container (for the checkbox + disclosure toggle + PV detail),
+        # which defaults to a Preferred vertical size policy - happy to
+        # grow into leftover layout space - unlike a bare QCheckBox
+        # (Fixed by default), which is what every earlier, non-stretchy
+        # version of this list used. A trailing stretch claims all that
+        # leftover space itself instead, the standard QVBoxLayout fix.
+        device_layout.addStretch()
 
         device_widget = QtWidgets.QWidget()
         device_widget.setLayout(device_layout)
@@ -436,20 +670,76 @@ class StartExperimentDialog(QtWidgets.QDialog):
         checked_state = {device: cb.isChecked() for device, cb in self.device_checks.items()}
         was_checked = checked_state.pop(old_name, True)
         checked_state[new_name] = checked_state.get(new_name, False) or was_checked
-        self._rebuild_device_checklist(list(checked_state.keys()), checked_state)
-
+        # Capture the CURRENT per-PV state across every device (not just
+        # old_name) before rebuilding, so a rename doesn't reset anyone
+        # else's partial selection back to all-or-nothing - PV names
+        # don't change on a rename (only "group" does), so they carry
+        # over into the rebuilt checklist unchanged by name.
+        pv_checked_state = {
+            entry.get("name"): cb.isChecked()
+            for pv_list in self._pv_checks.values()
+            for entry, cb in pv_list
+        }
+        self._rebuild_device_checklist(list(checked_state.keys()), checked_state, pv_checked_state)
 
     def _browse(self):
         path = _choose_save_file(self, "Output CSV", self._default_dir, "CSV files (*.csv)")
         if path:
             self.outfile_edit.setText(path)
 
+    def _load_selection_from_csv(self):
+        """Reconstruct a past run's exact PV selection from its logged
+        CSV's header row (see pl.read_logged_pv_names) - lets anyone
+        replicate ANY previous run's PV set on demand, not just whatever
+        the dialog happened to remember from the single most recent
+        session (see PVLoggerPanel.start_experiment's separate auto-
+        remember-last-selection behavior). Replaces the current selection
+        entirely (uncheck-then-check), rather than merging with whatever
+        was already checked, so the result always matches that CSV
+        exactly regardless of what state the dialog was in before this
+        was clicked.
+        """
+        path = _choose_open_file(self, "Load selection from CSV", self._default_dir, "CSV files (*.csv)")
+        if not path:
+            return
+        logged_names = set(pl.read_logged_pv_names(path))
+        if not logged_names:
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Nothing to load",
+                f"Could not find any logged PV names in '{path}' - is it a PV logger CSV file?")
+            return
+
+        matched = 0
+        for pv_list in self._pv_checks.values():
+            for entry, checkbox in pv_list:
+                checkbox.setChecked(entry.get("name") in logged_names)
+                if entry.get("name") in logged_names:
+                    matched += 1
+        unmatched = len(logged_names) - matched
+        message = f"Restored {matched} PV(s) from '{os.path.basename(path)}'."
+        if unmatched > 0:
+            message += (f"\n\n{unmatched} name(s) from that CSV weren't found in the current master "
+                        "list (renamed or removed since that run) and couldn't be restored.")
+        _message_box(QtWidgets.QMessageBox.Information, self, "Selection loaded", message)
+
     def _apply_device_filter(self, text):
-        """Hide checkboxes whose device name doesn't contain text
-        (case-insensitive substring). Paired with Check All/Uncheck All
-        acting only on visible checkboxes (see _set_visible_devices_checked),
-        this is how similarly-named devices (e.g. everything with "LENSES"
-        in the name) get selected together: filter, then Check All.
+        """Hide device rows whose device name AND every one of its PVs'
+        name/pv strings don't contain text (case-insensitive substring).
+        Paired with Check All/Uncheck All acting only on visible checkboxes
+        (see _set_visible_devices_checked), this is how similarly-named
+        devices (e.g. everything with "LENSES" in the name) get selected
+        together: filter, then Check All.
+
+        Matching PV content, not just the device/group name, matters now
+        that individual PVs are shown at all (see the per-PV checkboxes
+        added under each device) - confirmed directly that searching e.g.
+        "HDF1" found nothing under a device-name-only filter even though
+        several real PVs contain it, since "HDF1" only ever appears inside
+        specific PV names, never a device/group name itself. A device that
+        only matches via a PV (not by its own name) is auto-expanded too,
+        so the PV that actually matched isn't left hidden inside a
+        collapsed row - otherwise the row appearing with nothing visibly
+        matching in it would look like the filter did nothing.
 
         Also hides a category header once none of its devices match, so
         filtering doesn't leave a dangling "Furnaces / Heating" label
@@ -457,9 +747,27 @@ class StartExperimentDialog(QtWidgets.QDialog):
         """
         needle = text.strip().lower()
         visible_categories = set()
-        for device, checkbox in self.device_checks.items():
-            visible = not needle or needle in device.lower()
-            checkbox.setVisible(visible)
+        for device in self.device_checks:
+            name_matches = not needle or needle in device.lower()
+            pv_matches = False
+            if needle and not name_matches:
+                for entry, _checkbox in self._pv_checks.get(device, []):
+                    if needle in entry.get("pv", "").lower() or needle in entry.get("name", "").lower():
+                        pv_matches = True
+                        break
+            visible = name_matches or pv_matches
+            # Hides the whole row (checkbox + disclosure toggle + PV
+            # detail as one unit), not just the checkbox - otherwise a
+            # filtered-out device's toggle/expanded PV list would stay
+            # visible with no checkbox next to it. checkbox.isVisible()
+            # elsewhere (_set_visible_devices_checked) still reflects this
+            # correctly on its own, since Qt's isVisible() accounts for
+            # ancestor visibility automatically.
+            self._device_rows[device].setVisible(visible)
+            if pv_matches:
+                toggle = self._device_toggles.get(device)
+                if toggle is not None:
+                    toggle.setChecked(True)
             if visible:
                 visible_categories.add(self._device_category.get(device))
 
@@ -471,13 +779,79 @@ class StartExperimentDialog(QtWidgets.QDialog):
             if checkbox.isVisible():
                 checkbox.setChecked(checked)
 
+    def _on_group_checkbox_changed(self, device, state):
+        """User (or Check All/Uncheck All - setChecked() fires the same
+        stateChanged signal) toggled a device's group checkbox directly -
+        cascade to every one of its per-PV checkboxes. Guarded by
+        _syncing_checks so this doesn't re-fire when _on_pv_checkbox_changed
+        is the one driving this checkbox's state (to show the partial
+        indicator), and _GroupCheckBox.nextCheckState ensures `state` here
+        is only ever Checked or Unchecked from a real click - Partially-
+        Checked only ever arrives from _on_pv_checkbox_changed's own
+        programmatic setCheckState call below, which is itself guarded."""
+        if self._syncing_checks:
+            return
+        checked = state == QtCore.Qt.Checked
+        self._syncing_checks = True
+        try:
+            for _entry, pv_checkbox in self._pv_checks.get(device, []):
+                pv_checkbox.setChecked(checked)
+        finally:
+            self._syncing_checks = False
+
+    def _on_pv_checkbox_changed(self, device):
+        """One of device's per-PV checkboxes changed - recompute its group
+        checkbox's state from how many of them are now checked (none -
+        Unchecked, all - Checked, some - PartiallyChecked). Guarded by
+        _syncing_checks for the same reason _on_group_checkbox_changed is."""
+        if self._syncing_checks:
+            return
+        pv_checks = self._pv_checks.get(device, [])
+        checked_count = sum(1 for _entry, cb in pv_checks if cb.isChecked())
+        if checked_count == 0:
+            new_state = QtCore.Qt.Unchecked
+        elif checked_count == len(pv_checks):
+            new_state = QtCore.Qt.Checked
+        else:
+            new_state = QtCore.Qt.PartiallyChecked
+        self._syncing_checks = True
+        try:
+            self.device_checks[device].setCheckState(new_state)
+        finally:
+            self._syncing_checks = False
+
     def outfile(self):
         return self.outfile_edit.text().strip()
 
     def selected_devices(self):
-        """Return list of checked device names."""
+        """Return list of device names with at least one selected PV
+        (fully or partially checked) - QCheckBox.isChecked() is True for
+        both Checked and PartiallyChecked, which is exactly "this device
+        is involved at all", the only thing this is used for (the
+        launched job's human-readable description, and the "did you
+        select anything" guard). selected_pvs() is what actually
+        determines which PVs get logged."""
         return [device for device, checkbox in self.device_checks.items()
                 if checkbox.isChecked()]
+
+    def selected_pvs(self):
+        """Return the actual list of individually-selected PV entries
+        (the {name, pv, group} dicts from the master list) - the real
+        thing to log, now that selection can be finer-grained than whole
+        device groups. A device with per-PV checkboxes contributes
+        exactly its checked PVs (which may be a subset); a device without
+        them (this dialog built without pv_defs, so there was never
+        anything to individually check) falls back to "every PV in
+        pv_defs belonging to a checked device", the original all-or-
+        nothing behavior."""
+        result = []
+        for device, checkbox in self.device_checks.items():
+            pv_checks = self._pv_checks.get(device)
+            if pv_checks:
+                result.extend(entry for entry, cb in pv_checks if cb.isChecked())
+            elif checkbox.isChecked() and self._pv_defs:
+                result.extend(entry for entry in self._pv_defs if entry.get("group") == device)
+        return result
 
 
 class _PvLoggerLaunchWorker(QtCore.QObject):
@@ -725,9 +1099,17 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.cfg = pl.load_config(self.config_path)
         all_devices = pl.get_all_devices(self.cfg["pvs"])
 
-        # Show dialog with device checklist
+        # Show dialog with device checklist, pre-seeded from whatever
+        # selection was used last time this beamline launched (see
+        # _save_selection_prefs below) - None (not this beamline's key
+        # missing from an otherwise-valid prefs file - see _load_selection_
+        # prefs) means "never launched before here", falling back to
+        # StartExperimentDialog's own everything-checked default.
+        selection_prefs = _load_selection_prefs()
+        initial_selected_pv_names = selection_prefs.get(self.current_beamline)
         dialog = StartExperimentDialog(
-            self, devices=all_devices, pv_defs=self.cfg["pvs"], config_path=self.config_path)
+            self, devices=all_devices, pv_defs=self.cfg["pvs"], config_path=self.config_path,
+            initial_selected_pv_names=initial_selected_pv_names)
         _center_on_parent(dialog, self)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
@@ -737,10 +1119,23 @@ class PVLoggerPanel(QtWidgets.QWidget):
             _message_box(QtWidgets.QMessageBox.Warning, self, "Missing output file", "Choose an output CSV path.")
             return
 
-        selected_devices = dialog.selected_devices()
-        if not selected_devices:
-            _message_box(QtWidgets.QMessageBox.Warning, self, "No devices selected", "Select at least one device to monitor.")
+        selected_pvs = dialog.selected_pvs()
+        if not selected_pvs:
+            _message_box(QtWidgets.QMessageBox.Warning, self, "No devices selected", "Select at least one device/PV to monitor.")
             return
+        # Only for the launched job's human-readable description below -
+        # selected_pvs (not this, and not filter_pvs_by_devices) is what
+        # actually determines which PVs get logged, now that selection
+        # can be finer-grained than whole device groups (individual PV
+        # checkboxes nested under each device).
+        selected_devices = dialog.selected_devices()
+
+        # Remember this exact selection for next time this beamline's
+        # dialog opens - keyed by PV name (matches read_logged_pv_names'
+        # own granularity), not device, so a partial in-device selection
+        # is restored just as precisely as a whole-device one.
+        selection_prefs[self.current_beamline] = [entry.get("name") for entry in selected_pvs]
+        _save_selection_prefs(selection_prefs)
 
         # Canonicalize so a path chosen here (as whoever launched the GUI)
         # still resolves correctly once the job runs remotely as
@@ -748,11 +1143,12 @@ class PVLoggerPanel(QtWidgets.QWidget):
         # jobs use for local_root (see remote_job.canonical_path).
         outfile = pl.canonical_path(outfile)
 
-        # Filter PVs to only those in selected devices, and package them
-        # with a snapshot of settings as this job's config - written to
-        # the remote host and passed as --config, so pv_logger.py's start
-        # subcommand needs no new argument surface for device filtering.
-        filtered_pvs = pl.filter_pvs_by_devices(self.cfg["pvs"], selected_devices)
+        # The job's actual PV list, exactly as selected in the dialog -
+        # packaged with a snapshot of settings as this job's config,
+        # written to the remote host and passed as --config, so
+        # pv_logger.py's start subcommand needs no new argument surface
+        # for device/PV filtering.
+        filtered_pvs = selected_pvs
         job_settings = dict(self.cfg["settings"])
         # Override the default state_file (a path under parkjs's own repo
         # checkout, not writable by s1iduser/s20iduser) with one under this
@@ -777,7 +1173,6 @@ class PVLoggerPanel(QtWidgets.QWidget):
         thread.finished.connect(thread.deleteLater)
         self._launch_workers[beamline] = (thread, worker)
         thread.start()
-
 
     def _on_pv_logger_launched(self, beamline, status):
         self._launch_workers.pop(beamline, None)
