@@ -149,7 +149,30 @@ python disk_monitor_gui.py --config disk_monitor_config.json
   This walks the target's entire tree (same cost as the CLI's
   `top-folders`), so on a multi-TB mount it can take a while; the scan
   runs off the GUI thread so the rest of the panel keeps working while
-  you wait, and the dialog can be closed at any time.
+  you wait, and the dialog can be closed at any time. Runs with lowered
+  CPU/I/O priority (`ionice -c3`/`nice -n 19`) when those tools are
+  available, so a scan of a multi-TB mount doesn't starve the panel's own
+  regular refresh - or anything else hitting the same NFS server - while
+  it works; falls back to a plain `du` if they aren't installed.
+  Dereferences only the target path itself if it's a symlink (not every
+  symlink found while walking it), so a monitored target that's itself a
+  symlink (a common setup here) is scanned correctly instead of reporting
+  "No subdirectories found."
+- **Recent activity** column — filled in automatically in the background
+  shortly after the GUI starts (and refreshed for whichever target you
+  just ran **Top folders...** on manually), by scanning every configured
+  target's top-level folders sequentially, one `du` at a time, off the GUI
+  thread - the same scan **Top folders...** runs on demand, just automatic
+  and covering every target instead of one at a time. Shows the single
+  most recently touched top-level folder and how long ago
+  (`name (Nh ago)`); hover the cell for a tooltip breaking out the top 3
+  largest and top 3 most recently edited folders separately - size and
+  recency are independent signals (a folder can be huge but untouched for
+  months, or tiny but being written to right now), so neither ranking
+  alone tells the whole story. Shows `Scanning...` until that target's
+  scan completes; on a target with a lot of data this is the same cost as
+  **Top folders...** itself, but doesn't block the rest of the panel while
+  it runs.
 - **Disk monitor: ...** — a best-effort, read-only health check of the
   unattended `check` cron job, refreshed every cycle, color-coded green/red
   the same way the table's Status column is:

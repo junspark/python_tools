@@ -29,7 +29,7 @@ except ImportError:
         "(disk_monitor.py's 'check'/'monitor' CLI subcommands work without it.)"
     )
 
-COLUMNS = ["Name", "Path", "Used %", "Free (GB)", "Rate (GB/hr)", "ETA (days)", "Threshold %", "Status"]
+COLUMNS = ["Name", "Path", "Used %", "Free (GB)", "Rate (GB/hr)", "ETA (days)", "Threshold %", "Status", "Recent activity"]
 
 DEFAULT_FONT_SIZE = 10
 
@@ -194,6 +194,105 @@ def _cron_status(script_path):
     return "Disk monitor: unknown", "unknown"
 
 
+def _format_age(mtime):
+    """epoch seconds -> compact relative string ('2h ago', '3d ago') for
+    the 'Recent activity' column/tooltip - the raw epoch or a full
+    timestamp is too dense to scan across a whole table at a glance."""
+    if mtime is None:
+        return "unknown"
+    delta = max(0, time.time() - mtime)
+    if delta < 3600:
+        return "{:.0f}m ago".format(delta / 60)
+    if delta < 86400:
+        return "{:.0f}h ago".format(delta / 3600)
+    return "{:.0f}d ago".format(delta / 86400)
+
+
+def _top_folder_summary(entries):
+    """(cell_text, tooltip_text) for the 'Recent activity' column from a
+    full (uncapped) top-level du entries list. Size and recency are two
+    independent, often unrelated signals - a folder can be huge but
+    untouched for months, or tiny but being written to right now - so
+    this ranks by each separately rather than picking one list and
+    re-sorting it by the other criterion (which would silently hide a
+    small-but-active folder that never makes a size-based top N). Cell
+    text stays a single compact "most recently touched" line for an
+    at-a-glance signal; the tooltip breaks out both top-3 rankings in
+    full."""
+    if not entries:
+        return "(empty)", "No subdirectories found (or none were readable)."
+
+    by_size = sorted(entries, key=lambda e: e["size_bytes"], reverse=True)[:3]
+    by_recency = sorted(entries, key=lambda e: e["mtime"] or 0, reverse=True)[:3]
+
+    top_recent = by_recency[0]
+    cell_text = "{} ({})".format(top_recent["name"], _format_age(top_recent["mtime"]))
+
+    def _line(e):
+        size_gb = e["size_bytes"] / dm.GB
+        return "{}  -  {:.1f} GB  -  {}".format(e["name"], size_gb, _format_age(e["mtime"]))
+
+    tooltip_lines = ["Top 3 largest:"]
+    tooltip_lines += [_line(e) for e in by_size]
+    tooltip_lines.append("")
+    tooltip_lines.append("Top 3 most recently edited:")
+    tooltip_lines += [_line(e) for e in by_recency]
+    return cell_text, "\n".join(tooltip_lines)
+
+
+class _TopFoldersBackgroundScanner(QtCore.QObject):
+    """Scans every monitored target's top-level folders sequentially (one
+    `du` at a time, not all targets in parallel - several concurrent full
+    recursive walks of multi-TB NFS mounts would just contend with each
+    other and the beamline's own I/O for no real speed gain), off the GUI
+    thread, so the 'Recent activity' column can populate itself once at
+    startup without freezing the table. Emits target_done(name, entries)
+    incrementally so each row updates as soon as its own scan finishes,
+    rather than waiting for every target to complete first.
+    """
+
+    target_done = QtCore.pyqtSignal(str, object)  # name, entries (or None on failure)
+    all_done = QtCore.pyqtSignal()
+
+    def __init__(self, targets):
+        super().__init__()
+        self._targets = targets  # [(name, path), ...]
+        self._proc = None
+        self._cancelled = False
+
+    def run(self):
+        for name, path in self._targets:
+            if self._cancelled:
+                return
+            try:
+                proc = dm.spawn_du(path)
+            except RuntimeError:
+                self.target_done.emit(name, None)
+                continue
+            self._proc = proc
+            stdout, stderr = proc.communicate()
+            self._proc = None
+            if self._cancelled:
+                return
+            if proc.returncode != 0 and not stdout.strip():
+                self.target_done.emit(name, None)
+                continue
+            # Uncapped: _top_folder_summary needs every entry to rank by
+            # size and by recency independently, not just whichever subset
+            # a single size-based top N would have kept.
+            entries = dm._parse_du_output(stdout, path)
+            self.target_done.emit(name, entries)
+        self.all_done.emit()
+
+    def cancel(self):
+        """Same idea as _TopFoldersWorker.cancel() - kill whichever du is
+        currently running so this thread winds down promptly instead of
+        working through the rest of the target list first."""
+        self._cancelled = True
+        if self._proc is not None and self._proc.poll() is None:
+            self._proc.kill()
+
+
 class _TopFoldersWorker(QtCore.QObject):
     """Runs `du` over the target's entire tree off the GUI thread, via
     dm.spawn_du()/_parse_du_output() rather than the CLI's blocking
@@ -210,10 +309,9 @@ class _TopFoldersWorker(QtCore.QObject):
     finished = QtCore.pyqtSignal(list)
     error = QtCore.pyqtSignal(str)
 
-    def __init__(self, path, top_n):
+    def __init__(self, path):
         super().__init__()
         self.path = path
-        self.top_n = top_n
         self._proc = None
         self._cancelled = False
 
@@ -238,7 +336,11 @@ class _TopFoldersWorker(QtCore.QObject):
             self.error.emit(f"du failed for {self.path}: {stderr.strip()}")
             return
 
-        entries = dm._parse_du_output(stdout, self.path)[: self.top_n]
+        # Uncapped - the dialog itself slices to top_n for its own "N
+        # largest, by size" table, but DiskMonitorPanel.show_top_folders
+        # reuses the full list (via result_entries) to refresh the
+        # "Recent activity" column's independent size/recency rankings.
+        entries = dm._parse_du_output(stdout, self.path)
         self.finished.emit(entries)
 
     def cancel(self):
@@ -268,6 +370,8 @@ class TopFoldersDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Top folders in '{name}'")
         self.resize(600, 300)
+        self.top_n = top_n  # caps only this dialog's own table, not result_entries
+        self.result_entries = None  # full list, set on completion; read by DiskMonitorPanel.show_top_folders
 
         layout = QtWidgets.QVBoxLayout(self)
         self.status_label = QtWidgets.QLabel(f"Scanning {path} ...")
@@ -285,7 +389,7 @@ class TopFoldersDialog(QtWidgets.QDialog):
         layout.addWidget(buttons)
 
         self._thread = QtCore.QThread(self)
-        self._worker = _TopFoldersWorker(path, top_n)
+        self._worker = _TopFoldersWorker(path)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.finished.connect(self._on_finished)
@@ -294,6 +398,20 @@ class TopFoldersDialog(QtWidgets.QDialog):
         self._worker.error.connect(self._thread.quit)
         self._thread.finished.connect(self._thread.deleteLater)
         self._thread.start()
+
+        # Tracks whether the worker has wound down, via the same
+        # finished/error signals that already drive UI updates - NOT by
+        # querying self._thread's own isRunning()/etc. at close time.
+        # Confirmed directly this distinction matters: if the scan
+        # finishes naturally while the dialog is still open (the common
+        # case for anything but a huge mount), self._thread.finished's
+        # deleteLater() destroys the underlying C++ QThread well before
+        # the dialog is ever closed - so closeEvent()/reject() touching
+        # self._thread at all (even just .isRunning()) raises "wrapped
+        # C/C++ object of type QThread has been deleted", on the very
+        # first close attempt, regardless of how many times cleanup runs.
+        self._scan_done = False
+        self._cleanup_done = False
 
     def _cancel_and_wait(self):
         """Stop a still-running scan cooperatively before this dialog is
@@ -305,11 +423,20 @@ class TopFoldersDialog(QtWidgets.QDialog):
         this gives up after 5s and lets the dialog close anyway rather
         than freezing the GUI indefinitely; the thread will still finish
         and clean itself up whenever du actually exits, just later.
+
+        Idempotent (both reject() and closeEvent() call this, and in
+        practice one action can trigger both), and safe to call after the
+        scan has already finished on its own - see the note in __init__
+        for why that case must never touch self._thread at all.
         """
-        if self._thread.isRunning():
-            self._worker.cancel()
-            self._thread.quit()
-            self._thread.wait(5000)
+        if self._cleanup_done:
+            return
+        self._cleanup_done = True
+        if self._scan_done:
+            return
+        self._worker.cancel()
+        self._thread.quit()
+        self._thread.wait(5000)
 
     def reject(self):
         self._cancel_and_wait()
@@ -320,13 +447,16 @@ class TopFoldersDialog(QtWidgets.QDialog):
         super().closeEvent(event)
 
     def _on_finished(self, entries):
+        self._scan_done = True
+        self.result_entries = entries  # full list; read by DiskMonitorPanel.show_top_folders to refresh its cached summary column
         if not entries:
             self.status_label.setText("No subdirectories found (or none were readable).")
             return
 
-        self.status_label.setText(f"{len(entries)} largest subdirectories, by size:")
-        self.table.setRowCount(len(entries))
-        for row, entry in enumerate(entries):
+        display_entries = entries[: self.top_n]
+        self.status_label.setText(f"{len(display_entries)} largest subdirectories, by size:")
+        self.table.setRowCount(len(display_entries))
+        for row, entry in enumerate(display_entries):
             size_gb = entry["size_bytes"] / dm.GB
             mtime = entry["mtime"]
             mtime_str = (
@@ -339,6 +469,7 @@ class TopFoldersDialog(QtWidgets.QDialog):
         self.table.resizeColumnsToContents()
 
     def _on_error(self, message):
+        self._scan_done = True
         self.status_label.setText(f"Scan failed: {message}")
 
 
@@ -405,6 +536,26 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         self.config_path = config_path
         self.cfg = dm.load_config(config_path)
 
+        # name -> (cell_text, tooltip_text) from the last completed top-
+        # folders scan for that target, populated once in the background
+        # at startup (see _start_activity_scan) and refreshed whenever the
+        # "Top folders..." dialog is used manually - never recomputed on
+        # the fast refresh()/timer cadence, since it's a full recursive du
+        # walk, not a cheap statvfs call.
+        self._activity_cache = {}
+        self._activity_thread = None
+        self._activity_scanner = None
+        # True whenever there's no scan in flight (including "never
+        # started one yet") - checked instead of self._activity_thread.
+        # isRunning() in shutdown(), for the exact same reason
+        # TopFoldersDialog tracks _scan_done rather than querying the
+        # QThread directly: if a scan already finished naturally before
+        # shutdown() is called, the thread's own finished-signal-driven
+        # deleteLater() has already destroyed the underlying C++ object,
+        # and querying it at all (even just .isRunning()) raises "wrapped
+        # C/C++ object of type QThread has been deleted."
+        self._activity_scan_done = True
+
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -456,6 +607,7 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         self.timer.start(int(self.cfg["settings"]["check_interval_sec"] * 1000))
 
         self.refresh()
+        self._start_activity_scan()
 
     def refresh(self):
         settings = self.cfg["settings"]
@@ -486,8 +638,11 @@ class DiskMonitorPanel(QtWidgets.QWidget):
 
         self.table.setRowCount(len(statuses))
         for row, s in enumerate(statuses):
+            activity_text, activity_tooltip = self._activity_cache.get(
+                s["name"], ("Scanning...", "Top-folders scan in progress or not yet started."))
+
             if s.get("level") == "error":
-                values = [s["name"], s["path"], "-", "-", "-", "-", "-", "ERROR: " + s["error"]]
+                values = [s["name"], s["path"], "-", "-", "-", "-", "-", "ERROR: " + s["error"], activity_text]
             else:
                 eta = "{:.1f}".format(s["eta_days"]) if s["eta_days"] is not None else "-"
                 values = [
@@ -498,12 +653,15 @@ class DiskMonitorPanel(QtWidgets.QWidget):
                     eta,
                     str(s["threshold_pct"]),
                     s["level"].upper(),
+                    activity_text,
                 ]
 
             color = LEVEL_COLORS.get(s.get("level"), LEVEL_COLORS["error"])
             for col, value in enumerate(values):
                 item = QtWidgets.QTableWidgetItem(value)
                 item.setBackground(color)
+                if col == len(values) - 1:
+                    item.setToolTip(activity_tooltip)
                 self.table.setItem(row, col, item)
 
         now_str = QtCore.QDateTime.currentDateTime().toString(QtCore.Qt.TextDate)
@@ -546,6 +704,7 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         self.cfg["targets"].append(target)
         dm.save_config(self.cfg, self.config_path)
         self.refresh()
+        self._start_activity_scan()  # new target has no cached summary yet
 
     def edit_recipients(self):
         # A real QDialog we build and pre-fill ourselves, not QInputDialog.
@@ -591,6 +750,7 @@ class DiskMonitorPanel(QtWidgets.QWidget):
             del self.cfg["targets"][row]
         dm.save_config(self.cfg, self.config_path)
         self.refresh()
+        self._start_activity_scan()  # don't keep scanning a target that's no longer monitored
 
     def send_test_email(self):
         rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
@@ -609,12 +769,10 @@ class DiskMonitorPanel(QtWidgets.QWidget):
             _message_box(QtWidgets.QMessageBox.Critical, self, "Test email failed", "Failed to send test email; see console.")
 
     def show_top_folders(self):
-        """Manual, on-demand deep dive for one target - the full recursive
-        breakdown of every top-level subfolder's size, not just the whole-
-        target total shown in the table. Only enabled per-row (needs a
-        selection) since running it for every target at once would be a
-        multi-target concurrent `du` storm; also relies on the single-
-        selection-row assumption refresh() relies on."""
+        """Open TopFoldersDialog for the selected row's target (or the
+        first target if none selected) - same row-selection convention as
+        send_test_email above, and the same row-index-matches-cfg[targets]-
+        order assumption refresh() relies on."""
         targets = self.cfg.get("targets", [])
         if not targets:
             _message_box(QtWidgets.QMessageBox.Warning, self, "No targets", "No monitored paths configured.")
@@ -622,11 +780,88 @@ class DiskMonitorPanel(QtWidgets.QWidget):
 
         rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
         row = rows[0] if rows else 0
+        if row >= len(targets):
+            row = 0
         target = targets[row]
 
         dialog = TopFoldersDialog(self, target["name"], target["path"])
         _center_on_parent(dialog, self)
         dialog.exec_()
+
+        # A manual scan is strictly more current than whatever the
+        # background startup scan cached (or hasn't gotten to yet) - feed
+        # it back into the same cache the "Recent activity" column reads,
+        # rather than leaving that column stuck showing older/placeholder
+        # text until the next full GUI restart.
+        if dialog.result_entries is not None:
+            self._update_activity_cache(target["name"], dialog.result_entries)
+
+    def _update_activity_cache(self, name, entries):
+        self._activity_cache[name] = _top_folder_summary(entries)
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item and item.text() == name:
+                text, tooltip = self._activity_cache[name]
+                cell = QtWidgets.QTableWidgetItem(text)
+                cell.setBackground(self.table.item(row, len(COLUMNS) - 1).background())
+                cell.setToolTip(tooltip)
+                self.table.setItem(row, len(COLUMNS) - 1, cell)
+                break
+
+    def _start_activity_scan(self):
+        """Kick off the one-time (per GUI launch) background scan that
+        populates the 'Recent activity' column for every configured
+        target - see _TopFoldersBackgroundScanner. Safe to call again
+        later (e.g. after Add path/Remove selected change the target
+        list) since it always starts a fresh scanner over the current
+        target list; callers don't need to cancel an old one first, that
+        happens automatically in shutdown()/before a fresh scan replaces
+        self._activity_scanner.
+        """
+        self.shutdown()  # cancel any still-running scan over a now-stale target list first
+
+        targets = [(t["name"], t["path"]) for t in self.cfg.get("targets", [])]
+        if not targets:
+            return
+
+        self._activity_scan_done = False
+        self._activity_thread = QtCore.QThread(self)
+        self._activity_scanner = _TopFoldersBackgroundScanner(targets)
+        self._activity_scanner.moveToThread(self._activity_thread)
+        self._activity_thread.started.connect(self._activity_scanner.run)
+        self._activity_scanner.target_done.connect(self._on_activity_target_done)
+        self._activity_scanner.all_done.connect(self._on_activity_all_done)
+        self._activity_scanner.all_done.connect(self._activity_thread.quit)
+        self._activity_thread.finished.connect(self._activity_thread.deleteLater)
+        self._activity_thread.start()
+
+    def _on_activity_target_done(self, name, entries):
+        self._update_activity_cache(name, entries)
+
+    def _on_activity_all_done(self):
+        self._activity_scan_done = True
+
+    def shutdown(self):
+        """Cancel the background activity scanner if it's still running -
+        called before starting a fresh one, and should also be called from
+        whatever top-level window hosts this panel on its own closeEvent
+        (see ops_gui.py/DiskMonitorWindow), for the same reason
+        TopFoldersDialog needs its own cancel-and-wait: letting Qt tear
+        down a QThread that's still running underneath it is unsafe.
+
+        Deliberately checks self._activity_scan_done rather than
+        self._activity_thread.isRunning() - see the note on that flag in
+        __init__ for why touching the QThread object at all isn't safe
+        once a scan may have already finished on its own.
+        """
+        if self._activity_scan_done:
+            return
+        if self._activity_scanner is not None:
+            self._activity_scanner.cancel()
+        if self._activity_thread is not None:
+            self._activity_thread.quit()
+            self._activity_thread.wait(5000)
+        self._activity_scan_done = True
 
 
 class DiskMonitorWindow(QtWidgets.QMainWindow):
@@ -639,6 +874,10 @@ class DiskMonitorWindow(QtWidgets.QMainWindow):
         self.resize(900, 400)
         self.panel = DiskMonitorPanel(config_path)
         self.setCentralWidget(self.panel)
+
+    def closeEvent(self, event):
+        self.panel.shutdown()
+        super().closeEvent(event)
 
 
 def _parse_args(argv=None):
