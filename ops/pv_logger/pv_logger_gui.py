@@ -35,13 +35,12 @@ except ImportError:
         "(pv_logger.py's 'list-pvs'/'start' CLI subcommands work without it.)"
     )
 
-OFFLINE_COLUMNS = ["Name", "PV"]
-
 DEFAULT_FONT_SIZE = 10
 
 STATUS_COLORS = {
     "running": "#c8f7c5",
     "stopped": "#e0e0e0",
+    "failed": "#f7c5c5",
 }
 
 # Remembers the last PV selection used per beamline, keyed by PV "name"
@@ -959,15 +958,31 @@ class PVLoggerPanel(QtWidgets.QWidget):
     hosted standalone by PVLoggerWindow below.
     """
 
+    #: every beamline this tool manages - the single source of truth for
+    #: which rows _poll_all_beamlines shows, iterated in this fixed order.
+    BEAMLINES = ["s1", "s20"]
+
     def __init__(self, config_path, parent=None, show_font_control=True):
         super().__init__(parent)
         self.config_path = config_path
         self.base_config_dir = os.path.dirname(config_path)
         self.cfg = pl.load_config(config_path)
 
-        self.running = False
         self.current_beamline = "s1"
         self._launch_workers = {}  # beamline -> (QThread, _PvLoggerLaunchWorker), kept alive while launching
+        # beamline -> bool - unlike the old single self.running, both
+        # beamlines can be running independent jobs at once (confirmed
+        # directly: this tool always managed s1 and s20 as two entirely
+        # separate detached jobs, but the display used to only ever show
+        # whichever one was currently selected in the dropdown, with no
+        # way to see both at a glance without switching back and forth).
+        self._beamline_running = {beamline: False for beamline in self.BEAMLINES}
+        # beamline -> (state, finished_at) last surfaced as a FAILED/
+        # STOPPED popup - lets that transition be reported exactly once
+        # per beamline even when it happens before this GUI ever observed
+        # that beamline's job as RUNNING (see _update_beamline_row's own
+        # comment for why gating on "was running before" isn't enough).
+        self._last_shown_terminal_state = {}
 
         layout = QtWidgets.QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -975,29 +990,34 @@ class PVLoggerPanel(QtWidgets.QWidget):
         toolbar = QtWidgets.QToolBar()
         layout.addWidget(toolbar)
 
-        # Beamline selector
+        # Beamline selector - still controls which beamline Start/Stop/
+        # Edit recipients act on (those are inherently per-beamline
+        # actions), but no longer which beamline's status is visible -
+        # self.jobs_tree below always shows every beamline at once.
         toolbar.addWidget(QtWidgets.QLabel(" Beamline: "))
         self.beamline_combo = QtWidgets.QComboBox()
-        self.beamline_combo.addItems(["s1", "s20"])
+        self.beamline_combo.addItems(self.BEAMLINES)
         self.beamline_combo.currentTextChanged.connect(self._on_beamline_changed)
         toolbar.addWidget(self.beamline_combo)
         toolbar.addSeparator()
 
-        self.status_label = QtWidgets.QLabel("STOPPED")
-        self.status_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.status_label.setAutoFillBackground(True)
-        self._paint_status(running=False)
-        layout.addWidget(self.status_label)
-
-        self.info_label = QtWidgets.QLabel("No experiment started yet.")
-        layout.addWidget(self.info_label)
-
-        layout.addWidget(QtWidgets.QLabel("Currently offline:"))
-        self.offline_table = QtWidgets.QTableWidget(0, len(OFFLINE_COLUMNS))
-        self.offline_table.setHorizontalHeaderLabels(OFFLINE_COLUMNS)
-        self.offline_table.horizontalHeader().setStretchLastSection(True)
-        self.offline_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
-        layout.addWidget(self.offline_table)
+        # One top-level (color-coded RUNNING/STOPPED/FAILED) row per
+        # beamline, always all visible at once - replaces the single
+        # status banner that only ever showed whichever beamline happened
+        # to be selected in the dropdown. Expandable per beamline into
+        # every individually-tracked PV's own online/offline state, not
+        # just the (usually much shorter) currently-offline subset.
+        self.jobs_tree = QtWidgets.QTreeWidget()
+        self.jobs_tree.setHeaderLabels(["Beamline / PV", "Status", "Details"])
+        self.jobs_tree.header().setStretchLastSection(True)
+        self.jobs_tree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self._beamline_tree_items = {}
+        for beamline in self.BEAMLINES:
+            item = QtWidgets.QTreeWidgetItem([beamline, "STOPPED", "No experiment started yet."])
+            self.jobs_tree.addTopLevelItem(item)
+            self._beamline_tree_items[beamline] = item
+            self._paint_job_row(beamline, running=False)
+        layout.addWidget(self.jobs_tree, 1)
 
         self.status_bar = QtWidgets.QStatusBar()
         layout.addWidget(self.status_bar)
@@ -1018,27 +1038,30 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
         self.set_font_size(DEFAULT_FONT_SIZE)
 
-        # Polls the current beamline's remote status file - PV logging now
-        # runs as a detached job on that beamline's remote_job host (see
-        # start_experiment), so this GUI never touches EPICS or the CSV
-        # file itself once a job is running; it only reads back what the
-        # job already wrote. Always running (not just while self.running
-        # is True) so it can pick up a job someone else started, or a
+        # Polls EVERY beamline's remote status file, not just whichever is
+        # currently selected - PV logging now runs as a detached job on
+        # each beamline's own remote_job host (see start_experiment), so
+        # this GUI never touches EPICS or the CSV file itself once a job
+        # is running; it only reads back what the job already wrote.
+        # Always running (not just while a job this session launched is
+        # active) so it can pick up a job someone else started, or a
         # transition to STOPPED/FAILED, the same reattachment idea
         # data_integrity's checksum jobs use.
         self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self._poll_pv_logger_status)
+        self.timer.timeout.connect(self._poll_all_beamlines)
         poll_ms = int(self.cfg.get("settings", {}).get("log_interval_sec", 5) * 1000)
         self.timer.start(max(poll_ms, 1000))
-        self._poll_pv_logger_status()
+        self._poll_all_beamlines()
 
     def _on_beamline_changed(self, beamline_name):
-        """Load config for selected beamline. Switching is always allowed,
-        even mid-run - unlike the old in-process timer design, a running
-        PV-logging job is now detached on its own remote host and keeps
-        going regardless of what this GUI is currently looking at; the
-        poll timer just starts watching a different beamline's status file
-        and re-reattaches on switching back, the same as a fresh launch."""
+        """Load config for selected beamline - controls which beamline
+        Start/Stop/Edit recipients act on. Switching is always allowed,
+        even mid-run - a running PV-logging job is detached on its own
+        remote host and keeps going regardless of what this GUI is
+        currently looking at; self.jobs_tree already shows every
+        beamline's status regardless of this selection, so switching
+        doesn't affect what's displayed, only what the toolbar actions
+        target."""
         self.current_beamline = beamline_name
 
         config_file = os.path.join(self.base_config_dir, f"pv_master_list_{beamline_name}.json")
@@ -1063,22 +1086,99 @@ class PVLoggerPanel(QtWidgets.QWidget):
             self.cfg = pl.load_config(self.config_path)
             self.status_bar.showMessage(f"Using default PV list for {beamline_name}")
 
-        self._poll_pv_logger_status()
+        self.stop_action.setEnabled(self._beamline_running.get(beamline_name, False))
 
-    def _paint_status(self, running):
-        text = "RUNNING" if running else "STOPPED"
-        color = STATUS_COLORS["running"] if running else STATUS_COLORS["stopped"]
-        self.status_label.setText(text)
-        palette = self.status_label.palette()
-        palette.setColor(QtGui.QPalette.Window, QtGui.QColor(color))
-        self.status_label.setPalette(palette)
+    def _paint_job_row(self, beamline, running, failed=False):
+        item = self._beamline_tree_items[beamline]
+        if failed:
+            text, color = "FAILED", STATUS_COLORS.get("failed", QtGui.QColor(255, 200, 200))
+        else:
+            text = "RUNNING" if running else "STOPPED"
+            color = STATUS_COLORS["running"] if running else STATUS_COLORS["stopped"]
+        item.setText(1, text)
+        brush = QtGui.QBrush(QtGui.QColor(color))
+        for col in range(3):
+            item.setBackground(col, brush)
 
-    def _remote_job_info(self):
-        """(host, user, remote_base) for the current beamline's persistent
-        PV-logging job, from settings.remote_job - None, None, None if not
-        configured (e.g. an older config file that predates this)."""
-        remote_job = self.cfg.get("settings", {}).get("remote_job", {})
+    def _remote_job_info(self, cfg=None):
+        """(host, user, remote_base) for a beamline's persistent PV-logging
+        job, from settings.remote_job - None, None, None if not configured
+        (e.g. an older config file that predates this). Defaults to the
+        currently-selected beamline's own self.cfg (what start_experiment/
+        stop_monitoring act on); _poll_all_beamlines passes each other
+        beamline's own freshly-loaded cfg explicitly instead."""
+        cfg = self.cfg if cfg is None else cfg
+        remote_job = cfg.get("settings", {}).get("remote_job", {})
         return remote_job.get("host"), remote_job.get("user"), remote_job.get("remote_base")
+
+    def _cfg_for_beamline(self, beamline):
+        """A beamline's own master PV list, independent of self.cfg/
+        self.current_beamline (which only reflect whichever beamline is
+        selected in the toolbar) - _poll_all_beamlines needs every
+        beamline's own settings.remote_job and PV name->address mapping at
+        once, regardless of dropdown selection. Reloaded from disk each
+        call (small local JSON file, polled no more often than once per
+        log_interval_sec) rather than cached, so edits to a master list
+        made while the GUI is open still take effect without a relaunch."""
+        if beamline == self.current_beamline:
+            return self.cfg
+        config_file = os.path.join(self.base_config_dir, f"pv_master_list_{beamline}.json")
+        if not os.path.exists(config_file):
+            return self.cfg
+        try:
+            return pl.load_config(config_file)
+        except Exception:
+            return self.cfg
+
+    def _read_jobspec_names(self, remote_base, beamline):
+        """The PV names actually requested for this beamline's most recent
+        launch attempt - written (plain local file, see
+        _PvLoggerLaunchWorker.run) before the remote job even starts, so
+        it's available even when a run fails before ever getting to write
+        its own "tracked" list into the status file (e.g. "No PVs online
+        at discovery time"). Returns None if this beamline has never been
+        launched (no jobspec file yet)."""
+        jobspec_path = os.path.join(pl.pv_logger_status_dir(remote_base), f"{beamline}.jobspec")
+        try:
+            with open(jobspec_path) as f:
+                spec = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return None
+        return [entry.get("name") for entry in spec.get("pvs", [])]
+
+    def _set_job_children(self, beamline, online_names, offline_names, name_to_pv=None, neutral_names=()):
+        """Rebuild a beamline row's expandable children, one per tracked
+        PV. Offline PVs are listed first since they're the ones worth
+        noticing at a glance, then confirmed-online ones, then any
+        neutral/unknown ones (see _poll_all_beamlines: only a RUNNING
+        job's per-cycle sample is trustworthy enough to assert a PV is
+        actually online right now - a STOPPED/FAILED job's last-known
+        currently_offline may be stale, or may not exist at all for a job
+        that never got past discovery, so those show neutrally rather
+        than being painted a false green)."""
+        item = self._beamline_tree_items[beamline]
+        was_expanded = item.isExpanded()
+        item.takeChildren()
+        name_to_pv = name_to_pv or {}
+        offline_brush = QtGui.QBrush(QtGui.QColor(STATUS_COLORS["failed"]))
+        online_brush = QtGui.QBrush(QtGui.QColor(STATUS_COLORS["running"]))
+        neutral_brush = QtGui.QBrush(QtGui.QColor(STATUS_COLORS["stopped"]))
+        for name in offline_names:
+            child = QtWidgets.QTreeWidgetItem([name, "OFFLINE", name_to_pv.get(name, "")])
+            for col in range(3):
+                child.setBackground(col, offline_brush)
+            item.addChild(child)
+        for name in online_names:
+            child = QtWidgets.QTreeWidgetItem([name, "online", name_to_pv.get(name, "")])
+            for col in range(3):
+                child.setBackground(col, online_brush)
+            item.addChild(child)
+        for name in neutral_names:
+            child = QtWidgets.QTreeWidgetItem([name, "-", name_to_pv.get(name, "")])
+            for col in range(3):
+                child.setBackground(col, neutral_brush)
+            item.addChild(child)
+        item.setExpanded(was_expanded)
 
     def start_experiment(self):
         host, user, remote_base = self._remote_job_info()
@@ -1089,7 +1189,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 "can't launch a PV-logging job.")
             return
 
-        if self.running:
+        if self._beamline_running.get(self.current_beamline):
             _message_box(
                 QtWidgets.QMessageBox.Warning, self, "Already running",
                 f"PV logging is already running for '{self.current_beamline}'. Stop it first.")
@@ -1178,7 +1278,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self._launch_workers.pop(beamline, None)
         self.status_bar.showMessage(
             f"PV logging for '{beamline}' launched on remote host (running in background, survives closing this GUI)")
-        self._poll_pv_logger_status()
+        self._poll_all_beamlines()
 
     def _on_pv_logger_launch_error(self, beamline, msg):
         self._launch_workers.pop(beamline, None)
@@ -1196,76 +1296,134 @@ class PVLoggerPanel(QtWidgets.QWidget):
             _message_box(QtWidgets.QMessageBox.Critical, self, "Stop failed", str(e))
             return
         self.status_bar.showMessage(f"Stop requested for '{self.current_beamline}' - waiting for it to finish the current cycle...")
-        self._poll_pv_logger_status()
+        self._poll_all_beamlines()
 
-
-    def _poll_pv_logger_status(self):
-        """Re-read the current beamline's remote status file (plain local
-        read - beamline service accounts' homes are on the same shared
-        filesystem this GUI runs from, no SSH needed to read, only to
-        write) and repaint. This is the entire reattachment mechanism too:
-        a job started from a since-closed GUI, or a colleague's own GUI
-        instance, shows up here exactly the same way as one this session
-        launched itself.
+    def _poll_all_beamlines(self):
+        """Re-read EVERY beamline's remote status file (plain local read -
+        beamline service accounts' homes are on the same shared filesystem
+        this GUI runs from, no SSH needed to read, only to write) and
+        repaint every row of self.jobs_tree, not just whichever beamline
+        happens to be selected in the toolbar. This is the entire
+        reattachment mechanism too: a job started from a since-closed GUI,
+        or a colleague's own GUI instance, shows up here exactly the same
+        way as one this session launched itself.
         """
-        host, user, remote_base = self._remote_job_info()
-        if not remote_base:
-            return
+        for beamline in self.BEAMLINES:
+            cfg = self._cfg_for_beamline(beamline)
+            host, user, remote_base = self._remote_job_info(cfg)
+            name_to_pv = {entry["name"]: entry["pv"] for entry in cfg.get("pvs", [])}
 
-        status_path = pl.pv_logger_status_path(remote_base, self.current_beamline)
-        try:
-            with open(status_path) as f:
-                status = json.load(f)
-        except (OSError, json.JSONDecodeError):
-            if self.running:
-                self.running = False
-                self._paint_status(running=False)
-                self.stop_action.setEnabled(False)
-            return
+            if not remote_base:
+                self._beamline_running[beamline] = False
+                self._paint_job_row(beamline, running=False)
+                self._beamline_tree_items[beamline].setText(2, "Not configured.")
+                self._set_job_children(beamline, [], [])
+                if beamline == self.current_beamline:
+                    self.stop_action.setEnabled(False)
+                continue
 
-        state = status.get("state")
-        if state == "RUNNING":
-            self.running = True
-            self._paint_status(running=True)
-            self.stop_action.setEnabled(True)
+            status_path = pl.pv_logger_status_path(remote_base, beamline)
+            try:
+                with open(status_path) as f:
+                    status = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                self._beamline_running[beamline] = False
+                self._paint_job_row(beamline, running=False)
+                self._beamline_tree_items[beamline].setText(2, "No experiment started yet.")
+                self._set_job_children(beamline, [], [])
+                if beamline == self.current_beamline:
+                    self.stop_action.setEnabled(False)
+                continue
 
-            total = status.get("total_count", 0)
-            online_count = status.get("online_count", 0)
-            currently_offline = status.get("currently_offline", [])
-            self.info_label.setText(
-                "{} of {} PVs online  |  Output: {}".format(online_count, total, status.get("outfile", "?")))
+            state = status.get("state")
+            # "tracked" is every PV this job was launched with (added to
+            # the status payload specifically for this expandable list),
+            # written on the job's first successful cycle. A job that
+            # fails before ever getting that far (e.g. "No PVs online at
+            # discovery time") never writes it, so fall back to the
+            # jobspec file - written before the job even starts - for
+            # what was actually requested, rather than this beamline's
+            # entire master list (which would falsely imply every PV in
+            # the whole device catalog was part of this run).
+            tracked = status.get("tracked") or self._read_jobspec_names(remote_base, beamline) or []
 
-            name_to_pv = {entry["name"]: entry["pv"] for entry in self.cfg.get("pvs", [])}
-            self.offline_table.setRowCount(len(currently_offline))
-            for row, name in enumerate(currently_offline):
-                self.offline_table.setItem(row, 0, QtWidgets.QTableWidgetItem(name))
-                self.offline_table.setItem(row, 1, QtWidgets.QTableWidgetItem(name_to_pv.get(name, "")))
+            if state == "RUNNING":
+                # Only a RUNNING job's own per-cycle sample is trustworthy
+                # enough to assert a PV is actually online/offline right
+                # now - see _set_job_children for the STOPPED/FAILED case.
+                currently_offline = set(status.get("currently_offline", []))
+                offline_names = [n for n in tracked if n in currently_offline]
+                online_names = [n for n in tracked if n not in currently_offline]
 
-            updated_at = status.get("updated_at")
-            if updated_at:
-                self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
-        else:
-            was_running = self.running
-            self.running = False
-            self._paint_status(running=False)
-            self.stop_action.setEnabled(False)
-            if was_running:
+                self._beamline_running[beamline] = True
+                self._paint_job_row(beamline, running=True)
+                total = status.get("total_count", len(tracked))
+                online_count = status.get("online_count", len(online_names))
+                self._beamline_tree_items[beamline].setText(
+                    2, "{} of {} PVs online  |  Output: {}".format(
+                        online_count, total, status.get("outfile", "?")))
+                self._set_job_children(beamline, online_names, offline_names, name_to_pv)
+                if beamline == self.current_beamline:
+                    self.stop_action.setEnabled(True)
+                    updated_at = status.get("updated_at")
+                    if updated_at:
+                        self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
+            else:
+                self._beamline_running[beamline] = False
+                failed = state == "FAILED"
+                self._paint_job_row(beamline, running=False, failed=failed)
                 if state == "FAILED":
-                    self.status_bar.showMessage(
-                        "PV logging failed for '{}': {}".format(
-                            self.current_beamline, status.get("error_message", "unknown error")))
+                    detail = "Failed: {}".format(status.get("error_message", "unknown error"))
                 elif state == "STOPPED":
-                    finished_at = status.get("finished_at", time.time())
-                    self.status_bar.showMessage(
-                        "PV logging for '{}' stopped at {}".format(self.current_beamline, time.ctime(finished_at)))
+                    finished_at = status.get("finished_at")
+                    detail = "Stopped at {}".format(time.ctime(finished_at)) if finished_at else "Stopped."
+                else:
+                    detail = "No experiment started yet."
+                self._beamline_tree_items[beamline].setText(2, detail)
+                # Not RUNNING - the status file's own currently_offline (if
+                # present at all) reflects whatever the last actual sample
+                # cycle saw, which may be stale by now (or may not exist
+                # at all for a job that never got past discovery), so show
+                # what was requested neutrally rather than asserting a
+                # possibly-false-green "online" for all of it.
+                self._set_job_children(beamline, [], [], name_to_pv, neutral_names=tracked)
+                if beamline == self.current_beamline:
+                    self.stop_action.setEnabled(False)
+
+                # Report a FAILED/STOPPED transition exactly once per
+                # beamline, keyed by (state, finished_at) rather than
+                # gated on "was this GUI's own in-memory flag previously
+                # RUNNING" - confirmed directly that a job which fails
+                # fast enough (e.g. "No PVs online at discovery time",
+                # within the very first poll after launch) can jump
+                # straight from never-observed-running to FAILED, and the
+                # old was_running gate silently swallowed that failure's
+                # reason entirely - indistinguishable from "nothing
+                # happened at all", exactly the symptom reported. A
+                # message box, not just a status bar line, for the same
+                # reason every other real failure in this codebase gets
+                # one: a transient status bar message is easy to miss.
+                state_key = (state, status.get("finished_at"))
+                if state in ("FAILED", "STOPPED") and state_key != self._last_shown_terminal_state.get(beamline):
+                    self._last_shown_terminal_state[beamline] = state_key
+                    if state == "FAILED":
+                        msg = "PV logging failed for '{}': {}".format(
+                            beamline, status.get("error_message", "unknown error"))
+                        self.status_bar.showMessage(msg)
+                        _message_box(QtWidgets.QMessageBox.Warning, self, "PV logging failed", msg)
+                    elif state == "STOPPED":
+                        finished_at = status.get("finished_at", time.time())
+                        self.status_bar.showMessage(
+                            "PV logging for '{}' stopped at {}".format(beamline, time.ctime(finished_at)))
 
     def set_font_size(self, size):
         font = QtWidgets.QApplication.instance().font()
         font.setPointSize(size)
         QtWidgets.QApplication.instance().setFont(font)
-        self.offline_table.setFont(font)
-        self.offline_table.horizontalHeader().setFont(font)
-        self.offline_table.resizeRowsToContents()
+        self.jobs_tree.setFont(font)
+        self.jobs_tree.header().setFont(font)
+        for col in range(3):
+            self.jobs_tree.resizeColumnToContents(col)
         for toolbar in self.findChildren(QtWidgets.QToolBar):
             toolbar.setFont(font)
             for widget in toolbar.findChildren(QtWidgets.QWidget):
