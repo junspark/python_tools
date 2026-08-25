@@ -673,102 +673,102 @@
     {
       "name": "B Kohzu H size (mm)",
       "pv": "1idb:SlitHt2.C",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "B Kohzu V size (mm)",
       "pv": "1idb:SlitVt2.C",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "B Kohzu H pos (mm)",
       "pv": "1idb:SlitHt2.D",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "B Kohzu V pos (mm)",
       "pv": "1idb:SlitVt2.D",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "C Kohzu DS H size (mm)",
       "pv": "1idc:KslitdsHt2.C",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "C Kohzu DS V size (mm)",
       "pv": "1idc:KslitdsVt2.C",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "C Kohzu DS H pos (mm)",
       "pv": "1idc:KslitdsHt2.D",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "C Kohzu DS V pos (mm)",
       "pv": "1idc:KslitdsVt2.D",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "C Kohzu US H size (mm)",
       "pv": "1idc:KslitusHt2.C",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "C Kohzu US V size (mm)",
       "pv": "1idc:KslitusVt2.C",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "C Kohzu US H pos (mm)",
       "pv": "1idc:KslitusHt2.D",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "C Kohzu US V pos (mm)",
       "pv": "1idc:KslitusVt2.D",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "E Kohzu DS H size (mm)",
       "pv": "1ide1:Kohzu_E_dnHt2.C",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "E Kohzu DS V size (mm)",
       "pv": "1ide1:Kohzu_E_dnVt2.C",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "E Kohzu DS H pos (mm)",
       "pv": "1ide1:Kohzu_E_dnHt2.D",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "E Kohzu DS V pos (mm)",
       "pv": "1ide1:Kohzu_E_dnVt2.D",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "E Kohzu US H size (mm)",
       "pv": "1ide1:Kohzu_E_upHt2.C",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "E Kohzu US V size (mm)",
       "pv": "1ide1:Kohzu_E_upVt2.C",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "E Kohzu US H pos (mm)",
       "pv": "1ide1:Kohzu_E_upHt2.D",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "E Kohzu US V pos (mm)",
       "pv": "1ide1:Kohzu_E_upVt2.D",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "SR BPM H pos (mm)",
@@ -823,147 +823,147 @@
     {
       "name": "IC-B1 (cts)",
       "pv": "1id:S1:scaler1_cts1.C",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B2 (cts)",
       "pv": "1id:S1:scaler1_cts1.D",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B3 (cts)",
       "pv": "1id:S1:scaler1_cts2.A",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B4 (cts)",
       "pv": "1id:S1:scaler1_cts2.B",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B5 (cts)",
       "pv": "1id:S1:scaler1_cts2.C",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B8 (cts)",
       "pv": "1id:S1:scaler1_cts2.D",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B6 (cts)",
       "pv": "1id:S1:scaler1_cts3.A",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B7 (cts)",
       "pv": "1id:S1:scaler1_cts3.B",
-      "group": "IC from scaler1 in 1id"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-C1 (cts) (1id)",
       "pv": "1id:S1:scaler1_cts3.D",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C1 (cts) (1ide2)",
       "pv": "1ide2:S1:scaler1_cts4.C",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C2 (cts) (1id)",
       "pv": "1id:S1:scaler1_cts4.A",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C2 (cts) (1ide2)",
       "pv": "1ide2:S1:scaler1_cts4.D",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C3 (cts) (1id)",
       "pv": "1id:S1:scaler1_cts4.B",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C3 (cts) (1ide2)",
       "pv": "1ide2:S1:scaler1_cts5.C",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C4 (cts) (1id)",
       "pv": "1id:S1:scaler1_cts4.C",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C4 (cts) (1ide2)",
       "pv": "1ide2:S1:scaler1_cts5.D",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C5 (cts)",
       "pv": "1id:S1:scaler1_cts4.D",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C6 (cts)",
       "pv": "1id:S1:scaler1_cts5.A",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "mut (-)",
       "pv": "1id:S1:scaler1_calc8.VAL",
-      "group": "IC from scaler1 in 1id"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-E1 (cts)",
       "pv": "1ide2:S1:scaler1_cts1.C",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-E2 (cts)",
       "pv": "1ide2:S1:scaler1_cts1.D",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-E3 (cts)",
       "pv": "1ide2:S1:scaler1_cts2.A",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-E4 (cts)",
       "pv": "1ide2:S1:scaler1_cts2.C",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-E5 (cts)",
       "pv": "1ide2:S1:scaler1_cts2.B",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-E6 (cts)",
       "pv": "1ide2:S1:scaler1_cts2.D",
-      "group": "IC from scaler1 in 1ide"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC-B5e (cts)",
       "pv": "1ide2:S1:scaler1_cts4.A",
-      "group": "IC from scaler1 in 1ide"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-B8e (cts)",
       "pv": "1ide2:S1:scaler1_cts4.B",
-      "group": "IC from scaler1 in 1ide"
+      "group": "B Hutch Ion Chambers"
     },
     {
       "name": "IC-C1e (cts)",
       "pv": "1ide2:S1:scaler1_cts4.C",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "IC-C2e (cts)",
       "pv": "1ide2:S1:scaler1_cts4.D",
-      "group": "IC from scaler1 in 1ide"
+      "group": "C Hutch Ion Chambers"
     },
     {
       "name": "world angle (urad)",
@@ -2178,52 +2178,52 @@
     {
       "name": "E-hutch upstream H size",
       "pv": "1ide1:Kohzu_E_upHsize.VAL",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "E-hutch upstream V size",
       "pv": "1ide1:Kohzu_E_upVsize.VAL",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "E-hutch downstream H size",
       "pv": "1ide1:Kohzu_E_dnHsize.VAL",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "E-hutch downstream V size",
       "pv": "1ide1:Kohzu_E_dnVsize.VAL",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "C-hutch upstream H size",
       "pv": "1idc:KslitusHsize.VAL",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "C-hutch upstream V size",
       "pv": "1idc:KslitusVsize.VAL",
-      "group": "Slits"
+      "group": "C Upstream Slits"
     },
     {
       "name": "C-hutch downstream H size",
       "pv": "1idc:KslitdsHsize.VAL",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "C-hutch downstream V size",
       "pv": "1idc:KslitdsVsize.VAL",
-      "group": "Slits"
+      "group": "C Downstream Slits"
     },
     {
       "name": "B-hutch H size",
       "pv": "1idb:SlitHsize.VAL",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "B-hutch V size",
       "pv": "1idb:SlitVsize.VAL",
-      "group": "Slits"
+      "group": "B Slits"
     },
     {
       "name": "DAC1_3",
@@ -2813,22 +2813,22 @@
     {
       "name": "A White Beam H size (mm)",
       "pv": "1ida:Slit1Ht2.C",
-      "group": "Slits"
+      "group": "White Beam Slits"
     },
     {
       "name": "A White Beam H pos (mm)",
       "pv": "1ida:Slit1Ht2.D",
-      "group": "Slits"
+      "group": "White Beam Slits"
     },
     {
       "name": "A White Beam V size (mm)",
       "pv": "1ida:Slit1Vt2.C",
-      "group": "Slits"
+      "group": "White Beam Slits"
     },
     {
       "name": "A White Beam V pos (mm)",
       "pv": "1ida:Slit1Vt2.D",
-      "group": "Slits"
+      "group": "White Beam Slits"
     },
     {
       "name": "C keyence1",
