@@ -77,6 +77,32 @@ def run_remote_command(host, user, setup_cmd, python_code, timeout=30):
         if result.returncode != 0:
             raise RuntimeError(f"Remote command failed: {result.stderr}")
         return json.loads(result.stdout)
+    except subprocess.TimeoutExpired:
+        # Distinguished from the generic "SSH execution failed" below: SSH
+        # itself connected fine here (a timeout means the *remote* python
+        # process didn't finish in time, not that the connection couldn't
+        # be established) - conflating the two as one generic message reads
+        # like a network/auth problem when it's actually the remote call
+        # (e.g. a DM API query) itself being slow or stuck. Confirmed
+        # directly against a real, reproducible case: one specific
+        # experiment's DM upload-status query hung past this timeout on
+        # every attempt while every other experiment's identical query
+        # returned in well under a second - a server-side condition on
+        # that experiment, not anything wrong with the SSH/env setup here.
+        # That specific case turned out to be an already-archived
+        # experiment (confirmed via DM Station's Experiments tab) - called
+        # out explicitly here since it's easy to forget an experiment's
+        # archive status between sessions, unlike dm-upload's own "already
+        # archived" error (see dm_integrity_gui.py's _on_upload_error),
+        # Scan/Verify MD5's DM queries have no equivalent fast check to
+        # surface it any earlier than this timeout.
+        raise RuntimeError(
+            f"Remote command on {remote_spec} timed out after {timeout}s - the SSH connection "
+            "itself succeeded, but the remote command didn't finish in time (e.g. a slow or "
+            "stuck DM API call). Retrying with a longer timeout may help; if it times out "
+            "consistently for the same experiment, the hang is most likely on DM's end for "
+            "that specific experiment (e.g. it may already be archived - check DM Station's "
+            "Experiments/Uploads tabs), not in this tool.")
     except json.JSONDecodeError:
         raise RuntimeError(f"Remote command returned invalid JSON: {result.stdout}")
     except Exception as e:
@@ -143,7 +169,15 @@ def run_shell_command(host, user, command, timeout=15):
         capture_output=True, text=True, timeout=timeout,
     )
     if result.returncode != 0:
-        raise RuntimeError(f"Remote command failed: {result.stderr}")
+        # Include stdout as well as stderr: CLI tools commonly print their
+        # actual failure reason (a traceback, a "no such experiment"
+        # message) to stdout rather than stderr, and a caller here has no
+        # other way to see it - confirmed directly, an earlier version that
+        # only surfaced stderr showed a bare "Remote command failed: " with
+        # nothing after it for a dm-upload failure whose real error was on
+        # stdout, indistinguishable from every other failure mode.
+        detail = "\n".join(part for part in (result.stdout.strip(), result.stderr.strip()) if part)
+        raise RuntimeError(f"Remote command failed (exit {result.returncode}): {detail}")
     return result
 
 

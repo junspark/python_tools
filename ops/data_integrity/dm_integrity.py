@@ -204,7 +204,7 @@ release_remote_lock = rj.release_remote_lock
 
 
 def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=None, remote_user=None,
-                       setup_script="/dm/1id/etc/dm.setup.sh"):
+                       setup_script="/dm/1id/etc/dm.setup.sh", timeout=90):
     """
     Query DM upload status. Returns dict with keys:
     status (str), n_files (int), n_completed (int), n_errors (int),
@@ -214,6 +214,13 @@ def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=Non
     SSH, sourcing setup_script first - this MUST match the target beamline
     (e.g. ~/bin/dm_setup_20ide.sh for an s20 experiment); the 1-ID default
     only happens to work when querying s1.
+
+    timeout default raised from run_remote_command's own 30s default to
+    90s: confirmed directly that DM's listUploadRecords call can be slow
+    (or, for at least one specific real experiment, effectively hang) well
+    past 30s while every other experiment's identical query returns in
+    under a second - 30s was cutting off borderline-slow-but-real
+    responses, not just genuinely stuck ones.
     """
     if remote_host:
         # Execute remotely
@@ -238,7 +245,7 @@ except Exception as e:
     print(json.dumps({{"status": "error", "n_files": 0, "n_completed": 0, "n_errors": -1, "upload_complete": False, "error_msg": str(e)}}))
 """
         setup_cmd = f"source {setup_script} && conda activate dm-user"
-        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code)
+        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code, timeout=timeout)
 
     # Local execution
     if experimentDaqApi is None:
@@ -291,7 +298,7 @@ except Exception as e:
 
 
 def get_catalog_files(experiment_name, dataset_name=None, station_name="SOJOURNER", remote_host=None, remote_user=None,
-                       setup_script="/dm/1id/etc/dm.setup.sh"):
+                       setup_script="/dm/1id/etc/dm.setup.sh", timeout=180):
     """
     Fetch DM catalog file metadata.
     Returns dict {experimentFilePath: {"size": fileSize, "md5": md5Sum}}.
@@ -299,6 +306,11 @@ def get_catalog_files(experiment_name, dataset_name=None, station_name="SOJOURNE
     If remote_host is provided, executes this query on the remote host via
     SSH, sourcing setup_script first - see get_upload_status's docstring on
     why this must match the target beamline.
+
+    timeout defaults higher than get_upload_status's (180s vs 90s): this
+    call pages through the whole catalog (see the skip/limit loop below),
+    so a large experiment's legitimate total query time scales with file
+    count in a way a single listUploadRecords lookup never does.
     """
     if remote_host:
         # Execute remotely
@@ -340,7 +352,7 @@ except Exception as e:
     print(json.dumps({{}}))
 """
         setup_cmd = f"source {setup_script} && conda activate dm-user"
-        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code)
+        return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code, timeout=timeout)
 
     # Local execution
     if fileCatApi is None or datasetCatApi is None:
