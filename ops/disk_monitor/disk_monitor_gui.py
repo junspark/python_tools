@@ -41,6 +41,115 @@ LEVEL_COLORS = {
 }
 
 
+def _center_on_parent(dialog, parent):
+    """Explicitly position dialog over parent's current on-screen geometry
+    before it's shown, rather than trusting the window manager/compositor's
+    default placement for a new top-level window - confirmed necessary on
+    at least one real deployment: a Wayland/Mutter compositor with an
+    unusual multi-monitor layout placed brand-new, position-less windows
+    entirely off every monitor. An explicit move() issued after a window
+    is already mapped gets silently overridden by that same compositor,
+    but a position requested before the window is first shown is honored.
+    No-op if parent isn't currently visible - nothing sensible to center on
+    yet."""
+    if parent is None or not parent.isVisible():
+        return
+    # adjustSize() first, but ONLY for a dialog that never explicitly
+    # resize()d itself (e.g. AddTargetDialog, sized purely by its layout) -
+    # it otherwise still reports a placeholder width/height at this point.
+    # WA_Resized is set automatically by resize() (Qt's own way of
+    # tracking "has this widget been given an explicit size"), so this
+    # skips adjustSize() for a dialog like TopFoldersDialog that
+    # deliberately resized itself larger than its layout's natural
+    # minimum - calling adjustSize() there would shrink it back down.
+    if not dialog.testAttribute(QtCore.Qt.WA_Resized):
+        dialog.adjustSize()
+    parent_geo = parent.window().frameGeometry()
+    x = parent_geo.center().x() - dialog.width() // 2
+    y = parent_geo.center().y() - dialog.height() // 2
+    # Clamp the WHOLE rectangle inside whichever screen the parent window
+    # is actually on - not just floor negative coordinates. Confirmed
+    # directly not enough on a real unusual multi-monitor layout (mixed
+    # sizes/offsets): centering on parent_geo's center point can still
+    # place a dialog's edges past that monitor's actual bounds even though
+    # the center point itself looks reasonable, landing it partly or
+    # entirely on/past a neighboring monitor with a different origin.
+    # screenAt(parent_geo.center()) - not primaryScreen() - because the
+    # window actually being centered on may not be on the primary screen
+    # at all in a multi-monitor setup.
+    screen = QtWidgets.QApplication.screenAt(parent_geo.center()) or QtWidgets.QApplication.primaryScreen()
+    if screen is not None:
+        avail = screen.availableGeometry()
+        x = max(avail.x(), min(x, avail.x() + avail.width() - dialog.width()))
+        y = max(avail.y(), min(y, avail.y() + avail.height() - dialog.height()))
+    else:
+        x, y = max(0, x), max(0, y)
+    dialog.move(x, y)
+    # WindowStaysOnTopHint - set before the show() below, not after:
+    # confirmed directly that even a completely unrelated, bare Xlib app
+    # (xterm, no Qt/GTK involved) is unreliably mapped/focused on this
+    # remote X11-forwarding setup, while a modern GTK app (gedit) shows up
+    # every time - a window-manager/focus-stealing-prevention heuristic
+    # neither plain Xlib nor Qt's xcb backend satisfies the way GTK's
+    # does, not a bug specific to any one dialog here. Staying-on-top
+    # bypasses that heuristic entirely rather than politely requesting
+    # around it via raise_()/activateWindow() alone, which were not
+    # sufficient on their own.
+    dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+    # show()/raise_()/activateWindow() here, not left to the caller's
+    # later exec_(): plain show()/exec_() can map a window at a perfectly
+    # valid, on-screen position on this display setup without ever
+    # bringing it to the front - no error, no crash, the dialog is simply
+    # invisible until manually found. exec_() on an already-shown widget
+    # is fine (it just switches on modality and starts the local event
+    # loop), so doing the actual mapping here - right after positioning,
+    # before the caller's exec_() call - is what lets raise_()/
+    # activateWindow() apply to a window that actually exists yet, rather
+    # than being no-ops against a window that isn't mapped until exec_()
+    # gets to it.
+    dialog.show()
+    dialog.raise_()
+    dialog.activateWindow()
+
+
+def _message_box(icon, parent, title, text, buttons=QtWidgets.QMessageBox.Ok, default_button=None):
+    """Drop-in replacement for QtWidgets.QMessageBox.information/warning/
+    critical/question's static convenience methods, with the same
+    explicit-positioning fix _center_on_parent applies to every custom
+    QDialog here - those static methods build and exec_ their own
+    QMessageBox internally with no hook to position it first, so on the
+    same Wayland/Mutter setup _center_on_parent exists for, a plain
+    QMessageBox.information() call is just as invisible as an unpositioned
+    QDialog would be (confirmed directly in data_integrity's dm_integrity_gui.py -
+    see its own _message_box)."""
+    box = QtWidgets.QMessageBox(icon, title, text, buttons, parent)
+    if default_button is not None:
+        box.setDefaultButton(default_button)
+    _center_on_parent(box, parent)
+    return box.exec_()
+
+
+def _choose_directory(parent, title, start_dir=""):
+    """Drop-in replacement for QtWidgets.QFileDialog.getExistingDirectory's
+    static convenience method, for the same reason _message_box replaces
+    QMessageBox's (confirmed directly in data_integrity's dm_integrity_gui.py -
+    "Browse..." reproduced the identical no-error-nothing-visible symptom).
+    DontUseNativeDialog matters here specifically: getExistingDirectory
+    defaults to the platform's own native picker when available, which is
+    a separate windowing stack outside Qt's show()/raise_()/
+    activateWindow() control - _center_on_parent can't do anything for a
+    window it was never involved in creating."""
+    dialog = QtWidgets.QFileDialog(parent, title, start_dir)
+    dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+    dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+    _center_on_parent(dialog, parent)
+    if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        selected = dialog.selectedFiles()
+        return selected[0] if selected else ""
+    return ""
+
+
 def _cron_status(script_path):
     """
     Best-effort, read-only check of whether crond looks alive and a job
@@ -264,7 +373,7 @@ class AddTargetDialog(QtWidgets.QDialog):
         layout.addWidget(buttons)
 
     def _browse(self):
-        path = QtWidgets.QFileDialog.getExistingDirectory(self, "Select directory")
+        path = _choose_directory(self, "Select directory")
         if path:
             self.path_edit.setText(path)
 
@@ -416,12 +525,13 @@ class DiskMonitorPanel(QtWidgets.QWidget):
 
     def add_path(self):
         dialog = AddTargetDialog(self)
+        _center_on_parent(dialog, self)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
         target = dialog.target()
         if not target["name"] or not target["path"]:
-            QtWidgets.QMessageBox.warning(self, "Missing fields", "Name and path are required.")
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Missing fields", "Name and path are required.")
             return
 
         self.cfg["targets"].append(target)
@@ -453,34 +563,35 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         statuses = dm.check_targets(self.cfg)
         valid = [s for s in statuses if s.get("level") != "error"]
         if not valid:
-            QtWidgets.QMessageBox.warning(self, "No targets", "No valid targets to test.")
+            _message_box(QtWidgets.QMessageBox.Warning, self, "No targets", "No valid targets to test.")
             return
 
         status = dict(valid[rows[0]] if rows else valid[0])
         status["level"] = "alert"
         ok = dm.send_alert_email(self.cfg, status, all_statuses=valid)
         if ok:
-            QtWidgets.QMessageBox.information(self, "Test email", "Test alert sent (or printed to console).")
+            _message_box(QtWidgets.QMessageBox.Information, self, "Test email", "Test alert sent (or printed to console).")
         else:
-            QtWidgets.QMessageBox.critical(self, "Test email failed", "Failed to send test email; see console.")
+            _message_box(QtWidgets.QMessageBox.Critical, self, "Test email failed", "Failed to send test email; see console.")
 
     def show_top_folders(self):
-        """Open TopFoldersDialog for the selected row's target (or the
-        first target if none selected) - same row-selection convention as
-        send_test_email above, and the same row-index-matches-cfg[targets]-
-        order assumption refresh() relies on."""
+        """Manual, on-demand deep dive for one target - the full recursive
+        breakdown of every top-level subfolder's size, not just the whole-
+        target total shown in the table. Only enabled per-row (needs a
+        selection) since running it for every target at once would be a
+        multi-target concurrent `du` storm; also relies on the single-
+        selection-row assumption refresh() relies on."""
         targets = self.cfg.get("targets", [])
         if not targets:
-            QtWidgets.QMessageBox.warning(self, "No targets", "No monitored paths configured.")
+            _message_box(QtWidgets.QMessageBox.Warning, self, "No targets", "No monitored paths configured.")
             return
 
         rows = sorted({idx.row() for idx in self.table.selectedIndexes()})
         row = rows[0] if rows else 0
-        if row >= len(targets):
-            row = 0
         target = targets[row]
 
         dialog = TopFoldersDialog(self, target["name"], target["path"])
+        _center_on_parent(dialog, self)
         dialog.exec_()
 
 

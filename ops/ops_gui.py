@@ -30,7 +30,7 @@ import pv_logger_gui as plg
 import dm_integrity_gui as dig
 
 try:
-    from PyQt5 import QtWidgets
+    from PyQt5 import QtCore, QtGui, QtWidgets
 except ImportError:
     sys.exit(
         "PyQt5 is required for the GUI but is not installed.\n"
@@ -81,6 +81,41 @@ class OpsGuiWindow(QtWidgets.QMainWindow):
         width = self._prefs.get("width", 1000)
         height = self._prefs.get("height", 500)
         self.resize(width, height)
+
+        # Explicit initial position, computed fresh every launch (never
+        # persisted - see the comment above) from whatever screen this
+        # launch actually has available - confirmed necessary on at least
+        # one real deployment: a Wayland/Mutter compositor with an unusual
+        # multi-monitor layout placed a brand-new, position-less top-level
+        # window entirely off every monitor by default. An explicit
+        # XMoveWindow issued after the window was already mapped was
+        # silently overridden by the compositor, but a position requested
+        # before the window is first shown is honored - Wayland compositors
+        # generally only exercise their own placement heuristic when the
+        # client hasn't already asked for somewhere specific.
+        #
+        # screenAt(cursor position), not primaryScreen(): confirmed
+        # directly on a second real deployment (a different, "unusual"
+        # multi-monitor arrangement - mixed sizes/offsets) that even this
+        # fix's own primaryScreen()-based centering could land the window
+        # somewhere unreachable, resurfacing the exact symptom this code
+        # already exists to prevent. Since this is a brand-new top-level
+        # window with no parent to anchor to, the mouse cursor's current
+        # screen is the best available proxy for "the monitor the user is
+        # actually looking at right now" - falls back to primaryScreen()
+        # only if the cursor position doesn't resolve to any screen.
+        screen = QtWidgets.QApplication.screenAt(QtGui.QCursor.pos()) or QtWidgets.QApplication.primaryScreen()
+        if screen is not None:
+            avail = screen.availableGeometry()
+            x = avail.x() + max(0, (avail.width() - width) // 2)
+            y = avail.y() + max(0, (avail.height() - height) // 2)
+            # Clamp the whole rectangle inside avail, not just the
+            # centering formula above - that formula alone still assumes
+            # width/height <= avail's, which needn't hold on an unusually
+            # small or oddly-shaped monitor.
+            x = max(avail.x(), min(x, avail.x() + avail.width() - width))
+            y = max(avail.y(), min(y, avail.y() + avail.height() - height))
+            self.move(x, y)
 
         # Each panel normally has its own "Font size" control; suppress
         # all and drive them from one control here instead, so there's a
@@ -139,6 +174,24 @@ def main(argv=None):
     app = QtWidgets.QApplication(sys.argv[:1])
     window = OpsGuiWindow(args.disk_config, args.pv_config, args.di_config)
     window.show()
+    # raise_()/activateWindow() in addition to show(): on a real remote
+    # multi-monitor setup (SSH X11 forwarding to a Windows X server,
+    # confirmed via a direct screen-geometry diagnostic), the window's
+    # computed position was entirely correct and squarely inside the
+    # primary monitor's bounds, yet it still didn't reliably come to the
+    # front - show() alone maps the window, but doesn't request it be
+    # raised above other windows or given input focus, and this display
+    # setup is deliberately conservative about which clients get to do
+    # that unprompted. Asking explicitly gives it the clearest possible
+    # signal that this is a fresh, user-facing window that should come to
+    # the front, rather than relying on whatever its default heuristic
+    # does for a plain show(). Doesn't fully eliminate the flakiness on
+    # this particular display pipeline (a relaunch can still occasionally
+    # need a retry), but is the correct, standard thing to ask for either
+    # way.
+    window.raise_()
+    window.activateWindow()
+
     return app.exec_()
 
 
