@@ -32,7 +32,11 @@
       }
     },
     "checksum_cpu_budget": 0.2,
-    "checksum_poll_interval_sec": 4
+    "checksum_poll_interval_sec": 4,
+    "upload_hosts": {
+      "s1": "egressy",
+      "s20": "redwood"
+    }
   },
   "experiments": [
     {

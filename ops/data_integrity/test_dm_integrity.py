@@ -231,6 +231,62 @@ def test_scan_local_files():
     print("✓")
 
 
+def test_upload_info_for_experiment():
+    """upload_info_for_experiment must route s1 and s20 to their real
+    dm-upload hosts (egressy/redwood, per dm_end_user_1id.sh/
+    dm_end_user_20ide.sh) - NOT wherever remote_hosts/checksum_hosts
+    already point (zion for s20's DM-read and checksum routing) - and
+    build a data_directory distinct from local_root."""
+    print("Testing upload_info_for_experiment()...", end=" ")
+
+    config = {
+        "settings": {
+            "local_bases": {"s1": "~/mnt/s1c", "s20": "~/mnt/s20a"},
+            "remote_hosts": {"s1": "egressy", "s20": "zion"},
+            "setup_scripts": {"s1": "~/bin/dm_setup_1id.sh dm", "s20": "~/bin/dm_setup_20ide.sh"},
+        }
+    }
+
+    host, user, setup_script, data_directory = di.upload_info_for_experiment(config, "s1", "pokharel_jul26")
+    assert host == "egressy"
+    assert user == "s1iduser"
+    assert setup_script == "~/bin/dm_setup_1id.sh dm"
+    assert data_directory == "/export/s1c/pokharel_jul26"
+
+    host, user, setup_script, data_directory = di.upload_info_for_experiment(config, "s20", "liss_jul26")
+    assert host == "redwood", "s20 upload must route to redwood, not zion (where DM reads/checksums go)"
+    assert user == "s20iduser"
+    assert data_directory == "/net/s20iddata/export/s20a/liss_jul26"
+
+    # An explicit settings.upload_hosts entry overrides the built-in default.
+    config["settings"]["upload_hosts"] = {"s1": "kodaly"}
+    host, _, _, _ = di.upload_info_for_experiment(config, "s1", "pokharel_jul26")
+    assert host == "kodaly"
+
+    # No local_bases entry for the beamline -> can't derive dserv -> None.
+    host, user, setup_script, data_directory = di.upload_info_for_experiment(config, "unknown_beamline", "x")
+    assert host is None and data_directory is None
+
+    print("✓")
+
+
+def test_dm_upload_command_quoting():
+    """dm_upload_command must shell-quote both arguments - an experiment
+    name or data_directory containing a space or shell metacharacter must
+    not be able to inject extra arguments into the command shown/run."""
+    print("Testing dm_upload_command() quoting...", end=" ")
+
+    cmd = di.dm_upload_command("exp; rm -rf /", "/export/s1c/exp; rm -rf /")
+    assert "dm-upload" in cmd
+    assert "--experiment=" in cmd and "--data-directory=" in cmd and "--reprocess" in cmd
+    # Shell-quoted means the dangerous text sits inside a single-quoted
+    # token, not as a bare, shell-interpretable "; rm -rf /".
+    assert "'exp; rm -rf /'" in cmd
+    assert "'/export/s1c/exp; rm -rf /'" in cmd
+
+    print("✓")
+
+
 if __name__ == "__main__":
     try:
         test_compare()
@@ -240,6 +296,8 @@ if __name__ == "__main__":
         test_save_and_list_records()
         test_scan_local_files()
         test_get_upload_status_mock()
+        test_upload_info_for_experiment()
+        test_dm_upload_command_quoting()
         print("\nAll tests passed! ✓")
     except Exception as e:
         print(f"\nTest failed: {e}")

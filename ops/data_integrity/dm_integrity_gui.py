@@ -698,6 +698,38 @@ class _ChecksumStopWorker(QtCore.QObject):
             self.error.emit(str(e))
 
 
+class _DmUploadWorker(QtCore.QObject):
+    """Runs `dm-upload --reprocess` for one experiment, off the GUI thread
+    (an SSH round trip to the beamline's designated upload host - see
+    dm_integrity.upload_info_for_experiment for why that host differs from
+    where DM catalog reads/checksum jobs are routed). This only confirms
+    the upload request was accepted by DM - DM's own backend does the
+    actual data transfer/cataloging asynchronously from there, the same
+    way the beamlines' own dm_end_user_*.sh scripts treat it (fire the
+    command, don't wait for the archive to finish ingesting). done carries
+    dm-upload's own stdout - the only place the upload/job id DM prints on
+    acceptance is available; discarding it left no way to look the upload
+    back up in DM afterward."""
+
+    done = QtCore.pyqtSignal(str)
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self, host, user, setup_script, exp_name, data_directory):
+        super().__init__()
+        self.host = host
+        self.user = user
+        self.setup_script = setup_script
+        self.exp_name = exp_name
+        self.data_directory = data_directory
+
+    def run(self):
+        try:
+            result = di.run_dm_upload(self.host, self.user, self.setup_script, self.exp_name, self.data_directory)
+            self.done.emit(result.stdout or "")
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class AddExperimentDialog(QtWidgets.QDialog):
     """Manually add an experiment to the dashboard that auto-discovery
     didn't pick up - either because it's not among the most-recent
@@ -834,7 +866,9 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self.font_size = 10
         self.last_reports = {}
         self._row_buttons = {}
+        self._row_upload_buttons = {}
         self._row_history_labels = {}
+        self._upload_workers = {}
         self._active_workers = {}
         # Detached checksum jobs (Verify MD5): _tracked_checksum_jobs holds
         # the last-known status dict per experiment, refreshed by the poll
@@ -939,20 +973,21 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             self._log(f"Error discovering experiments: {str(e)[:100]}")
 
     def _ensure_six_column_layout(self):
-        """Switch to the 6-column layout (adds Beamline and History) - the
-        base table from _init_ui only has 5 columns, and
+        """Switch to the full 7-column layout (adds Beamline, History, and
+        DM Upload) - the base table from _init_ui only has 5 columns, and
         setHorizontalHeaderLabels does NOT grow columnCount on its own, so
         without this the extra columns (Actions sliding to column 4,
-        History needing column 5) would silently never appear. A no-op once already at 6 columns - needed
+        History needing column 5, DM Upload needing column 6) would
+        silently never appear. A no-op once already at 7 columns - needed
         both by bulk discovery and by add_experiment(), since a manual add
         can be the very first row (e.g. local_bases found nothing, so bulk
         discovery never got past the 5-column table _init_ui starts
         with)."""
-        if self.table_widget.columnCount() >= 6:
+        if self.table_widget.columnCount() >= 7:
             return
-        self.table_widget.setColumnCount(6)
+        self.table_widget.setColumnCount(7)
         self.table_widget.setHorizontalHeaderLabels([
-            "Expid", "Beamline", "Upload Status", "Files", "Actions", "History"
+            "Expid", "Beamline", "Upload Status", "Files", "Actions", "History", "DM Upload"
         ])
 
     def _load_manual_experiments(self, existing_names):
@@ -1053,6 +1088,17 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         history_btn = QtWidgets.QPushButton("History")
         history_btn.clicked.connect(lambda checked, e=exp_name: self._on_history(e))
         self.table_widget.setCellWidget(row, 5, history_btn)
+
+        # DM Upload - pushes local_root's data into Sojourner via
+        # `dm-upload --reprocess` (see _on_upload_to_dm). Kept as its own
+        # column rather than folded into Actions: unlike Scan/Verify MD5/
+        # Stop (all read-only or self-contained), this writes into shared
+        # production infrastructure, so it gets its own confirmation flow
+        # and shouldn't be visually lumped in with the routine buttons.
+        upload_btn = QtWidgets.QPushButton("Upload to DM")
+        upload_btn.clicked.connect(lambda checked, e=exp_name: self._on_upload_to_dm(e))
+        self._row_upload_buttons[exp_name] = upload_btn
+        self.table_widget.setCellWidget(row, 6, upload_btn)
 
         # Deliberately NOT previewing DM status here: local_root is
         # already known (that's the point of local discovery / the
@@ -1252,11 +1298,122 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         if row is not None:
             self.table_widget.removeRow(row)
         self._row_buttons.pop(exp_name, None)
+        self._row_upload_buttons.pop(exp_name, None)
         self._row_history_labels.pop(exp_name, None)
         self.last_reports.pop(exp_name, None)
 
         self._recompute_aggregate_summary()
         self._log(f"Removed experiment '{exp_name}'")
+
+    def _on_upload_to_dm(self, exp_name):
+        """Trigger `dm-upload --reprocess` for exp_name, to push local
+        files into Sojourner and resolve a discrepancy a Scan/Verify MD5
+        found (missing files, size mismatches, etc.) - the same command
+        the beamlines' own end-of-experiment scripts run, just without the
+        DAQ-stop/detector-rsync/metadata-copy steps around it, which are
+        experiment-teardown-specific and out of scope for "fix Sojourner".
+        Unlike Scan/Verify MD5 (read-only) or Stop (only affects a job this
+        tool itself launched), this writes into shared production
+        infrastructure - hence the confirmation dialog spelling out the
+        exact command before it runs, rather than firing immediately.
+        """
+        if di is None:
+            return
+
+        beamline = self._beamline_for_exp(exp_name)
+        host, user, setup_script, data_directory = di.upload_info_for_experiment(self.config, beamline, exp_name)
+        if not host or not data_directory:
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Not configured",
+                f"No upload_hosts/local_bases entry configured for beamline '{beamline}' - can't determine "
+                "where to run dm-upload from or what data-directory to pass it.")
+            return
+
+        command_line = di.dm_upload_command(exp_name, data_directory)
+        reply = _message_box(
+            QtWidgets.QMessageBox.Question, self, "Upload to DM",
+            f"This pushes '{exp_name}' into Sojourner via DM, running as {user}@{host}:\n\n"
+            f"  {command_line}\n\n"
+            "This writes into the shared production archive and can't be undone from here. Continue?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        upload_btn = self._row_upload_buttons.get(exp_name)
+        if upload_btn:
+            upload_btn.setEnabled(False)
+        self._log(f"Uploading '{exp_name}' to DM (running in background)...")
+
+        thread = QtCore.QThread(self)
+        worker = _DmUploadWorker(host, user, setup_script, exp_name, data_directory)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.done.connect(lambda output: self._on_upload_done(exp_name, output))
+        worker.error.connect(lambda msg: self._on_upload_error(exp_name, msg))
+        worker.done.connect(thread.quit)
+        worker.error.connect(thread.quit)
+        thread.finished.connect(thread.deleteLater)
+        self._upload_workers[exp_name] = (thread, worker)
+        thread.start()
+
+    def _on_upload_done(self, exp_name, output):
+        """dm-upload prints an upload/job id on acceptance - shown here
+        (not just a generic "triggered" message) since that's the only
+        record of it; DM doesn't surface it anywhere else this tool
+        already queries. get_upload_status (what Scan/Verify MD5's
+        "Upload Status"/"Files" columns already show) is the way to check
+        progress afterward - no separate polling added here since that
+        path already exists."""
+        self._upload_workers.pop(exp_name, None)
+        upload_btn = self._row_upload_buttons.get(exp_name)
+        if upload_btn:
+            upload_btn.setEnabled(True)
+        output = output.strip()
+        self._log(
+            f"Upload triggered for '{exp_name}'. dm-upload output: {output or '(none)'} - "
+            "re-run Scan/Verify MD5 in a bit to see it reflected in Upload Status/Files.")
+        _message_box(
+            QtWidgets.QMessageBox.Information, self, "Upload triggered",
+            f"dm-upload accepted the request for '{exp_name}'.\n\n"
+            f"Output:\n{output or '(dm-upload produced no output)'}\n\n"
+            "To check progress: re-run Scan or Verify MD5 for this row in a bit - both already "
+            "query DM's own upload status (the same listUploadRecords lookup DM's job id would "
+            "point at) and refresh the Upload Status/Files columns from it.")
+
+    def _on_upload_error(self, exp_name, msg):
+        self._upload_workers.pop(exp_name, None)
+        upload_btn = self._row_upload_buttons.get(exp_name)
+        if upload_btn:
+            upload_btn.setEnabled(True)
+        # dm-upload's own exit-15 message for this case ("Upload id ... is
+        # already active or pending for experiment ...") - confirmed
+        # directly against DM Station's own Uploads tab: this isn't a
+        # failure at all, it's DM correctly refusing a second concurrent
+        # reprocess while an earlier one (often from a prior click here) is
+        # still genuinely running. Logged distinctly so it doesn't read
+        # like something to retry or debug - Scan/Verify MD5 (not another
+        # Upload to DM click) or DM Station's Uploads tab is what actually
+        # shows its progress.
+        if "already active or pending" in msg:
+            self._log(
+                f"'{exp_name}' already has an upload in progress on DM (not a failure) - "
+                "check DM Station's Uploads tab for progress, or re-run Scan/Verify MD5 here "
+                "once it finishes.")
+            return
+        # dm-upload's own exit-16 message ("Experiment ... is already
+        # archived") - confirmed directly for a real experiment: DM refuses
+        # --reprocess entirely once an experiment has been archived, by
+        # design, not a transient failure. Nothing to retry here - if
+        # Sojourner is genuinely missing/mismatched files for an archived
+        # experiment, DM Upload from this tool can't fix it; that needs
+        # DM's own un-archive/restore path (outside this tool's scope).
+        if "already archived" in msg:
+            self._log(
+                f"'{exp_name}' is already archived in DM - archived experiments can't be "
+                "re-uploaded/reprocessed from here. If Sojourner is still missing files for it, "
+                "that needs DM's own un-archive process, not another Upload to DM attempt.")
+            return
+        self._log(f"Upload failed for '{exp_name}': {msg}")
 
     def _row_for_exp(self, exp_name):
         for row in range(self.table_widget.rowCount()):

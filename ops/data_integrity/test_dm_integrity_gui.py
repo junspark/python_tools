@@ -283,6 +283,93 @@ def test_stop_checksum_button_swaps_and_calls_systemctl_stop():
     print("✓")
 
 
+def test_upload_to_dm_button_confirms_and_calls_run_dm_upload():
+    """Clicking "Upload to DM" should ask for confirmation showing the
+    real command, then call run_dm_upload with the beamline's dedicated
+    upload host (not wherever checksum_hosts/remote_hosts already point)."""
+    print("Testing Upload to DM confirmation and run_dm_upload call...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        os.makedirs(os.path.join(s1_base, "test_jan24"))
+
+        config_path = os.path.join(tmpdir, "config.json")
+        config = {
+            "settings": {
+                "station_name": "SOJOURNER",
+                "records_dir": os.path.join(tmpdir, "records"),
+                "local_bases": {"s1": s1_base},
+                "setup_scripts": {"s1": "~/bin/dm_setup_1id.sh dm"},
+                "upload_hosts": {"s1": "egressy"},
+                "experiments_per_beamline": 3,
+            },
+        }
+        with open(config_path, "w") as f:
+            json.dump(config, f)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+        exp_name = "test_jan24"
+        assert panel._row_for_exp(exp_name) is not None
+        upload_btn = panel._row_upload_buttons[exp_name]
+        assert not upload_btn.isHidden()
+
+        calls = []
+
+        class _FakeCompletedProcess:
+            def __init__(self, stdout):
+                self.stdout = stdout
+
+        def _fake_run_dm_upload(host, user, setup_script, exp, data_directory, timeout=120):
+            calls.append((host, user, setup_script, exp, data_directory))
+            return _FakeCompletedProcess("Upload accepted: uploadId=0xdeadbeef\n")
+
+        # Upload's confirm dialog and its post-completion info dialog both go
+        # through the same _message_box choke point now (see dm_integrity_gui.
+        # _message_box) - one side_effect distinguishes them by icon rather
+        # than needing two separate mocks the way QMessageBox.question/
+        # information could be patched independently before.
+        message_box_calls = []
+
+        def _fake_message_box(icon, parent, title, text, buttons=QtWidgets.QMessageBox.Ok, default_button=None):
+            message_box_calls.append((icon, parent, title, text, buttons, default_button))
+            return QtWidgets.QMessageBox.Yes
+
+        with mock.patch.object(dig.di, "run_dm_upload", _fake_run_dm_upload), \
+             mock.patch.object(dig, "_message_box", side_effect=_fake_message_box):
+            panel._on_upload_to_dm(exp_name)
+            for _ in range(200):
+                app.processEvents()
+                if exp_name not in panel._upload_workers:
+                    break
+                time.sleep(0.01)
+            app.processEvents()
+            time.sleep(0.05)
+            app.processEvents()
+
+        question_calls = [c for c in message_box_calls if c[0] == QtWidgets.QMessageBox.Question]
+        info_calls = [c for c in message_box_calls if c[0] == QtWidgets.QMessageBox.Information]
+
+        assert question_calls, "should confirm before running an upload"
+        confirm_text = question_calls[0][3]
+        assert "dm-upload" in confirm_text, "confirmation should show the real command, not just describe it"
+
+        assert exp_name not in panel._upload_workers
+        assert len(calls) == 1, f"expected exactly one run_dm_upload call, got {calls}"
+        host, user, setup_script, exp, data_directory = calls[0]
+        assert host == "egressy" and user == "s1iduser"
+        assert data_directory == "/export/s1c/test_jan24"
+        assert upload_btn.isEnabled(), "button should re-enable once the upload request completes"
+
+        assert info_calls, "should surface dm-upload's own output (e.g. the job id it prints)"
+        info_text = info_calls[0][3]
+        assert "0xdeadbeef" in info_text, "the job id dm-upload printed must be shown, not discarded"
+
+        app.quit()
+
+    print("✓")
+
+
 def test_remove_experiment_only_offered_for_manual_rows():
     """Only manually-added rows get a Remove button; removing one deletes
     its row and its beamline-tagged config entry, without touching
@@ -461,6 +548,7 @@ if __name__ == "__main__":
         test_add_experiment_persists_and_appends_row()
         test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates()
         test_stop_checksum_button_swaps_and_calls_systemctl_stop()
+        test_upload_to_dm_button_confirms_and_calls_run_dm_upload()
         test_remove_experiment_only_offered_for_manual_rows()
         test_history_summary_indicator_populates_and_refreshes()
         test_history_detail_dialog_lists_problem_files()

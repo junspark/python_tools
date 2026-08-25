@@ -121,6 +121,63 @@ def remote_info_for_beamline(config, beamline):
     return remote_host, default_user, setup_script
 
 
+_BEAMLINE_UPLOAD_DEFAULTS = {
+    # (host, user, data_directory_template) for `dm-upload --reprocess` -
+    # confirmed directly from the beamlines' own end-of-experiment scripts
+    # (dm_end_user_1id.sh / dm_end_user_20ide.sh). The host is NOT always
+    # the same as remote_info_for_beamline's DM-query host: s1's "dm" VM
+    # path happens to match (egressy, also used for reads), but s20's
+    # dm-upload must run from redwood specifically, not zion (where s20's
+    # DM catalog reads are routed) - this is a real, beamline-mandated SOP
+    # difference, not an oversight to reconcile away. data_directory_
+    # template is filled in with {dserv} (s1c/s20a, from settings.
+    # local_bases' basename) and {expid} - distinct from local_root, which
+    # is where this tool reads files FROM, not DM's own view of the path.
+    "s1": ("egressy", "s1iduser", "/export/{dserv}/{expid}"),
+    "s20": ("redwood", "s20iduser", "/net/s20iddata/export/{dserv}/{expid}"),
+}
+
+
+def upload_info_for_experiment(config, beamline, exp_name):
+    """(host, user, setup_script, data_directory) to run `dm-upload
+    --experiment=<exp_name> --data-directory=<data_directory> --reprocess`
+    for exp_name - see _BEAMLINE_UPLOAD_DEFAULTS for why this needs its own
+    host routing (settings.upload_hosts) separate from remote_hosts
+    (DM-query routing) and checksum_hosts (where hashing runs). Reuses
+    settings.setup_scripts - the same DM environment already used for
+    catalog reads has dm-upload on its PATH once activated. Returns all
+    None if beamline has no configured local_bases entry (dserv can't be
+    derived) or no upload default exists for it.
+    """
+    settings = config.get("settings", {})
+    default_host, default_user, template = _BEAMLINE_UPLOAD_DEFAULTS.get(beamline, (None, None, None))
+    host = settings.get("upload_hosts", {}).get(beamline, default_host)
+    local_base = settings.get("local_bases", {}).get(beamline)
+    if not host or not template or not local_base:
+        return None, None, None, None
+    _, _, setup_script = remote_info_for_beamline(config, beamline)
+    dserv = os.path.basename(local_base.rstrip("/"))
+    data_directory = template.format(dserv=dserv, expid=exp_name)
+    return host, default_user, setup_script, data_directory
+
+
+def dm_upload_command(exp_name, data_directory):
+    """The literal `dm-upload` invocation - a separate function so the GUI
+    can show the exact command in a confirmation dialog before running it,
+    not just describe it in prose."""
+    return f"dm-upload --experiment={shlex.quote(exp_name)} --data-directory={shlex.quote(data_directory)} --reprocess"
+
+
+def run_dm_upload(host, user, setup_script, exp_name, data_directory, timeout=120):
+    """Trigger a DM upload/reprocess for exp_name on host, as user, after
+    sourcing setup_script - the same "source <script> && conda activate
+    dm-user" environment remote_info_for_beamline's callers already rely
+    on to reach DM's Python API also has the dm-upload CLI on PATH.
+    """
+    inner = f"source {setup_script} && conda activate dm-user && {dm_upload_command(exp_name, data_directory)}"
+    return run_shell_command(host, user, "bash -c {}".format(shlex.quote(inner)), timeout=timeout)
+
+
 def beamline_for_path(local_bases, local_root):
     """Best-effort beamline ("s1"/"s20"/...) for local_root: whichever
     local_bases entry it falls under. None if local_root doesn't fall
