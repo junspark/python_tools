@@ -64,16 +64,27 @@ def test_top_level_breakdown_bad_path():
 def test_spawn_du_cancellable():
     """The GUI needs to be able to kill a scan mid-flight (see
     disk_monitor_gui.py's _TopFoldersWorker.cancel) - exercise that same
-    spawn-then-kill sequence directly against a real, large-ish temp
-    directory, confirming the process actually dies and communicate()
-    returns instead of hanging."""
+    spawn-then-kill sequence directly against a real temp directory,
+    confirming the process actually dies and communicate() returns
+    instead of hanging.
+
+    Found flaky with a single small file: `du` over ~10KB in one file can
+    complete before kill() is even called, so the assertion below raced
+    against du's own natural exit (confirmed directly - reproduced both a
+    failure and, moments later, passes, with returncode 0 on the failing
+    run). Several thousand files across nested subdirectories makes du's
+    real recursive stat() traversal take measurably longer than the
+    microseconds between Popen() returning and kill() being called, so
+    the kill reliably lands while it's still running."""
     print("Testing spawn_du() can be killed before it finishes...", end=" ")
 
     with tempfile.TemporaryDirectory() as td:
-        sub = os.path.join(td, "sub")
-        os.makedirs(sub)
-        with open(os.path.join(sub, "data.bin"), "wb") as f:
-            f.write(b"\0" * 10_000)
+        for i in range(50):
+            sub = os.path.join(td, f"sub{i}")
+            os.makedirs(sub)
+            for j in range(100):
+                with open(os.path.join(sub, f"f{j}.bin"), "wb") as f:
+                    f.write(b"\0" * 100)
 
         proc = dm.spawn_du(td)
         proc.kill()

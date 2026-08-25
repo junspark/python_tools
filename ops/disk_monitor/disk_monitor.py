@@ -108,10 +108,40 @@ def spawn_du(path):
     the process and kill it early, instead of being stuck inside a single
     blocking subprocess.run() call with no way to interrupt it. Raises
     RuntimeError if `du` itself isn't on PATH.
+
+    -D (--dereference-args) matters here: several real monitored targets
+    are themselves symlinks (e.g. ~/mnt/s20a -> /net/s20iddata/export/s20a,
+    or /home/beams/PARKJS -> /home/beams3/PARKJS) - confirmed directly that
+    without it, du treats a symlink command-line argument as a leaf and
+    reports only its target's total, never descending into it at all, so
+    --max-depth=1 silently produced zero subdirectory rows for exactly
+    these targets ("No subdirectories found" for genuinely large, populated
+    mounts). Deliberately -D and not -L (--dereference, which follows
+    *every* symlink encountered anywhere in the walk, not just the
+    top-level argument): confirmed directly that -L chases nested symlinks
+    too and can hit "Too many levels of symbolic links" or wander into an
+    unrelated filesystem reachable via some inner symlink - -D dereferences
+    only the path given here, nothing found while walking it.
+
+    Run under `ionice -c3` (idle I/O class - only gets disk bandwidth when
+    nothing else wants it) and `nice -n 19` (lowest CPU priority) when
+    available: this is a full recursive walk of a whole mount, potentially
+    multi-TB, and reported directly to make the rest of the GUI sluggish
+    (including switching tabs in ops_gui, a separate tab from disk_monitor
+    entirely) while it ran - the *regular* fast poll's plain statvfs() call
+    against the same NFS-mounted targets was getting caught behind this
+    scan's sustained I/O load on the same server, even though the two run
+    on different threads (this isn't a GIL/threading problem, the NFS
+    server itself was the shared, contended resource). Falls back to a
+    bare `du` if ionice/nice aren't on PATH rather than failing outright -
+    lower priority is a nice-to-have, not a requirement for correctness.
     """
+    prefix = []
+    if shutil.which("ionice") and shutil.which("nice"):
+        prefix = ["ionice", "-c3", "nice", "-n", "19"]
     try:
         return subprocess.Popen(
-            ["du", "--max-depth=1", "-b", "--time", "--time-style=+%s", path],
+            prefix + ["du", "--max-depth=1", "-b", "--time", "--time-style=+%s", "-D", path],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
     except FileNotFoundError:
