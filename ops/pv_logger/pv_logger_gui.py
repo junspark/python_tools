@@ -210,11 +210,11 @@ DEVICE_CATEGORIES = [
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
     ]),
-    ("Optics / Lenses", [
-        "B Hutch Lenses", "C Hutch Lenses",
+    ("B Lens Stacks", [
+        "L1", "L2", "RL", "CRL1", "CRL2",
     ]),
     ("C Lens Stacks", [
-        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7",
+        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7", "LC",
     ]),
     ("D Lens Stacks", [
         "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",

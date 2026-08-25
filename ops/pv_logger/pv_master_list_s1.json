@@ -139,62 +139,62 @@
     {
       "name": "L1piv",
       "pv": "1idb:m47.RBV",
-      "group": "B Hutch Lenses"
+      "group": "L1"
     },
     {
       "name": "L1gap",
       "pv": "1idb:m29.RBV",
-      "group": "B Hutch Lenses"
+      "group": "L1"
     },
     {
       "name": "L2piv",
       "pv": "1idb:m22.RBV",
-      "group": "B Hutch Lenses"
+      "group": "L2"
     },
     {
       "name": "L2gap",
       "pv": "1idb:m24.RBV",
-      "group": "B Hutch Lenses"
+      "group": "L2"
     },
     {
       "name": "RLxb",
       "pv": "1idb:m54.RBV",
-      "group": "B Hutch Lenses"
+      "group": "RL"
     },
     {
       "name": "RLyb",
       "pv": "1idb:m44.RBV",
-      "group": "B Hutch Lenses"
+      "group": "RL"
     },
     {
       "name": "RLthb",
       "pv": "1idb:m53.RBV",
-      "group": "B Hutch Lenses"
+      "group": "RL"
     },
     {
       "name": "RLphib",
       "pv": "1idb:m49.RBV",
-      "group": "B Hutch Lenses"
+      "group": "RL"
     },
     {
       "name": "LCx",
       "pv": "1idc:m42.RBV",
-      "group": "C Hutch Lenses"
+      "group": "LC"
     },
     {
       "name": "LCy",
       "pv": "1idc:m43.RBV",
-      "group": "C Hutch Lenses"
+      "group": "LC"
     },
     {
       "name": "LCth",
       "pv": "1idc:m41.RBV",
-      "group": "C Hutch Lenses"
+      "group": "LC"
     },
     {
       "name": "LCphi",
       "pv": "1idc:m44.RBV",
-      "group": "C Hutch Lenses"
+      "group": "LC"
     },
     {
       "name": "atten",
@@ -544,22 +544,22 @@
     {
       "name": "CRL 1 Th",
       "pv": "1ida:m31.RBV",
-      "group": "B Hutch Lenses"
+      "group": "CRL1"
     },
     {
       "name": "CRL 1 Y",
       "pv": "1ida:m21.RBV",
-      "group": "B Hutch Lenses"
+      "group": "CRL1"
     },
     {
       "name": "CRL 2 Th",
       "pv": "1ida:m24.RBV",
-      "group": "B Hutch Lenses"
+      "group": "CRL2"
     },
     {
       "name": "CRL 2 Y",
       "pv": "1ida:m26.RBV",
-      "group": "B Hutch Lenses"
+      "group": "CRL2"
     },
     {
       "name": "Fedrl1 (mm) (1ide)",
