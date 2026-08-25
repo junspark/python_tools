@@ -60,7 +60,11 @@ it needs neither `ops` nor the DM environment on `zion`.
       "s20": {"host": "zion", "user": "s20iduser", "remote_base": "/home/beams/S20IDUSER/dm_record"}
     },
     "checksum_cpu_budget": 0.20,
-    "checksum_poll_interval_sec": 4
+    "checksum_poll_interval_sec": 4,
+    "upload_hosts": {
+      "s1": "egressy",
+      "s20": "redwood"
+    }
   },
   "experiments": []
 }
@@ -92,16 +96,31 @@ it needs neither `ops` nor the DM environment on `zion`.
   Verify MD5 jobs actually *execute* and where their shared records/status
   live - see "Persistent Checksum Jobs". Distinct from `remote_hosts`
   above (that's for the fast DM catalog queries only).
+- **`upload_hosts`**: per-beamline host for **Upload to DM** (`dm-upload
+  --reprocess`, see "GUI Usage" below) - a third, distinct routing table
+  from `remote_hosts` (DM catalog queries) and `checksum_hosts` (where
+  Verify MD5 executes). Confirmed against each beamline's own
+  end-of-experiment script (`dm_end_user_1id.sh`/`dm_end_user_20ide.sh`):
+  s1's upload host happens to match its DM-query host (`egressy`), but
+  s20's `dm-upload` must run from `redwood` specifically, not `zion`
+  (where s20's DM-query/checksum jobs run) - a real, beamline-mandated
+  SOP difference, not an oversight to reconcile away. If missing here,
+  built-in defaults (`egressy` for s1, `redwood` for s20) are used.
 - **`checksum_cpu_budget`**: aggregate CPU budget, as a fraction of one
   core (e.g. `0.20` = 20% of one core, `systemd`'s own `CPUQuota`
   convention), shared across *all* concurrently-running checksum jobs on
   `zion`, both beamlines combined.
 - **`checksum_poll_interval_sec`**: how often the GUI re-reads a tracked
   checksum job's status file to update its progress display.
-- **`experiments`**: no longer read for discovery (see below) - the GUI
-  populates it in-memory as experiments are discovered, purely so
-  Scan/Verify MD5 don't need to re-resolve a local root they already know.
-  Not written back to the file.
+- **`experiments`**: two different kinds of entries share this list.
+  Auto-discovered experiments (see "How Experiments Are Found") are
+  cached here in-memory only, purely so Scan/Verify MD5 don't need to
+  re-resolve a local root they already know - never written back to the
+  file, and never carry a `"beamline"` key. Manually-added experiments
+  (via the GUI's **Add EXPID...**, or a hand-edited entry for the CLI -
+  see "CLI Usage") carry an explicit `"beamline"` key and ARE written
+  back (`save_config()`), so they persist across restarts and reappear
+  in the dashboard without being re-added.
 
 ## How Experiments Are Found
 
@@ -123,6 +142,14 @@ needed). Upload Status/Files start as `---` for every row - nothing is
 checked against DM until you click **Scan** or **Verify MD5** on that row,
 or a Verify MD5 job for it is already running/queued (see below).
 
+An experiment auto-discovery doesn't surface - older than the most-recent
+`experiments_per_beamline`, or named outside the `<piname>_<mon><yy>`
+convention - can be added manually via **Add EXPID...** above the table.
+It gets its own **Remove** button (auto-discovered rows don't - removing
+one wouldn't stick, since the next startup just rediscovers it). Removing
+an experiment only forgets it in this tool - no local files or Sojourner
+data are touched.
+
 ## GUI Usage
 
 ```bash
@@ -130,29 +157,61 @@ python dm_integrity_gui.py          # standalone
 python ../ops_gui.py                # combined with disk_monitor and pv_logger, as a tab
 ```
 
-Each row has three actions:
+Each row has these actions:
 
 - **Scan**: fast, size/existence-only comparison (no hashing). Queries DM
   upload status + file catalog over SSH, walks the local directory,
-  classifies every file as `MATCH`/`SIZE_MISMATCH`/`LOCAL_ONLY`/`REMOTE_ONLY`,
-  and saves a timestamped record. This is what fills in Upload
+  classifies every file as `MATCH`/`SIZE_MISMATCH`/`LOCAL_ONLY`/`REMOTE_ONLY`
+  (relocated files are reclassified out of these - see "Relocated Files"
+  below), and saves a timestamped record. This is what fills in Upload
   Status/Files and colors the row.
-- **Verify MD5**: launches the slower checksum pass on top of Scan's
-  matched files - see "Persistent Checksum Jobs" below. Grayed out while
-  a job for that experiment is already queued/running (locally tracked,
-  or reattached from a job someone else launched).
-- **History**: last 10 saved records for that experiment (from both the
-  new per-beamline location and the legacy flat one).
+- **Verify MD5 / Stop**: one button, not two. It reads **Verify MD5**
+  normally and launches the slower checksum pass on top of Scan's
+  matched files - see "Persistent Checksum Jobs" below. Once a job for
+  that experiment is queued/running (locally tracked, or reattached from
+  a job someone else launched) it relabels to **Stop**, which asks for
+  confirmation and requests a clean shutdown of the remote job (progress
+  isn't saved - a future run starts over). If a job hasn't reported
+  progress in 15 minutes it's shown as **Stalled?** instead of
+  "Verifying" - usually a crashed/killed remote process, but this
+  beamline's ~30GB detector files can legitimately go this long between
+  progress updates, so check before assuming it's dead. Stop on a
+  stalled job offers to force-clear it rather than waiting on a shutdown
+  handler that will never run for an already-dead process.
+- **History**: opens a drill-down dialog for that experiment's saved
+  Scan/Verify MD5 records - pick any past snapshot from a dropdown, see a
+  per-category count table (good/missing/mismatched/relocated), the list
+  of whole subdirectories that never landed on either side, and a
+  filterable, file-by-file list of every problem in that snapshot. A
+  compact "N recs" label next to the buttons shows at a glance whether
+  history exists for a row without opening the dialog.
+- **Upload to DM**: triggers `dm-upload --experiment=<name>
+  --data-directory=<path> --reprocess` on the beamline's designated
+  upload host (`settings.upload_hosts` - see Configuration; **not** the
+  same host as DM catalog queries or Verify MD5) to push local files
+  into Sojourner. Shows the exact command and asks for confirmation
+  first - this writes into shared production infrastructure and can't
+  be undone from here. Only confirms the request was *accepted*; DM's
+  own backend does the transfer asynchronously - re-run Scan/Verify MD5
+  afterward to see it land.
 
 Row coloring (`Files` column and beyond):
 - **Green**: fully landed, upload complete, no problems - safe to delete
 - **Red**: a real problem - `SIZE_MISMATCH`, `REMOTE_ONLY`, or
   `CHECKSUM_MISMATCH` present (checked ahead of green/yellow, so it can't
-  be masked by an otherwise-good status)
+  be masked by an otherwise-good status; counts here are already
+  post-relocation - see "Relocated Files" below)
 - **Yellow**: `NOT_ON_SOJOURNER` - the expected state for a
   currently-running experiment, not necessarily a problem
 - **Orange**: some other non-critical "bad" count (rare)
 - **Blue**: a Verify MD5 job is queued/running for this row
+
+Below that, a scrollable **Console** keeps a timestamped log of every
+status/error message from this session (failures highlighted) - the
+one-line status label above it can only ever show the latest message,
+which made a long SSH failure or DM error unreadable before it was
+overwritten by the next poll tick. **Clear** empties it; it isn't saved
+anywhere.
 
 Below the table, a per-beamline rollup line tallies whatever's already
 been Scanned/Verified among the displayed rows, e.g.:
@@ -252,7 +311,7 @@ python dm_integrity.py check \
 ```
 Experiment: expname
 Upload status: done
-Files: 125 good / 0 bad
+Files: 125 good / 0 bad / 0 relocated
 Recommend deletion: True
 ```
 
@@ -277,6 +336,7 @@ python dm_integrity.py verify-checksums \
 Experiment: expname
 Checksums verified: 125 match
 Checksums failed: 0 mismatch
+Relocated (same file, different path): 0
 Recommend deletion: True
 ```
 
@@ -324,7 +384,8 @@ Each Scan/Verify MD5 run saves a timestamped JSON report:
     "size_mismatch": 0,
     "local_only": 0,
     "remote_only": 0,
-    "checksum_mismatch": 0
+    "checksum_mismatch": 0,
+    "relocated": 0
   },
   "directory_stats": {
     "missing": [],
@@ -337,6 +398,7 @@ Each Scan/Verify MD5 run saves a timestamped JSON report:
   "checksum_results": {
     "path/to/file1.dat": "CHECKSUM_MATCH"
   },
+  "relocated_files": [],
   "sojourner_status": "FULLY_LANDED",
   "sojourner_summary": "All local files have landed on Sojourner",
   "recommend_deletion": true,
@@ -370,6 +432,9 @@ either direction - there's nothing to have landed, so it isn't a gap.
 `PARTIALLY_LANDED`'s `sojourner_summary` mentions `"missing"` directly when
 non-empty; `NOT_ON_SOJOURNER` doesn't repeat it, since in that case *every*
 local directory is trivially "missing" and saying so would just be noise.
+(A file relocated to a different subfolder - present on both sides, just
+under a different path - is a separate, per-file concept from a whole
+missing subdirectory; see "Relocated Files" below.)
 
 ### File status values (`comparison`/`checksum_results`)
 
@@ -380,6 +445,42 @@ local directory is trivially "missing" and saying so would just be noise.
 - **CHECKSUM_MATCH** / **CHECKSUM_MISMATCH** / **CHECKSUM_UNKNOWN**: MD5
   agrees / disagrees / wasn't available to compare
 
+### Relocated Files
+
+A file can be genuinely present on **both** sides but end up as one
+`LOCAL_ONLY` and one unrelated-looking `REMOTE_ONLY` entry if it moved
+to a different subfolder on one side (local data reorganized after
+upload, or Sojourner's layout differing from the local one) -
+indistinguishable, in `comparison` alone, from an actually-missing
+file. `find_relocated_files()` looks for exactly this: `LOCAL_ONLY`/
+`REMOTE_ONLY` pairs sharing a basename and a recorded size, run on
+every Scan and Verify MD5.
+
+This is basename+size matching only, deliberately not
+checksum-confirmed - neither side has a checksum for a `LOCAL_ONLY`/
+`REMOTE_ONLY` path to compare, and hashing every candidate just to
+classify it would mean an extra full pass no cheaper than Verify MD5
+itself. A matched pair:
+
+- is subtracted out of `file_stats["local_only"]`/`["remote_only"]` and
+  tallied separately in `file_stats["relocated"]`/the
+  `"relocated_files"` list (`comparison` itself is untouched - the
+  pair's two paths still show up there as plain `LOCAL_ONLY`/`REMOTE_ONLY`)
+- no longer paints the row **Red** in the GUI on its own (a
+  fully-cleaned-up-after-upload experiment used to show every leftover
+  `REMOTE_ONLY` file as a real problem)
+- still blocks `recommend_deletion` - a basename+size match is
+  evidence, not proof; nothing here is checksum-confirmed, so this tool
+  never treats a relocated pair as safe to delete on that alone
+- shows up in the History dialog as one combined `local -> remote` row
+  (category **Relocated**) rather than two separate, seemingly
+  unrelated missing-file entries
+
+A basename shared by an unusually large number of files on either side
+is skipped entirely (no attempt at exhaustive matching within that
+bucket), as are zero-byte files (any two empty files would otherwise
+"match").
+
 ### Deletion Safety
 
 `"recommend_deletion": true` only if upload is complete, no
@@ -389,18 +490,53 @@ local files.**
 
 ## Troubleshooting
 
-**A row's Verify MD5 stays grayed out indefinitely / never finishes**
-- Check `~<user>iduser/dm_record/checksum_status/<expid>.json` on `zion`
-  directly for its `state` and `error_message`.
+**A row shows "Stalled?" or never finishes**
+- The GUI flags a `RUNNING` job as **Stalled?** once its status file
+  hasn't updated in 15 minutes (`_CHECKSUM_STALE_SEC` in
+  `dm_integrity_gui.py`) and lets you click **Stop** to force-clear it
+  without waiting for a shutdown handler that will likely never run -
+  see "Persistent Checksum Jobs" and the Verify MD5/Stop bullet under
+  "GUI Usage". Before force-clearing, consider whether this could be a
+  single very large file: this beamline's detector files can be tens of
+  GB each, and `checksum_worker.py` only reports progress once per whole
+  file hashed, not per chunk - a job can legitimately show no progress
+  for several minutes while genuinely alive. 900s was chosen to clear
+  that case comfortably while still catching a truly-dead job (confirmed
+  against two real incidents that sat `RUNNING` for 78h and 20h after
+  their process had actually crashed).
+- For the underlying status directly (rather than via the GUI): check
+  `~<user>iduser/dm_record/checksum_status/<expid>.json` on `zion` for
+  its `state` and `error_message`.
 - If it's stuck at `QUEUED` with no progress ever, check for a lingering
   failed unit blocking relaunch: `ssh s1iduser@zion systemctl --user status checksum-verify@<expid>.service`.
   `launch_checksum_job` passes `--collect` specifically so finished/failed
   units clean themselves up rather than getting stuck this way; if you
   still see one, `systemctl --user reset-failed checksum-verify@<expid>.service`
   clears it manually.
-- A job legitimately reading a very large file (tens of GB) can show
-  `checked_files` unchanged for a while - that's expected I/O-bound
-  behavior, not a hang; check `/proc/<pid>/fd` on `zion` if in doubt.
+- Check `/proc/<pid>/fd` on `zion` if you want to confirm a job is still
+  actually doing I/O rather than dead.
+
+**A DM query (Upload Status/Files, or Upload to DM) fails or times out**
+- The error now includes the remote command's exit code and full
+  stdout+stderr (previously blank for some failures) - read it before
+  assuming a network/auth problem.
+- If it's specifically a *timeout* on the DM catalog query and happens
+  consistently for one experiment while every other experiment's
+  identical query returns quickly, the most likely cause is that
+  experiment already being archived in DM - check DM Station's
+  Experiments/Uploads tabs. `get_upload_status`/`get_catalog_files` wait
+  up to 90s/180s respectively (raised from a shared 30s default) since a
+  real slow-but-legitimate response can take longer than that.
+
+**"Upload to DM" fails with "already active or pending" / "already archived"**
+- Not a failure of this tool - these are `dm-upload`'s own refusal
+  messages. "Already active or pending" means an earlier upload (often
+  from a previous click here) is still genuinely running - check DM
+  Station's Uploads tab, or re-run Scan/Verify MD5 once it finishes.
+  "Already archived" means DM refuses `--reprocess` entirely for an
+  archived experiment by design - nothing to retry here; fixing
+  Sojourner for an archived experiment needs DM's own un-archive/restore
+  path, outside this tool's scope.
 
 **"dm Python API is required but is not installed..."**
 - Source the beamline's `dm.setup.sh` and activate `dm-user` first, or
