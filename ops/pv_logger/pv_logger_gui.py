@@ -211,9 +211,9 @@ DEVICE_CATEGORIES = [
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
     ]),
     ("Optics / Lenses", [
-        "LENSES", "LENSES IN B CRL, upstream", "LENSES IN B VERTICAL FOCUS",
-        "LENSES IN E Horizontal FOCUS", "LENSES IN E VERTICAL FOCUS", "LENGELER LENSES IN B",
-        "CRL LENSES IN DS C", "C-HUTCH LENSES", "E-HUTCH LENSES", "US CRL LENSES IN B",
+        "B Lenses", "B CRL Lenses (Upstream)", "B Vertical Focus Lenses", "B Lengeler Lenses",
+        "B US CRL Lenses", "C Hutch Lenses", "C CRL Lenses (Downstream)",
+        "E Hutch Lenses", "E Horizontal Focus Lenses", "E Vertical Focus Lenses",
     ]),
     ("D Lens Stacks", [
         "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",
