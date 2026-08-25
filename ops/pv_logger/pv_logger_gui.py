@@ -250,7 +250,7 @@ DEVICE_CATEGORIES = [
         "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
     ]),
     ("Sensors / Environmental", [
-        "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE",
+        "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
     ]),
     ("Beam / Storage Ring", [
         "Beam Position Monitor", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",

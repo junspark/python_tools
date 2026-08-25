@@ -1283,7 +1283,7 @@
     {
       "name": "Furnace T2 (C) (1idTC32)",
       "pv": "1idTC32:Ti8",
-      "group": "HASTINGS FURNACE"
+      "group": "TC32"
     },
     {
       "name": "Furnace T3 (C)",
@@ -1618,12 +1618,12 @@
     {
       "name": "Tsam (deg C)",
       "pv": "1idTC32:Ti7",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "TC32"
     },
     {
       "name": "CMU T housing (deg C)",
       "pv": "1idTC32:Ti24",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "TC32"
     },
     {
       "name": "FZHANG Furnace Force (-)",
@@ -1733,37 +1733,37 @@
     {
       "name": "T24-surface (C)",
       "pv": "1idTC32:Ti24",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCC (C)",
       "pv": "1idTC32:Ti3",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCD (C)",
       "pv": "1idTC32:Ti4",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCE (C)",
       "pv": "1idTC32:Ti5",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCF (C)",
       "pv": "1idTC32:Ti6",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCG (C)",
       "pv": "1idTC32:Ti7",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "TCH (C)",
       "pv": "1idTC32:Ti8",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "T1 (C)",
@@ -1783,17 +1783,17 @@
     {
       "name": "Tsurf (C) (1idTC32)",
       "pv": "1idTC32:Ti1",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "Tsurf (C) (1idTC32)",
       "pv": "1idTC32:Ti11",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "Tsurf (C) (1idTC32)",
       "pv": "1idTC32:Ti7",
-      "group": "THERMOCOUPLE"
+      "group": "TC32"
     },
     {
       "name": "FLOW (V)",
@@ -1808,27 +1808,27 @@
     {
       "name": "TC16 (C)",
       "pv": "1idTC32:Ti16",
-      "group": "Hutch monitoring thermocouples"
+      "group": "TC32"
     },
     {
       "name": "TC17 (C)",
       "pv": "1idTC32:Ti17",
-      "group": "Hutch monitoring thermocouples"
+      "group": "TC32"
     },
     {
       "name": "TC18 (C)",
       "pv": "1idTC32:Ti18",
-      "group": "Hutch monitoring thermocouples"
+      "group": "TC32"
     },
     {
       "name": "TC19 (C)",
       "pv": "1idTC32:Ti19",
-      "group": "Hutch monitoring thermocouples"
+      "group": "TC32"
     },
     {
       "name": "TC20 (C)",
       "pv": "1idTC32:Ti20",
-      "group": "Hutch monitoring thermocouples"
+      "group": "TC32"
     },
     {
       "name": "TRIBO-A-raw (V)",
