@@ -43,6 +43,129 @@ STATUS_COLORS = {
     "stopped": "#e0e0e0",
 }
 
+def _center_on_parent(dialog, parent):
+    """Explicitly position dialog over parent's current on-screen geometry
+    before it's shown, rather than trusting the window manager/compositor's
+    default placement for a new top-level window - confirmed necessary on
+    at least one real deployment: a Wayland/Mutter compositor with an
+    unusual multi-monitor layout placed brand-new, position-less windows
+    entirely off every monitor. An explicit move() issued after a window
+    is already mapped gets silently overridden by that same compositor,
+    but a position requested before the window is first shown is honored.
+    No-op if parent isn't currently visible - nothing sensible to center on
+    yet."""
+    if parent is None or not parent.isVisible():
+        return
+    # adjustSize() first, but ONLY for a dialog that never explicitly
+    # resize()d itself - it otherwise still reports a placeholder width/
+    # height at this point. WA_Resized is set automatically by resize()
+    # (Qt's own way of tracking "has this widget been given an explicit
+    # size"), so this skips adjustSize() for a dialog that deliberately
+    # resized itself larger than its layout's natural minimum.
+    if not dialog.testAttribute(QtCore.Qt.WA_Resized):
+        dialog.adjustSize()
+    parent_geo = parent.window().frameGeometry()
+    x = parent_geo.center().x() - dialog.width() // 2
+    y = parent_geo.center().y() - dialog.height() // 2
+    # Clamp the WHOLE rectangle inside whichever screen the parent window
+    # is actually on - not just floor negative coordinates. Confirmed
+    # directly not enough on a real unusual multi-monitor layout (mixed
+    # sizes/offsets): centering on parent_geo's center point can still
+    # place a dialog's edges past that monitor's actual bounds even though
+    # the center point itself looks reasonable, landing it partly or
+    # entirely on/past a neighboring monitor with a different origin.
+    # screenAt(parent_geo.center()) - not primaryScreen() - because the
+    # window actually being centered on may not be on the primary screen
+    # at all in a multi-monitor setup.
+    screen = QtWidgets.QApplication.screenAt(parent_geo.center()) or QtWidgets.QApplication.primaryScreen()
+    if screen is not None:
+        avail = screen.availableGeometry()
+        x = max(avail.x(), min(x, avail.x() + avail.width() - dialog.width()))
+        y = max(avail.y(), min(y, avail.y() + avail.height() - dialog.height()))
+    else:
+        x, y = max(0, x), max(0, y)
+    dialog.move(x, y)
+    # WindowStaysOnTopHint - set before the show() below, not after:
+    # confirmed directly that even a completely unrelated, bare Xlib app
+    # (xterm, no Qt/GTK involved) is unreliably mapped/focused on this
+    # remote X11-forwarding setup, while a modern GTK app (gedit) shows up
+    # every time - a window-manager/focus-stealing-prevention heuristic
+    # neither plain Xlib nor Qt's xcb backend satisfies the way GTK's
+    # does, not a bug specific to any one dialog here. Staying-on-top
+    # bypasses that heuristic entirely rather than politely requesting
+    # around it via raise_()/activateWindow() alone, which were not
+    # sufficient on their own.
+    dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+    # show()/raise_()/activateWindow() here, not left to the caller's
+    # later exec_(): plain show()/exec_() can map a window at a perfectly
+    # valid, on-screen position on this display setup without ever
+    # bringing it to the front - no error, no crash, the dialog is simply
+    # invisible until manually found. exec_() on an already-shown widget
+    # is fine (it just switches on modality and starts the local event
+    # loop), so doing the actual mapping here - right after positioning,
+    # before the caller's exec_() call - is what lets raise_()/
+    # activateWindow() apply to a window that actually exists yet, rather
+    # than being no-ops against a window that isn't mapped until exec_()
+    # gets to it.
+    dialog.show()
+    dialog.raise_()
+    dialog.activateWindow()
+
+
+def _message_box(icon, parent, title, text, buttons=QtWidgets.QMessageBox.Ok, default_button=None):
+    """Drop-in replacement for QtWidgets.QMessageBox.information/warning/
+    critical/question's static convenience methods, with the same
+    explicit-positioning fix _center_on_parent applies to every custom
+    QDialog here - those static methods build and exec_ their own
+    QMessageBox internally with no hook to position it first, so on the
+    same Wayland/Mutter setup _center_on_parent exists for, a plain
+    QMessageBox.information() call is just as invisible as an unpositioned
+    QDialog would be (confirmed directly in data_integrity's dm_integrity_gui.py -
+    see its own _message_box)."""
+    box = QtWidgets.QMessageBox(icon, title, text, buttons, parent)
+    if default_button is not None:
+        box.setDefaultButton(default_button)
+    _center_on_parent(box, parent)
+    return box.exec_()
+
+
+def _choose_save_file(parent, title, start_dir="", filter_str=""):
+    """Drop-in replacement for QtWidgets.QFileDialog.getSaveFileName's
+    static convenience method, for the same reason _message_box replaces
+    QMessageBox's (confirmed directly in data_integrity's dm_integrity_gui.py -
+    a native/unpositioned file picker reproduced the identical no-error-
+    nothing-visible symptom). DontUseNativeDialog matters here
+    specifically: getSaveFileName defaults to the platform's own native
+    picker when available, which is a separate windowing stack outside
+    Qt's show()/raise_()/activateWindow() control - _center_on_parent
+    can't do anything for a window it was never involved in creating."""
+    dialog = QtWidgets.QFileDialog(parent, title, start_dir, filter_str)
+    dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+    dialog.setFileMode(QtWidgets.QFileDialog.AnyFile)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+    _center_on_parent(dialog, parent)
+    if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        selected = dialog.selectedFiles()
+        return selected[0] if selected else ""
+    return ""
+
+
+def _choose_open_file(parent, title, start_dir="", filter_str=""):
+    """Drop-in replacement for QtWidgets.QFileDialog.getOpenFileName's
+    static convenience method - same reasoning as _choose_save_file/
+    _choose_directory (a native picker is a separate windowing stack
+    _center_on_parent can't reach). Used for "Load selection from CSV...",
+    picking an EXISTING file rather than naming a new one."""
+    dialog = QtWidgets.QFileDialog(parent, title, start_dir, filter_str)
+    dialog.setAcceptMode(QtWidgets.QFileDialog.AcceptOpen)
+    dialog.setFileMode(QtWidgets.QFileDialog.ExistingFile)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+    _center_on_parent(dialog, parent)
+    if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        selected = dialog.selectedFiles()
+        return selected[0] if selected else ""
+    return ""
+
 # Device-type groupings for the Start-new-experiment checklist, so related
 # groups (e.g. the 8 different furnace groups, scattered across the
 # alphabet under names like "FZHANG COLD SINTER FURNACE"/"RF Furnace"/
@@ -267,8 +390,8 @@ class StartExperimentDialog(QtWidgets.QDialog):
             return
 
         if new_name in self.device_checks:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Merge devices?",
+            reply = _message_box(
+                QtWidgets.QMessageBox.Question, self, "Merge devices?",
                 f"A device named '{new_name}' already exists. Rename "
                 f"'{old_name}' into it? This merges all of '{old_name}'s "
                 f"PVs under '{new_name}' in the master list.",
@@ -292,8 +415,8 @@ class StartExperimentDialog(QtWidgets.QDialog):
         except (OSError, ValueError) as e:
             for entry in renamed_entries:
                 entry["group"] = old_name
-            QtWidgets.QMessageBox.critical(
-                self, "Rename failed", f"Could not save master list: {e}")
+            _message_box(
+                QtWidgets.QMessageBox.Critical, self, "Rename failed", f"Could not save master list: {e}")
             return
 
         checked_state = {device: cb.isChecked() for device, cb in self.device_checks.items()}
@@ -301,9 +424,9 @@ class StartExperimentDialog(QtWidgets.QDialog):
         checked_state[new_name] = checked_state.get(new_name, False) or was_checked
         self._rebuild_device_checklist(list(checked_state.keys()), checked_state)
 
+
     def _browse(self):
-        path, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Output CSV", self._default_dir, "CSV files (*.csv)")
+        path = _choose_save_file(self, "Output CSV", self._default_dir, "CSV files (*.csv)")
         if path:
             self.outfile_edit.setText(path)
 
@@ -547,15 +670,15 @@ class PVLoggerPanel(QtWidgets.QWidget):
     def start_experiment(self):
         host, user, remote_base = self._remote_job_info()
         if not remote_base:
-            QtWidgets.QMessageBox.critical(
-                self, "Not configured",
+            _message_box(
+                QtWidgets.QMessageBox.Critical, self, "Not configured",
                 f"No settings.remote_job configured for '{self.current_beamline}' - "
                 "can't launch a PV-logging job.")
             return
 
         if self.running:
-            QtWidgets.QMessageBox.warning(
-                self, "Already running",
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Already running",
                 f"PV logging is already running for '{self.current_beamline}'. Stop it first.")
             return
 
@@ -566,17 +689,18 @@ class PVLoggerPanel(QtWidgets.QWidget):
         # Show dialog with device checklist
         dialog = StartExperimentDialog(
             self, devices=all_devices, pv_defs=self.cfg["pvs"], config_path=self.config_path)
+        _center_on_parent(dialog, self)
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
         outfile = dialog.outfile()
         if not outfile:
-            QtWidgets.QMessageBox.warning(self, "Missing output file", "Choose an output CSV path.")
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Missing output file", "Choose an output CSV path.")
             return
 
         selected_devices = dialog.selected_devices()
         if not selected_devices:
-            QtWidgets.QMessageBox.warning(self, "No devices selected", "Select at least one device to monitor.")
+            _message_box(QtWidgets.QMessageBox.Warning, self, "No devices selected", "Select at least one device to monitor.")
             return
 
         # Canonicalize so a path chosen here (as whoever launched the GUI)
@@ -615,6 +739,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self._launch_workers[beamline] = (thread, worker)
         thread.start()
 
+
     def _on_pv_logger_launched(self, beamline, status):
         self._launch_workers.pop(beamline, None)
         self.status_bar.showMessage(
@@ -624,7 +749,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
     def _on_pv_logger_launch_error(self, beamline, msg):
         self._launch_workers.pop(beamline, None)
         self.status_bar.showMessage(f"Failed to launch PV logging for '{beamline}': {msg}")
-        QtWidgets.QMessageBox.critical(self, "Launch failed", msg)
+        _message_box(QtWidgets.QMessageBox.Critical, self, "Launch failed", msg)
 
     def stop_monitoring(self):
         host, user, remote_base = self._remote_job_info()
@@ -634,10 +759,11 @@ class PVLoggerPanel(QtWidgets.QWidget):
         try:
             pl.run_shell_command(host, user, f"systemctl --user stop {unit_name}")
         except RuntimeError as e:
-            QtWidgets.QMessageBox.critical(self, "Stop failed", str(e))
+            _message_box(QtWidgets.QMessageBox.Critical, self, "Stop failed", str(e))
             return
         self.status_bar.showMessage(f"Stop requested for '{self.current_beamline}' - waiting for it to finish the current cycle...")
         self._poll_pv_logger_status()
+
 
     def _poll_pv_logger_status(self):
         """Re-read the current beamline's remote status file (plain local
