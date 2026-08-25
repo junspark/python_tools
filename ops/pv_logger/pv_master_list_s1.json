@@ -2,6 +2,7 @@
   "settings": {
     "log_interval_sec": 5,
     "connect_timeout_sec": 2.0,
+    "caget_path": "/APSshare/epics/base-7.0.10/bin/rhel9-x86_64/caget",
     "recipients": [],
     "sender": "pv_logger@your-host.aps.anl.gov",
     "smtp_host": "apsmail.aps.anl.gov",
@@ -96,124 +97,104 @@
       "group": "NF DET"
     },
     {
-      "name": "L1th",
+      "name": "E Lens1 Th",
       "pv": "1ide1:m30.RBV",
-      "group": "E Vertical Focus Lenses"
+      "group": "E Lens Stack 1"
     },
     {
-      "name": "L1y",
+      "name": "E Lens1 Y",
       "pv": "1ide1:m28.RBV",
-      "group": "E Vertical Focus Lenses"
+      "group": "E Lens Stack 1"
     },
     {
-      "name": "L2th",
+      "name": "E Lens2 Th",
       "pv": "1ide1:m32.RBV",
-      "group": "E Vertical Focus Lenses"
+      "group": "E Lens Stack 2"
     },
     {
-      "name": "L2y",
+      "name": "E Lens2 Y",
       "pv": "1ide1:m29.RBV",
-      "group": "E Vertical Focus Lenses"
+      "group": "E Lens Stack 2"
     },
     {
-      "name": "L3x",
+      "name": "E Lens3 X",
       "pv": "1ide1:m82.RBV",
-      "group": "E Horizontal Focus Lenses"
+      "group": "E Lens Stack 3"
     },
     {
-      "name": "L3ph",
+      "name": "E Lens3 Phi",
       "pv": "1ide1:m83.RBV",
-      "group": "E Horizontal Focus Lenses"
+      "group": "E Lens Stack 3"
     },
     {
-      "name": "L4x",
+      "name": "E Lens4 X",
       "pv": "1ide1:m85.RBV",
-      "group": "E Horizontal Focus Lenses"
+      "group": "E Lens Stack 4"
     },
     {
-      "name": "L4ph",
+      "name": "E Lens4 Phi",
       "pv": "1ide1:m88.RBV",
-      "group": "E Horizontal Focus Lenses"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "L1piv",
       "pv": "1idb:m47.RBV",
-      "group": "B Vertical Focus Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "L1gap",
       "pv": "1idb:m29.RBV",
-      "group": "B Vertical Focus Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "L2piv",
       "pv": "1idb:m22.RBV",
-      "group": "B Vertical Focus Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "L2gap",
       "pv": "1idb:m24.RBV",
-      "group": "B Vertical Focus Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "RLxb",
       "pv": "1idb:m54.RBV",
-      "group": "B Lengeler Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "RLyb",
       "pv": "1idb:m44.RBV",
-      "group": "B Lengeler Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "RLthb",
       "pv": "1idb:m53.RBV",
-      "group": "B Lengeler Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "RLphib",
       "pv": "1idb:m49.RBV",
-      "group": "B Lengeler Lenses"
-    },
-    {
-      "name": "CRL1Y",
-      "pv": "1ida:m21.RBV",
-      "group": "B US CRL Lenses"
-    },
-    {
-      "name": "CRL1Th",
-      "pv": "1ida:m31.RBV",
-      "group": "B US CRL Lenses"
-    },
-    {
-      "name": "CRL2Y",
-      "pv": "1ida:m26.RBV",
-      "group": "B US CRL Lenses"
-    },
-    {
-      "name": "CRL2Th",
-      "pv": "1ida:m24.RBV",
-      "group": "B US CRL Lenses"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "LCx",
       "pv": "1idc:m42.RBV",
-      "group": "C CRL Lenses (Downstream)"
+      "group": "C Hutch Lenses"
     },
     {
       "name": "LCy",
       "pv": "1idc:m43.RBV",
-      "group": "C CRL Lenses (Downstream)"
+      "group": "C Hutch Lenses"
     },
     {
       "name": "LCth",
       "pv": "1idc:m41.RBV",
-      "group": "C CRL Lenses (Downstream)"
+      "group": "C Hutch Lenses"
     },
     {
       "name": "LCphi",
       "pv": "1idc:m44.RBV",
-      "group": "C CRL Lenses (Downstream)"
+      "group": "C Hutch Lenses"
     },
     {
       "name": "atten",
@@ -561,44 +542,24 @@
       "group": "PIXIRAD2"
     },
     {
-      "name": "L5B Y",
-      "pv": "1idb:m47.RBV",
-      "group": "B Lenses"
-    },
-    {
-      "name": "L5B Th",
-      "pv": "1idb:m29.RBV",
-      "group": "B Lenses"
-    },
-    {
-      "name": "L4B Y",
-      "pv": "1idb:m22.RBV",
-      "group": "B Lenses"
-    },
-    {
-      "name": "L4B Th",
-      "pv": "1idb:m24.RBV",
-      "group": "B Lenses"
-    },
-    {
       "name": "CRL 1 Th",
       "pv": "1ida:m31.RBV",
-      "group": "B CRL Lenses (Upstream)"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "CRL 1 Y",
       "pv": "1ida:m21.RBV",
-      "group": "B CRL Lenses (Upstream)"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "CRL 2 Th",
       "pv": "1ida:m24.RBV",
-      "group": "B CRL Lenses (Upstream)"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "CRL 2 Y",
       "pv": "1ida:m26.RBV",
-      "group": "B CRL Lenses (Upstream)"
+      "group": "B Hutch Lenses"
     },
     {
       "name": "Fedrl1 (mm) (1ide)",
@@ -2728,137 +2689,137 @@
     {
       "name": "C Lens1 X",
       "pv": "1idc:m99.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens1 Y",
       "pv": "1idc:m100.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens1 Z",
       "pv": "1idc:m101.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens1 RX",
       "pv": "1idc:m102.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens1 RY",
       "pv": "1idc:m103.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens1 RZ",
       "pv": "1idc:m104.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 1"
     },
     {
       "name": "C Lens2 X",
       "pv": "1idc:m65.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens2 Y",
       "pv": "1idc:m66.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens2 Z",
       "pv": "1idc:m67.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens2 RX",
       "pv": "1idc:m68.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens2 RY",
       "pv": "1idc:m69.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens2 RZ",
       "pv": "1idc:m70.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 2"
     },
     {
       "name": "C Lens7 Z",
       "pv": "1idc:m45.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "C Lens7 RX",
       "pv": "1idc:m46.RBV",
-      "group": "C Hutch Lenses"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "E Lens1 X",
       "pv": "1ide1:m117.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E Lens1 RY",
       "pv": "1ide1:m119.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E Lens1 RZ",
       "pv": "1ide1:m31.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E Lens2 X",
       "pv": "1ide1:m118.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E Lens2 RY",
       "pv": "1ide1:m120.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E Lens3 Y",
       "pv": "1ide1:m89.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E Lens3 Z",
       "pv": "1ide1:m81.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E Lens3 RX",
       "pv": "1ide1:m44.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E Lens3 RZ",
       "pv": "1ide1:m45.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E Lens4 Y",
       "pv": "1ide1:m114.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E Lens4 Z",
       "pv": "1ide1:m115.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E Lens4 RX",
       "pv": "1ide1:m116.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E Lens4 RZ",
       "pv": "1ide1:m84.RBV",
-      "group": "E Hutch Lenses"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "C Scaler1 T",

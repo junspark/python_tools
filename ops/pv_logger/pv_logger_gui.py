@@ -211,9 +211,10 @@ DEVICE_CATEGORIES = [
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
     ]),
     ("Optics / Lenses", [
-        "B Lenses", "B CRL Lenses (Upstream)", "B Vertical Focus Lenses", "B Lengeler Lenses",
-        "B US CRL Lenses", "C Hutch Lenses", "C CRL Lenses (Downstream)",
-        "E Hutch Lenses", "E Horizontal Focus Lenses", "E Vertical Focus Lenses",
+        "B Hutch Lenses", "C Hutch Lenses",
+    ]),
+    ("C Lens Stacks", [
+        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7",
     ]),
     ("D Lens Stacks", [
         "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",
@@ -222,7 +223,7 @@ DEVICE_CATEGORIES = [
     ("E Lens Stacks", [
         "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
     ]),
-    ("Monochromators", ["HEM", "HRM", "Monochromator"]),
+    ("Monochromators", ["HEM", "HRM"]),
     ("B Slits", ["B Slits"]),
     ("C Slits", ["C Upstream Slits", "C Downstream Slits"]),
     ("D Slits", ["D Upstream Slits", "D Downstream Slits", "D T7 Slits"]),
@@ -278,6 +279,14 @@ def _category_for_device(device):
 _T_NUMBER_RE = re.compile(r"[Tt](\d+)")
 _CURRENT_NUMBER_RE = re.compile(r"Current(\d+)", re.IGNORECASE)
 
+# A trailing motion-axis code (X/Y/Z or RX/RY/RZ), optionally preceded by a
+# space or underscore (matches both "C Lens1 RX" and "D_Lens1RX" naming
+# styles) - requires a non-letter (or start-of-string) immediately before
+# it so this doesn't false-positive inside an unrelated word ending in the
+# same letter (e.g. "Max", "Complex").
+_AXIS_SUFFIX_RE = re.compile(r"(?<![A-Za-z])(R?[XYZ])$")
+_AXIS_ORDER = {"X": 0, "Y": 1, "Z": 2, "RX": 3, "RY": 4, "RZ": 5}
+
 
 def _pv_sort_key(entry):
     """Order a device's per-PV checkboxes by hardware address (T-unit,
@@ -285,11 +294,18 @@ def _pv_sort_key(entry):
     confirmed directly that alphabetical-by-name scrambles a hutch's ion
     chambers relative to their actual T1/T2/T3 wiring (e.g. "IC7D" sorting
     next to "IC8D" alphabetically, while both actually being T3 Current1/
-    Current2, next to unrelated T1/T2 entries in between). Falls back to
-    plain alphabetical-by-name for anything that doesn't match this T<n>/
-    Current<n> convention (most devices don't use it at all) - those
-    entries carry no T/Current number to sort by, so they end up ordered
-    only by name, exactly as before this existed.
+    Current2, next to unrelated T1/T2 entries in between).
+
+    Also orders a lens/motor stack's translation axes before its rotation
+    axes (X, Y, Z, then RX, RY, RZ) within the same stack number, rather
+    than plain alphabetical - confirmed directly that alphabetical order
+    puts every "RX"/"RY"/"RZ" before "X"/"Y"/"Z" (since 'R' sorts before
+    'X'), scrambling e.g. "C Lens1 RX/RY/RZ/X/Y/Z" into rotation-first
+    order instead of the natural translation-then-rotation one. Falls
+    back to plain alphabetical-by-name for anything matching neither
+    convention (most devices don't use either) - those entries carry
+    nothing to sort by beyond their name, exactly as before either of
+    these existed.
     """
     pv = entry.get("pv", "")
     name = entry.get("name", "") or ""
@@ -297,7 +313,16 @@ def _pv_sort_key(entry):
     current_match = _CURRENT_NUMBER_RE.search(pv)
     t_num = int(t_match.group(1)) if t_match else float("inf")
     current_num = int(current_match.group(1)) if current_match else float("inf")
-    return (t_num, current_num, name.lower())
+
+    axis_match = _AXIS_SUFFIX_RE.search(name)
+    if axis_match:
+        axis_order = _AXIS_ORDER[axis_match.group(1).upper()]
+        base_name = name[:axis_match.start(1)].rstrip().lower()
+    else:
+        axis_order = -1
+        base_name = name.lower()
+
+    return (t_num, current_num, base_name, axis_order, name.lower())
 
 
 class _GroupCheckBox(QtWidgets.QCheckBox):
