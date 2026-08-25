@@ -179,22 +179,22 @@
     {
       "name": "LCx",
       "pv": "1idc:m42.RBV",
-      "group": "LC"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "LCy",
       "pv": "1idc:m43.RBV",
-      "group": "LC"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "LCth",
       "pv": "1idc:m41.RBV",
-      "group": "LC"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "LCphi",
       "pv": "1idc:m44.RBV",
-      "group": "LC"
+      "group": "C Lens Stack 7"
     },
     {
       "name": "atten",
