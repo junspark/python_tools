@@ -188,31 +188,45 @@ DEVICE_CATEGORIES = [
         "LENSES IN E Horizontal FOCUS", "LENSES IN E VERTICAL FOCUS", "LENGELER LENSES IN B",
         "CRL LENSES IN DS C", "C-HUTCH LENSES", "E-HUTCH LENSES", "US CRL LENSES IN B",
     ]),
-    ("Monochromators", ["HEM", "HEM (Monochromator)", "HRM", "HRM (Analyzer)", "Monochromator"]),
-    ("Slits", ["Slits"]),
+    ("D Lens Stacks", [
+        "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",
+        "D Lens Stack 5", "D Lens Stack 6",
+    ]),
+    ("E Lens Stacks", [
+        "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
+    ]),
+    ("Monochromators", ["HEM", "HRM", "Monochromator"]),
+    ("D Slits", ["D Upstream Slits", "D Downstream Slits", "D T7 Slits"]),
+    ("E Slits", ["E Upstream Slits", "E Downstream Slits"]),
+    ("White Beam Slits", ["Slits", "White Beam Slits"]),
     ("Scalers / Ion Chambers", [
         "C Scaler (raw channels)", "E Scaler (raw channels)",
         "IC from scaler1 in 1id", "IC from scaler1 in 1ide", "Ion Chamber",
+        "A Hutch Ion Chambers", "D Hutch Ion Chambers", "E Hutch Ion Chambers",
     ]),
-    ("Furnaces / Heating", [
+    ("Sample Environment", [
         "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",
         "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
-        "SUTER-BASIL FURNACE",
+        "SUTER-BASIL FURNACE", "E PulseRay Furnace", "Linkam Furnace (old)",
     ]),
     ("Load Frames / Mechanical Testing", [
         "Compact loadframe", "Compact loadframe UL / DESY", "meimei psylotech load frame",
         "MTS", "MTS - BIAXIAL", "MTS+RAMS1+OXYGON setup", "RAMS1", "RAMS3", "OWIS compression type",
     ]),
     ("Sample Stages / Motors", [
-        "Aero setup", "AM chamber setup", "C 4-Circle Stage", "E HL-SMS",
+        "Aero setup", "AM chamber setup", "C 4-Circle Stage",
         "MAMC setup", "NIST BOULDER CONNOLLY H2 CHAMBER", "Motors",
     ]),
+    ("Sample Manipulation Systems", ["D-HRSMS", "E-HRSMS", "E-HLSMS", "E HL-SMS"]),
     ("Sensors / Environmental", [
         "KEYENCE", "TILT SENSORS", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE",
     ]),
-    ("Beam / Storage Ring", ["Beam positions", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters"]),
+    ("Beam / Storage Ring", [
+        "Beam positions", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",
+    ]),
+    ("Storage Ring / Undulator", ["Storage Ring", "Undulator"]),
     ("Lab Equipment", ["LANL CHILLER", "LANL WELDER", "AGILENT FUNC GEN"]),
-    ("Shutters / Shields / Foils", ["Shields", "Shutters", "Foils. attens"]),
+    ("Shutters / Shields / Foils", ["Shields", "Shutters", "Foils. attens", "Attenuator"]),
     ("Software / Misc", [
         "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
         "write_parfile_general.mac (misc, review before use)", "Calculation/Software", "Miscellaneous",

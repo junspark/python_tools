@@ -858,282 +858,282 @@
     {
       "name": "HEM_Bender1",
       "pv": "20idHEM:m10.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Bender2",
       "pv": "20idHEM:m11.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Roll2",
       "pv": "20idHEM:m7.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Th1",
       "pv": "20idHEM:m1.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Th2",
       "pv": "20idHEM:m4.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_WBS_Diag",
       "pv": "20idHEM:m14.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_WBS_Horz",
       "pv": "20idHEM:m13.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_WBS_Pitch",
       "pv": "20idHEM:m15.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_WBS_Yaw",
       "pv": "20idHEM:m16.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_WB_StopX",
       "pv": "20idHEM:m9.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_X1",
       "pv": "20idHEM:m2.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_X2",
       "pv": "20idHEM:m5.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Y1",
       "pv": "20idHEM:m3.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Y2",
       "pv": "20idHEM:m6.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "HEM_Z2",
       "pv": "20idHEM:m8.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "HEM"
     },
     {
       "name": "WBSlitsHCenter",
       "pv": "20idHEM:slits:hCenter.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "White Beam Slits"
     },
     {
       "name": "WBSlitsHSize",
       "pv": "20idHEM:slits:hSize.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "White Beam Slits"
     },
     {
       "name": "WBSlitsVCenter",
       "pv": "20idHEM:slits:vCenter.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "White Beam Slits"
     },
     {
       "name": "WBSlitsVSize",
       "pv": "20idHEM:slits:vSize.RBV",
-      "group": "HEM (Monochromator)"
+      "group": "White Beam Slits"
     },
     {
       "name": "HRM_Energy",
       "pv": "20ida1:HR1_ERdbkAO",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "HRM_PZT1",
       "pv": "20idPI518:PIE518:1:p1_position",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "HRM_PZT1V",
       "pv": "20idPI518:PIE518:1:p1_volts",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "HRM_PZT2",
       "pv": "20idPI518:PIE518:1:p2_position",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "HRM_PZT2V",
       "pv": "20idPI518:PIE518:1:p2_volts",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "IC3A_HRM",
       "pv": "20aT1:TM:Current3:MeanValue_RBV",
-      "group": "HRM (Analyzer)"
+      "group": "HRM"
     },
     {
       "name": "DIC_Strain",
       "pv": "20ideLJ:T701:Ai4",
-      "group": "Ion Chamber"
+      "group": "Miscellaneous"
     },
     {
       "name": "DSIC_E",
       "pv": "20eT2:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "IC1A",
       "pv": "20aT1:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "IC2A",
       "pv": "20aT1:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "IC2D",
       "pv": "20dT1:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "IC3D",
       "pv": "20dT1:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "IC4A_foil_I0",
       "pv": "20aT2:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "IC4DIB",
       "pv": "20dT1:TM:Current3:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "IC4DOB",
       "pv": "20dT1:TM:Current4:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "IC5A_foil_I1",
       "pv": "20aT2:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "IC6A",
       "pv": "20aT1:TM:Current4:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "IC7D",
       "pv": "20dT3:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "IC8D",
       "pv": "20dT3:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "SIC1_D_B",
       "pv": "20dT2:TM:Current3:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "SIC1_D_IB",
       "pv": "20dT2:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "SIC1_D_OB",
       "pv": "20dT2:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "SIC1_D_T",
       "pv": "20dT2:TM:Current4:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_X_2D_1",
       "pv": "20aT3:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_X_2D_2",
       "pv": "20aT3:TM:Current2:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_Y_1D_1",
       "pv": "20aT2:TM:Current3:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_Y_1D_2",
       "pv": "20aT2:TM:Current4:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_Y_2D_1",
       "pv": "20aT3:TM:Current3:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "SIC_A_Y_2D_2",
       "pv": "20aT3:TM:Current4:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "A Hutch Ion Chambers"
     },
     {
       "name": "T7_IC7D_X",
       "pv": "20idd1:m7.RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "T7_IC8D_X",
       "pv": "20idd1:m20.RBV",
-      "group": "Ion Chamber"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "USIC_E",
       "pv": "20eT2:TM:Current1:MeanValue_RBV",
-      "group": "Ion Chamber"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "D2PD_E",
       "pv": "20eT2:TM:Current3:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "DSBOT_E",
       "pv": "20eT3:TM:Current3:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "DSIB_E",
       "pv": "20eT3:TM:Current1:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "DSOB_E",
       "pv": "20eT3:TM:Current2:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "DSTOP_E",
       "pv": "20eT3:TM:Current4:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "DateTimeStart",
@@ -1143,22 +1143,22 @@
     {
       "name": "E_HLSMS_tilt1",
       "pv": "20ideSoft:JDI:1:X",
-      "group": "Miscellaneous"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_tilt1_offset",
       "pv": "20ideSoft:JDI:1:X_Offset",
-      "group": "Miscellaneous"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_tilt2",
       "pv": "20ideSoft:JDI:1:Y",
-      "group": "Miscellaneous"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_tilt2_offset",
       "pv": "20ideSoft:JDI:1:Y_Offset",
-      "group": "Miscellaneous"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_Hutch_Analog_In",
@@ -1173,117 +1173,117 @@
     {
       "name": "E_PR_IRF_Output",
       "pv": "20idcSoft:ET2k:1:OP",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_RBV",
       "pv": "20ideLJ:T701:Ai12",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_RampRate",
       "pv": "20idcSoft:ET2k:1:RRt",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_RampRate_RBV",
       "pv": "20idcSoft:ET2k:1:RR",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T1",
       "pv": "20idcSoft:ET2k:1:Temp",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_max_output",
       "pv": "20idcSoft:ET2k:1:Hi_Pwr_Lim",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_max_output_RBV",
       "pv": "20idcSoft:ET2k:1:HO",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_max_set_pt",
       "pv": "20idcSoft:ET2k:1:SP_Hi_Lim",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_max_set_pt_RBV",
       "pv": "20idcSoft:ET2k:1:HS",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_set_pt",
       "pv": "20idcSoft:ET2k:1:Sp",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "E_PR_IRF_T_target",
       "pv": "20idcSoft:ET2k:1:SP",
-      "group": "Miscellaneous"
+      "group": "E PulseRay Furnace"
     },
     {
       "name": "IDEnergyDS",
       "pv": "S20ID:DSID:EnergyM",
-      "group": "Miscellaneous"
+      "group": "Undulator"
     },
     {
       "name": "IDEnergyUS",
       "pv": "S20ID:USID:EnergyM",
-      "group": "Miscellaneous"
+      "group": "Undulator"
     },
     {
       "name": "IDGapDS",
       "pv": "S20ID:DSID:GapM",
-      "group": "Miscellaneous"
+      "group": "Undulator"
     },
     {
       "name": "IDGapUS",
       "pv": "S20ID:USID:GapM",
-      "group": "Miscellaneous"
+      "group": "Undulator"
     },
     {
       "name": "LINKAM_OLD_Heating_Rate",
       "pv": "20ideSoft:ci94:setRate",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_Pump_Speed",
       "pv": "20ideSoft:ci94:pumpSpeed",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_Pump_Speed_set",
       "pv": "20ideSoft:ci94:setSpeed",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_T1",
       "pv": "20ideSoft:ci94:temp",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_T1_set",
       "pv": "20ideSoft:ci94:setLimit",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_T2",
       "pv": "20ideSoft:ci94:temp2",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_dsc_value",
       "pv": "20ideSoft:ci94:dsc",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "LINKAM_OLD_status",
       "pv": "20ideSoft:ci94:status",
-      "group": "Miscellaneous"
+      "group": "Linkam Furnace (old)"
     },
     {
       "name": "Psylotech_Done",
@@ -1298,7 +1298,7 @@
     {
       "name": "SRCurrent",
       "pv": "S-DCCT:CurrentM",
-      "group": "Miscellaneous"
+      "group": "Storage Ring"
     },
     {
       "name": "SamPressure",
@@ -1313,467 +1313,467 @@
     {
       "name": "T2_4_E",
       "pv": "20eT2:TM:Current4:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "USBOT_E",
       "pv": "20eT1:TM:Current3:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "USIB_E",
       "pv": "20eT1:TM:Current1:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "USOB_E",
       "pv": "20eT1:TM:Current2:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "USTOP_E",
       "pv": "20eT1:TM:Current4:MeanValue_RBV",
-      "group": "Miscellaneous"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "World_Angle",
       "pv": "20ida1:HR1_worldOffAO.VAL",
-      "group": "Miscellaneous"
+      "group": "HRM"
     },
     {
       "name": "World_Angle_Th1",
       "pv": "20ida1:HR1_Theta1RdbkAO",
-      "group": "Miscellaneous"
+      "group": "HRM"
     },
     {
       "name": "World_Angle_Th2",
       "pv": "20ida1:HR1_Theta2RdbkAO",
-      "group": "Miscellaneous"
+      "group": "HRM"
     },
     {
       "name": "D_AttenPos",
       "pv": "20idhedm:m6.RBV",
-      "group": "Motors"
+      "group": "Attenuator"
     },
     {
       "name": "D_HRSMS_RotX",
       "pv": "20idhedm:m46.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samRx",
       "pv": "20idhedm:m44.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samRy",
       "pv": "20idhedmA:m1.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samRz",
       "pv": "20idhedm:m43.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samX",
       "pv": "20idhedm:m41.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samY",
       "pv": "20idhedm:m45.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_HRSMS_samZ",
       "pv": "20idhedm:m42.RBV",
-      "group": "Motors"
+      "group": "D-HRSMS"
     },
     {
       "name": "D_Lens1RX",
       "pv": "20idhedm:m13.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens1RY",
       "pv": "20idhedm:m12.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens1RZ",
       "pv": "20idhedm:m14.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens1X",
       "pv": "20idhedm:m9.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens1Y",
       "pv": "20idhedm:m11.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens1Z",
       "pv": "20idhedm:m10.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 1"
     },
     {
       "name": "D_Lens2RX",
       "pv": "20idhedm:m19.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens2RY",
       "pv": "20idhedm:m18.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens2RZ",
       "pv": "20idhedm:m20.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens2X",
       "pv": "20idhedm:m15.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens2Y",
       "pv": "20idhedm:m17.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens2Z",
       "pv": "20idhedm:m16.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 2"
     },
     {
       "name": "D_Lens3RX",
       "pv": "20idhedm:m25.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens3RY",
       "pv": "20idhedm:m24.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens3RZ",
       "pv": "20idhedm:m26.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens3X",
       "pv": "20idhedm:m21.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens3Y",
       "pv": "20idhedm:m23.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens3Z",
       "pv": "20idhedm:m22.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 3"
     },
     {
       "name": "D_Lens4RX",
       "pv": "20idhedm:m31.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens4RY",
       "pv": "20idhedm:m30.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens4RZ",
       "pv": "20idhedm:m32.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens4X",
       "pv": "20idhedm:m27.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens4Y",
       "pv": "20idhedm:m29.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens4Z",
       "pv": "20idhedm:m28.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 4"
     },
     {
       "name": "D_Lens5RX",
       "pv": "20idd1:m12.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens5RY",
       "pv": "20idd1:m11.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens5RZ",
       "pv": "20idd1:m13.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens5X",
       "pv": "20idd1:m8.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens5Y",
       "pv": "20idd1:m10.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens5Z",
       "pv": "20idd1:m9.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 5"
     },
     {
       "name": "D_Lens6RX",
       "pv": "20idd1:m18.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "D_Lens6RY",
       "pv": "20idd1:m17.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "D_Lens6RZ",
       "pv": "20idd1:m19.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "D_Lens6X",
       "pv": "20idd1:m15.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "D_Lens6Y",
       "pv": "20idd1:m16.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "D_Lens6Z",
       "pv": "20idd1:m14.RBV",
-      "group": "Motors"
+      "group": "D Lens Stack 6"
     },
     {
       "name": "E_HLSMS_RotX",
       "pv": "20ide2:m88.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_RotY1",
       "pv": "20ide2:m81.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_RotY2",
       "pv": "20ide2:m82.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_RotY3",
       "pv": "20ide2:m83.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_samRy",
       "pv": "20ide2:m84.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_samX",
       "pv": "20ide2:m85.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_samY",
       "pv": "20ide2:m86.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HLSMS_samZ",
       "pv": "20ide2:m87.RBV",
-      "group": "Motors"
+      "group": "E-HLSMS"
     },
     {
       "name": "E_HRSMS_samRx",
       "pv": "20ideHRSMS:m3.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_HRSMS_samRy",
       "pv": "20ideHRSMS:m2.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_HRSMS_samRz",
       "pv": "20ideHRSMS:m5.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_HRSMS_samX",
       "pv": "20ideHRSMS:m6.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_HRSMS_samY",
       "pv": "20ideHRSMS:m7.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_HRSMS_samZ",
       "pv": "20ideHRSMS:m8.RBV",
-      "group": "Motors"
+      "group": "E-HRSMS"
     },
     {
       "name": "E_Lens1RX",
       "pv": "20ide2:m18.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens1RY",
       "pv": "20ide2:m19.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens1RZ",
       "pv": "20ide2:m20.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens1X",
       "pv": "20ide2:m15.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens1Y",
       "pv": "20ide2:m16.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens1Z",
       "pv": "20ide2:m17.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 1"
     },
     {
       "name": "E_Lens2RX",
       "pv": "20ide2:m24.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens2RY",
       "pv": "20ide2:m25.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens2RZ",
       "pv": "20ide2:m26.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens2X",
       "pv": "20ide2:m21.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens2Y",
       "pv": "20ide2:m22.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens2Z",
       "pv": "20ide2:m23.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 2"
     },
     {
       "name": "E_Lens3RX",
       "pv": "20ide2:m32.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens3RY",
       "pv": "20ide2:m33.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens3RZ",
       "pv": "20ide2:m34.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens3X",
       "pv": "20ide2:m29.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens3Y",
       "pv": "20ide2:m30.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens3Z",
       "pv": "20ide2:m31.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 3"
     },
     {
       "name": "E_Lens4RX",
       "pv": "20ide2:m38.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E_Lens4RY",
       "pv": "20ide2:m39.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E_Lens4RZ",
       "pv": "20ide2:m40.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E_Lens4X",
       "pv": "20ide2:m35.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E_Lens4Y",
       "pv": "20ide2:m36.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "E_Lens4Z",
       "pv": "20ide2:m37.RBV",
-      "group": "Motors"
+      "group": "E Lens Stack 4"
     },
     {
       "name": "FillPattern",
       "pv": "OPS:message3",
-      "group": "Motors"
+      "group": "Storage Ring"
     },
     {
       "name": "NextFillInfo",
       "pv": "OPS:message6",
-      "group": "Motors"
+      "group": "Storage Ring"
     },
     {
       "name": "RingOperator",
       "pv": "OPS:message1",
-      "group": "Motors"
+      "group": "Storage Ring"
     },
     {
       "name": "DetADCoreVersion",
@@ -2063,102 +2063,102 @@
     {
       "name": "DDSSlitsHCenter",
       "pv": "20idhedm:S2Ht2.D",
-      "group": "Slits"
+      "group": "D Downstream Slits"
     },
     {
       "name": "DDSSlitsHSize",
       "pv": "20idhedm:S2Ht2.C",
-      "group": "Slits"
+      "group": "D Downstream Slits"
     },
     {
       "name": "DDSSlitsVCenter",
       "pv": "20idhedm:S2Vt2.D",
-      "group": "Slits"
+      "group": "D Downstream Slits"
     },
     {
       "name": "DDSSlitsVSize",
       "pv": "20idhedm:S2Vt2.C",
-      "group": "Slits"
+      "group": "D Downstream Slits"
     },
     {
       "name": "DUSSlitsHCenter",
       "pv": "20idhedm:S1Ht2.D",
-      "group": "Slits"
+      "group": "D Upstream Slits"
     },
     {
       "name": "DUSSlitsHSize",
       "pv": "20idhedm:S1Ht2.C",
-      "group": "Slits"
+      "group": "D Upstream Slits"
     },
     {
       "name": "DUSSlitsVCenter",
       "pv": "20idhedm:S1Vt2.D",
-      "group": "Slits"
+      "group": "D Upstream Slits"
     },
     {
       "name": "DUSSlitsVSize",
       "pv": "20idhedm:S1Vt2.C",
-      "group": "Slits"
+      "group": "D Upstream Slits"
     },
     {
       "name": "EDSSlitsHCenter",
       "pv": "20ide2:KslitEdsHt2.D",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "EDSSlitsHSize",
       "pv": "20ide2:KslitEdsHt2.C",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "EDSSlitsVCenter",
       "pv": "20ide2:KslitEdsVt2.D",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "EDSSlitsVSize",
       "pv": "20ide2:KslitEdsVt2.C",
-      "group": "Slits"
+      "group": "E Downstream Slits"
     },
     {
       "name": "EUSSlitsHCenter",
       "pv": "20ide2:KslitEusHt2.D",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "EUSSlitsHSize",
       "pv": "20ide2:KslitEusHt2.C",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "EUSSlitsVCenter",
       "pv": "20ide2:KslitEusVt2.D",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "EUSSlitsVSize",
       "pv": "20ide2:KslitEusVt2.C",
-      "group": "Slits"
+      "group": "E Upstream Slits"
     },
     {
       "name": "T7SlitsHCenter",
       "pv": "20idd1:S3Ht2.D",
-      "group": "Slits"
+      "group": "D T7 Slits"
     },
     {
       "name": "T7SlitsHSize",
       "pv": "20idd1:S3Ht2.C",
-      "group": "Slits"
+      "group": "D T7 Slits"
     },
     {
       "name": "T7SlitsVCenter",
       "pv": "20idd1:S3Vt2.D",
-      "group": "Slits"
+      "group": "D T7 Slits"
     },
     {
       "name": "T7SlitsVSize",
       "pv": "20idd1:S3Vt2.C",
-      "group": "Slits"
+      "group": "D T7 Slits"
     },
     {
       "name": "DetADCoreVersion",
