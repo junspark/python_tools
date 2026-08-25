@@ -489,6 +489,15 @@ class _PvLoggerLaunchWorker(QtCore.QObject):
         self.selected_devices = selected_devices
 
     def run(self):
+        # Diagnostic prints at each step (flush=True, since this runs off
+        # the GUI thread and stdout may otherwise not appear promptly) -
+        # confirmed directly that a launch can sit indefinitely on
+        # "Launching..." with no error ever surfacing, and with plain SSH
+        # connectivity to this exact host/user already verified working
+        # and fast - narrowing down which specific step actually hangs
+        # needs to see progress between them, not just before/after.
+        print(f"[pv_logger launch] starting for beamline={self.beamline!r} host={self.host!r} user={self.user!r}", flush=True)
+
         # Same atomic-mkdir-lock guard rail as Scan/Verify MD5: the
         # status-file pre-check on the GUI thread is a fast common-case
         # filter, but it's check-then-act across different users'/sessions'
@@ -496,26 +505,36 @@ class _PvLoggerLaunchWorker(QtCore.QObject):
         # needs to cover the launch sequence itself, not the job's whole
         # runtime.
         lock_path = pl.lock_dir(self.remote_base, "pvlogger", self.beamline)
+        print(f"[pv_logger launch] acquiring lock at {lock_path!r}...", flush=True)
         if not pl.acquire_remote_lock(self.host, self.user, lock_path):
+            print("[pv_logger launch] lock already held - aborting", flush=True)
             self.error.emit(f"PV logging for '{self.beamline}' is already starting/running elsewhere.")
             return
+        print("[pv_logger launch] lock acquired", flush=True)
 
         try:
             status_path = pl.pv_logger_status_path(self.remote_base, self.beamline)
+            print(f"[pv_logger launch] checking local status file {status_path!r}...", flush=True)
             try:
                 with open(status_path) as f:
                     existing = json.load(f)
                 if existing.get("state") == "RUNNING":
+                    print("[pv_logger launch] status file says already RUNNING - aborting", flush=True)
                     self.error.emit(f"PV logging for '{self.beamline}' is already running (started by another user or session).")
                     return
             except (OSError, json.JSONDecodeError):
                 pass
+            print("[pv_logger launch] status check done", flush=True)
 
             job_spec_path = os.path.join(pl.pv_logger_status_dir(self.remote_base), f"{self.beamline}.jobspec")
             unit_name = pl.pv_logger_unit_name(self.beamline)
             worker_script_path = os.path.join(SCRIPT_DIR, "pv_logger.py")
 
-            pl.write_remote_file(self.host, self.user, job_spec_path, json.dumps(self.filtered_cfg, indent=2))
+            job_spec_json = json.dumps(self.filtered_cfg, indent=2)
+            print(f"[pv_logger launch] writing job spec ({len(job_spec_json)} bytes, "
+                  f"{len(self.filtered_cfg.get('pvs', []))} PVs) to {job_spec_path!r}...", flush=True)
+            pl.write_remote_file(self.host, self.user, job_spec_path, job_spec_json)
+            print("[pv_logger launch] job spec written", flush=True)
 
             command = (
                 "/usr/bin/python3 {script} start --config {spec} --outfile {outfile} --status-file {status}"
@@ -525,18 +544,24 @@ class _PvLoggerLaunchWorker(QtCore.QObject):
                 outfile=shlex.quote(self.outfile),
                 status=shlex.quote(status_path),
             )
+            print(f"[pv_logger launch] launching detached job (unit={unit_name!r})...", flush=True)
             pl.launch_detached_job(
                 self.host, self.user, unit_name,
                 description=f"PV logger: {self.beamline} ({', '.join(self.selected_devices[:3])}{'...' if len(self.selected_devices) > 3 else ''})",
                 command=command,
                 slice_name="pv-logger.slice",
             )
+            print("[pv_logger launch] detached job launched successfully", flush=True)
 
             self.launched.emit({"beamline": self.beamline, "outfile": self.outfile})
+            print("[pv_logger launch] launched signal emitted", flush=True)
         except Exception as e:
+            print(f"[pv_logger launch] EXCEPTION: {e!r}", flush=True)
             self.error.emit(str(e))
         finally:
+            print("[pv_logger launch] releasing lock...", flush=True)
             pl.release_remote_lock(self.host, self.user, lock_path)
+            print("[pv_logger launch] lock released, run() returning", flush=True)
 
 
 class PVLoggerPanel(QtWidgets.QWidget):
