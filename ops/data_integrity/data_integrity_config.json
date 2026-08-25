@@ -56,6 +56,18 @@
       "beamline": "s20",
       "local_root": "/home/s20a/kamath_jun26",
       "dataset": null
+    },
+    {
+      "name": "sangid_jul25",
+      "beamline": "s20",
+      "local_root": "/home/s20a/sangid_jul25",
+      "dataset": null
+    },
+    {
+      "name": "sangid_nov25",
+      "beamline": "s20",
+      "local_root": "/home/s20a/sangid_nov25",
+      "dataset": null
     }
   ]
 }
