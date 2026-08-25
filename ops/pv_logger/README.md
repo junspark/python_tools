@@ -113,16 +113,35 @@ silently skipped at discovery, no need to comment it out.
 ### Device categories
 
 The Start-new-experiment checklist groups devices under category headers
-(`DEVICE_CATEGORIES` in `pv_logger_gui.py`) — e.g. separate "D Lens
-Stacks"/"E Lens Stacks", "D Slits"/"E Slits"/"White Beam Slits", and "A/D/E
-Hutch Ion Chambers" groups, mirroring the hutch/position a device actually
-belongs to rather than one generic "Slits" or "Ion Chamber" bucket. A
-device not mapped to any category falls into "Other" at the end. To add a
-new device group, give its PVs a `"group"` value in the master list and
-(optionally) add that name to the relevant category in
-`DEVICE_CATEGORIES` — an unmapped group still shows up fine under "Other",
-categorization is a display convenience, not a requirement.
-`DEVICE_CATEGORIES` is shared across both beamlines' master lists.
+(`DEVICE_CATEGORIES` in `pv_logger_gui.py`) — e.g. separate "B/C/D/E Lens
+Stacks", "B/C/E Slits"/"White Beam Slits", and "B/C/E Hutch Ion Chambers"
+groups, mirroring the hutch/position a device actually belongs to rather
+than one generic "Slits" or "Ion Chamber" bucket. A device not mapped to
+any category falls into "Other" at the end. To add a new device group,
+give its PVs a `"group"` value in the master list and (optionally) add
+that name to the relevant category in `DEVICE_CATEGORIES` — an unmapped
+group still shows up fine under "Other", categorization is a display
+convenience, not a requirement. `DEVICE_CATEGORIES` is shared across both
+beamlines' master lists — before removing or renaming an entry, check
+both master lists for real members, not just one.
+
+Where a physical device is naturally numbered (e.g. a lens stack with its
+own motor per axis), give each unit its own `"group"` like `"C Lens Stack
+1"` rather than lumping every unit under one generic device — this is what
+lets the checklist show/select one stack at a time instead of all-or-
+nothing for a whole hutch's optics. Not every device has this structure:
+where the hardware itself has no natural numbering (e.g. s1's B hutch has
+five distinct optics — `L1`, `L2`, `RL`, `CRL1`, `CRL2` — with different
+axis sets and no shared "stack N" scheme), each unit keeps its own short
+name as its `"group"` instead of an invented number.
+
+Within a device group, PVs are ordered by `_pv_sort_key` rather than
+raw alphabetical: a name ending in a motion-axis code sorts translation
+axes before rotation axes (`X`, `Y`, `Z`, then `RX`, `RY`, `RZ`) — plain
+alphabetical order would put every `RX`/`RY`/`RZ` first, since `R` sorts
+before `X` in ASCII. Applies to both naming styles in use (`"C Lens1 X"`
+and `"D_Lens1X"`). Anything else falls back to plain alphabetical, exactly
+as before this existed.
 
 ## CLI usage
 
