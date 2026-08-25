@@ -17,8 +17,11 @@ Job spec (written by the GUI before launching, see dm_integrity_gui.py):
   experiment_name, beamline, local_root (already canonicalized),
   upload_status, catalog_files, comparison (compare()'s size-based result -
   build_report needs this alongside checksum_results), paths_to_verify,
-  records_dir, status_dirs (list - both beamlines', for aggregate peer
-  counting), cpu_budget.
+  relocated_files (find_relocated_files()'s output, computed by the GUI
+  since it has local_files in scope and this worker only gets local_root -
+  read via .get(..., []) so a job spec from before this key existed still
+  runs), records_dir, status_dirs (list - both beamlines', for aggregate
+  peer counting), cpu_budget.
 
 Status file is updated in place (atomic write) as the job progresses -
 state machine QUEUED -> RUNNING -> DONE|FAILED|CANCELLED. The GUI writes
@@ -237,11 +240,17 @@ def run(job_spec_path, status_file):
         paths_to_verify = spec["paths_to_verify"]
         upload_status = spec["upload_status"]
         records_dir = spec["records_dir"]
+        # .get(), not spec[...]: a job launched by an older
+        # _ChecksumLaunchWorker (before relocated_files existed) has no
+        # such key - defaults to [] the same way build_report's own
+        # relocated_files=None default does, so an in-flight upgrade never
+        # crashes a running job.
+        relocated_files = spec.get("relocated_files", [])
 
         checksum_results = di.verify_checksums(
             local_root, catalog_files, paths_to_verify, progress_cb=job.progress_cb)
 
-        report = di.build_report(experiment_name, upload_status, comparison, checksum_results)
+        report = di.build_report(experiment_name, upload_status, comparison, checksum_results, relocated_files)
         report_path = di.save_record(records_dir, experiment_name, report)
 
         job.mark_done(report_path)

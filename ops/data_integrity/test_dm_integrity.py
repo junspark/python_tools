@@ -30,6 +30,7 @@ sys.modules['dm.ds_web_service.api.fileDsApi'] = mock.MagicMock()
 sys.path.insert(0, SCRIPT_DIR)
 
 import dm_integrity as di
+import checksum_worker
 
 
 def test_compare():
@@ -57,6 +58,46 @@ def test_compare():
     assert result["file3.dat"] == "MATCH", "file3 should MATCH"
     assert result["local_only.txt"] == "LOCAL_ONLY", "local_only.txt should be LOCAL_ONLY"
     assert result["remote_only.txt"] == "REMOTE_ONLY", "remote_only.txt should be REMOTE_ONLY"
+
+    print("✓")
+
+
+def test_find_relocated_files():
+    """A file present on both sides but under a different relative path
+    should be paired by basename+size, not left as two unrelated LOCAL_
+    ONLY/REMOTE_ONLY entries. Zero-byte files and files with no basename
+    match on the other side must not be paired."""
+    print("Testing find_relocated_files()...", end=" ")
+
+    local_files = {
+        "raw/scan_0042.h5": {"size": 5000, "mtime": 1},
+        "raw/empty.dat": {"size": 0, "mtime": 1},
+        "raw/never_uploaded.dat": {"size": 999, "mtime": 1},
+    }
+    catalog_files = {
+        "archive/2026/scan_0042.h5": {"size": 5000, "md5": "abc"},
+        "archive/2026/empty.dat": {"size": 0, "md5": "def"},
+        "archive/2026/deleted_locally.dat": {"size": 777, "md5": "ghi"},
+    }
+    comparison = di.compare(local_files, catalog_files)
+    assert comparison["raw/scan_0042.h5"] == "LOCAL_ONLY"
+    assert comparison["archive/2026/scan_0042.h5"] == "REMOTE_ONLY"
+
+    relocated = di.find_relocated_files(local_files, catalog_files, comparison)
+
+    assert len(relocated) == 1, f"expected exactly one relocated pair (empty.dat must be skipped), got {relocated}"
+    pair = relocated[0]
+    assert pair["local_path"] == "raw/scan_0042.h5"
+    assert pair["remote_path"] == "archive/2026/scan_0042.h5"
+    assert pair["size"] == 5000
+
+    # Genuinely un-paired files (different basenames, or a same-basename
+    # zero-byte file) must not show up as relocated.
+    relocated_paths = {pair["local_path"] for pair in relocated} | {pair["remote_path"] for pair in relocated}
+    assert "raw/never_uploaded.dat" not in relocated_paths
+    assert "archive/2026/deleted_locally.dat" not in relocated_paths
+    assert "raw/empty.dat" not in relocated_paths
+    assert "archive/2026/empty.dat" not in relocated_paths
 
     print("✓")
 
@@ -94,6 +135,88 @@ def test_build_report():
 
     report2 = di.build_report("test_exp", upload_status, comparison_with_mismatch)
     assert report2["recommend_deletion"] == False, "Should not recommend deletion if files differ"
+
+    # A relocated pair must be subtracted out of local_only/remote_only
+    # (not double-counted as two separate "missing" problems) and must
+    # count toward neither good nor bad - but must still block
+    # recommend_deletion, since a basename+size match is never checksum-
+    # confirmed (verify_checksums only ever hashes MATCH-status paths).
+    comparison_with_relocation = {
+        "file1.dat": "MATCH",
+        "raw/moved.h5": "LOCAL_ONLY",
+        "archive/moved.h5": "REMOTE_ONLY",
+    }
+    relocated_files = [{"local_path": "raw/moved.h5", "remote_path": "archive/moved.h5", "size": 123}]
+    report3 = di.build_report("test_exp", upload_status, comparison_with_relocation, relocated_files=relocated_files)
+
+    stats = report3["file_stats"]
+    assert stats["relocated"] == 1
+    assert stats["local_only"] == 0, "the relocated pair's LOCAL_ONLY path must not also count as local_only"
+    assert stats["remote_only"] == 0, "the relocated pair's REMOTE_ONLY path must not also count as remote_only"
+    assert stats["good"] == 1 and stats["bad"] == 0, "relocated files count toward neither good nor bad"
+    assert stats["total"] == 3, "total is still every raw comparison path, relocated or not"
+    assert report3["relocated_files"] == relocated_files
+    assert report3["recommend_deletion"] == False, \
+        "a basename+size-only match must never authorize deletion on its own"
+
+    print("✓")
+
+
+def test_checksum_worker_passes_through_relocated_files():
+    """checksum_worker.py's run() reads job_spec["relocated_files"] and
+    forwards it into build_report() - and must default safely to []
+    for a job spec from an older _ChecksumLaunchWorker that predates this
+    key, rather than KeyError-ing a running job mid-upgrade."""
+    print("Testing checksum_worker.run() forwards relocated_files...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        records_dir = os.path.join(tmpdir, "records")
+        job_spec_path = os.path.join(tmpdir, "job.jobspec")
+        status_file = os.path.join(tmpdir, "status.json")
+
+        job_spec = {
+            "experiment_name": "test_exp",
+            "beamline": "s1",
+            "local_root": tmpdir,
+            "upload_status": {"upload_complete": True},
+            "catalog_files": {},
+            "comparison": {
+                "good.h5": "MATCH",
+                "raw/moved.h5": "LOCAL_ONLY",
+                "archive/moved.h5": "REMOTE_ONLY",
+            },
+            "paths_to_verify": [],
+            "relocated_files": [{"local_path": "raw/moved.h5", "remote_path": "archive/moved.h5", "size": 123}],
+            "records_dir": records_dir,
+        }
+        with open(job_spec_path, "w") as f:
+            json.dump(job_spec, f)
+
+        rc = checksum_worker.run(job_spec_path, status_file)
+        assert rc == 0
+
+        with open(status_file) as f:
+            status = json.load(f)
+        assert status["state"] == "DONE"
+        with open(status["report_path"]) as f:
+            report = json.load(f)
+        assert report["file_stats"]["relocated"] == 1
+        assert report["relocated_files"] == job_spec["relocated_files"]
+
+        # A job spec from before relocated_files existed must not crash -
+        # spec.get(..., []) should quietly default to no relocations.
+        del job_spec["relocated_files"]
+        status_file2 = os.path.join(tmpdir, "status2.json")
+        job_spec_path2 = os.path.join(tmpdir, "job2.jobspec")
+        with open(job_spec_path2, "w") as f:
+            json.dump(job_spec, f)
+        rc2 = checksum_worker.run(job_spec_path2, status_file2)
+        assert rc2 == 0
+        with open(status_file2) as f:
+            status2 = json.load(f)
+        with open(status2["report_path"]) as f:
+            report2 = json.load(f)
+        assert report2["file_stats"]["relocated"] == 0
 
     print("✓")
 
@@ -290,7 +413,9 @@ def test_dm_upload_command_quoting():
 if __name__ == "__main__":
     try:
         test_compare()
+        test_find_relocated_files()
         test_build_report()
+        test_checksum_worker_passes_through_relocated_files()
         test_diff_directories()
         test_verify_checksums()
         test_save_and_list_records()

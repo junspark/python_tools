@@ -721,17 +721,118 @@ def verify_checksums(local_root, catalog_files, paths, progress_cb=None):
     return result
 
 
-def build_report(experiment_name, upload_status, comparison, checksum_results=None):
+_RELOCATION_BASENAME_BUCKET_CAP = 1000  # see find_relocated_files
+
+
+def find_relocated_files(local_files, catalog_files, comparison):
+    """
+    Detect files present on BOTH sides but under a different relative
+    subfolder path - the case compare()'s flat per-path status can't tell
+    apart from "genuinely missing": a file moved within the local tree (or
+    reorganized on Sojourner relative to it) shows up as one LOCAL_ONLY
+    path and one unrelated-looking REMOTE_ONLY path, with nothing to
+    connect the two. Confirmed directly as a real gap: a "1 good / 13317
+    bad" Verify MD5 result for an experiment whose local copy had simply
+    been cleaned up post-upload was indistinguishable, at a glance, from
+    13317 files actually missing from Sojourner.
+
+    Matches by basename + recorded size - the same cheap, non-checksum
+    heuristic the beamline's own prior (MATLAB-based) tool used, chosen
+    deliberately over a full checksum cross-reference: neither local_files
+    nor catalog_files carry a checksum for LOCAL_ONLY/REMOTE_ONLY paths
+    (verify_checksums() only ever hashes paths compare() already called
+    MATCH), so anything stronger than basename+size would mean a whole
+    extra hashing pass just to classify files this function only narrows
+    down as *candidates* for "probably the same file, moved" - a labeling
+    aid, not a data-integrity guarantee. Callers must NOT treat a returned
+    pair as checksum-confirmed (see build_report's recommend_deletion,
+    which deliberately does not treat relocated files as safe to delete
+    on this evidence alone).
+
+    Zero-byte files are skipped: two unrelated empty files anywhere in the
+    tree would otherwise "match" by basename+size collision constantly.
+    A basename shared by an unusually large number of files on either side
+    (_RELOCATION_BASENAME_BUCKET_CAP) is also skipped entirely, rather than
+    attempting O(n^2) matching within that one bucket - a defensive guard
+    against a pathological naming convention, not an expected case (most
+    basenames appear once or twice across LOCAL_ONLY/REMOTE_ONLY).
+
+    Matching is greedy and deterministic (paths sorted before matching,
+    each remote path consumed at most once) - with duplicate basenames on
+    both sides this may occasionally pair the "wrong" specific files, but
+    always produces the same result for the same input.
+
+    Returns [{"local_path": ..., "remote_path": ..., "size": ...}, ...] -
+    a list of pair dicts (JSON-serializable, since this needs to cross the
+    Verify MD5 job spec's process/host boundary - see _ChecksumLaunchWorker
+    in dm_integrity_gui.py).
+    """
+    local_only = sorted(p for p, s in comparison.items() if s == "LOCAL_ONLY")
+    remote_only = sorted(p for p, s in comparison.items() if s == "REMOTE_ONLY")
+
+    by_basename_remote = {}
+    for p in remote_only:
+        by_basename_remote.setdefault(os.path.basename(p), []).append(p)
+
+    by_basename_local = {}
+    for p in local_only:
+        by_basename_local.setdefault(os.path.basename(p), []).append(p)
+
+    relocated = []
+    matched_remote_paths = set()
+    for basename, local_candidates in by_basename_local.items():
+        remote_candidates = by_basename_remote.get(basename)
+        if not remote_candidates:
+            continue
+        if len(local_candidates) > _RELOCATION_BASENAME_BUCKET_CAP or len(remote_candidates) > _RELOCATION_BASENAME_BUCKET_CAP:
+            continue
+        for local_path in local_candidates:
+            local_size = local_files.get(local_path, {}).get("size")
+            if not local_size:  # None or 0 - skip zero-byte/unknown-size files
+                continue
+            for remote_path in remote_candidates:
+                if remote_path in matched_remote_paths:
+                    continue
+                remote_size = catalog_files.get(remote_path, {}).get("size")
+                if remote_size == local_size:
+                    relocated.append({"local_path": local_path, "remote_path": remote_path, "size": local_size})
+                    matched_remote_paths.add(remote_path)
+                    break
+
+    return relocated
+
+
+def build_report(experiment_name, upload_status, comparison, checksum_results=None, relocated_files=None):
     """
     Build summary report.
     Returns dict with experiment info, file stats, and recommend_deletion flag.
+
+    relocated_files (see find_relocated_files) reclassifies matched pairs
+    out of local_only/remote_only: file_stats["local_only"]/["remote_only"]
+    are the counts AFTER subtracting relocated pairs, not compare()'s raw
+    counts - a relocated pair still shows as one LOCAL_ONLY and one
+    REMOTE_ONLY entry in the saved "comparison" map itself (compare() is
+    never modified by this), only the summary counts are adjusted. This
+    means file_stats["local_only"] + file_stats["remote_only"] +
+    2*file_stats["relocated"] + file_stats["match"] +
+    file_stats["size_mismatch"] == file_stats["total"] - and, deliberately,
+    file_stats["good"] + file_stats["bad"] no longer equals total once any
+    relocation exists (relocated files count toward neither: the local/
+    remote paths differ from Sojourner's own structure, worth surfacing,
+    but the data itself isn't missing either).
     """
     checksum_results = checksum_results or {}
+    relocated_files = relocated_files or []
+    relocated_count = len(relocated_files)
 
     match_count = sum(1 for s in comparison.values() if s == "MATCH")
     size_mismatch_count = sum(1 for s in comparison.values() if s == "SIZE_MISMATCH")
-    local_only_count = sum(1 for s in comparison.values() if s == "LOCAL_ONLY")
-    remote_only_count = sum(1 for s in comparison.values() if s == "REMOTE_ONLY")
+    # Adjusted (post-relocation) counts - used everywhere below, including
+    # recommend_deletion and sojourner_status, not just file_stats: a
+    # relocated file is "explained," not "missing," for every purpose this
+    # function computes.
+    local_only_count = sum(1 for s in comparison.values() if s == "LOCAL_ONLY") - relocated_count
+    remote_only_count = sum(1 for s in comparison.values() if s == "REMOTE_ONLY") - relocated_count
     checksum_mismatch_count = sum(1 for s in checksum_results.values() if s == "CHECKSUM_MISMATCH")
 
     total_files = len(comparison)
@@ -745,7 +846,15 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
         local_only_count == 0 and
         size_mismatch_count == 0 and
         remote_only_count == 0 and
-        checksum_mismatch_count == 0
+        checksum_mismatch_count == 0 and
+        # A relocated pair is only ever basename+size evidence (see
+        # find_relocated_files) - never checksum-confirmed, since
+        # verify_checksums() only hashes paths compare() already called
+        # MATCH, not LOCAL_ONLY ones. Recommending deletion on that alone
+        # would mean trusting a same-name/same-size coincidence with zero
+        # byte-level confirmation - require a human to notice and confirm
+        # the rename was intentional first.
+        relocated_count == 0
     )
 
     # A plain answer to "did the local files land on Sojourner at all" -
@@ -785,6 +894,8 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
         if missing_dirs:
             dirs_shown = ", ".join(missing_dirs[:3]) + ("..." if len(missing_dirs) > 3 else "")
             sojourner_summary += f" ({len(missing_dirs)} whole subdirector{'y' if len(missing_dirs) == 1 else 'ies'} not on Sojourner at all: {dirs_shown})"
+        if relocated_count:
+            sojourner_summary += f" ({relocated_count} file{'' if relocated_count == 1 else 's'} found under a different path on each side, likely relocated)"
 
     report = {
         "experiment_name": experiment_name,
@@ -799,6 +910,7 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
             "local_only": local_only_count,
             "remote_only": remote_only_count,
             "checksum_mismatch": checksum_mismatch_count,
+            "relocated": relocated_count,
         },
         "directory_stats": {
             "missing": missing_dirs,
@@ -806,6 +918,7 @@ def build_report(experiment_name, upload_status, comparison, checksum_results=No
         },
         "comparison": comparison,
         "checksum_results": checksum_results,
+        "relocated_files": relocated_files,
         "sojourner_status": sojourner_status,
         "sojourner_summary": sojourner_summary,
         "recommend_deletion": recommend_deletion,
@@ -972,13 +1085,15 @@ def main(argv=None):
         catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user, setup_script)
         local_files = scan_local_files(local_root)
         comparison = compare(local_files, catalog_files)
+        relocated_files = find_relocated_files(local_files, catalog_files, comparison)
 
-        report = build_report(args.experiment, upload_status, comparison)
+        report = build_report(args.experiment, upload_status, comparison, relocated_files=relocated_files)
         save_record(records_dir, args.experiment, report)
 
         print(f"Experiment: {args.experiment}")
         print(f"Upload status: {upload_status['status']}")
-        print(f"Files: {report['file_stats']['good']} good / {report['file_stats']['bad']} bad")
+        print(f"Files: {report['file_stats']['good']} good / {report['file_stats']['bad']} bad"
+              f" / {report['file_stats']['relocated']} relocated")
         print(f"Recommend deletion: {report['recommend_deletion']}")
         _print_directory_stats(report)
 
@@ -987,16 +1102,18 @@ def main(argv=None):
         catalog_files = get_catalog_files(args.experiment, args.dataset, station_name, remote_host, remote_user, setup_script)
         local_files = scan_local_files(local_root)
         comparison = compare(local_files, catalog_files)
+        relocated_files = find_relocated_files(local_files, catalog_files, comparison)
 
         paths_to_verify = [p for p, s in comparison.items() if s == "MATCH"]
         checksum_results = verify_checksums(local_root, catalog_files, paths_to_verify)
 
-        report = build_report(args.experiment, upload_status, comparison, checksum_results)
+        report = build_report(args.experiment, upload_status, comparison, checksum_results, relocated_files)
         save_record(records_dir, args.experiment, report)
 
         print(f"Experiment: {args.experiment}")
         print(f"Checksums verified: {sum(1 for s in checksum_results.values() if s == 'CHECKSUM_MATCH')} match")
         print(f"Checksums failed: {sum(1 for s in checksum_results.values() if s == 'CHECKSUM_MISMATCH')} mismatch")
+        print(f"Relocated (same file, different path): {report['file_stats']['relocated']}")
         print(f"Recommend deletion: {report['recommend_deletion']}")
         _print_directory_stats(report)
 

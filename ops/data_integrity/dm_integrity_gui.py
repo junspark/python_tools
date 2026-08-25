@@ -253,8 +253,9 @@ class _ScanWorker(QtCore.QObject):
                 self.exp_name, self.dataset, self.station_name, self.remote_host, self.remote_user, self.setup_script)
             local_files = di.scan_local_files(self.local_root)
             comparison = di.compare(local_files, catalog_files)
+            relocated_files = di.find_relocated_files(local_files, catalog_files, comparison)
 
-            report = di.build_report(self.exp_name, upload_status, comparison)
+            report = di.build_report(self.exp_name, upload_status, comparison, relocated_files=relocated_files)
             if self.remote_base:
                 di.save_record_remote(self.save_host, self.save_user, di.checksum_records_dir(self.remote_base), self.exp_name, report)
             else:
@@ -334,6 +335,13 @@ class _ChecksumLaunchWorker(QtCore.QObject):
             local_files = di.scan_local_files(self.local_root)
             comparison = di.compare(local_files, catalog_files)
             paths_to_verify = [p for p, s in comparison.items() if s == "MATCH"]
+            # Computed here, not on checksum_worker.py's end: the remote
+            # job spec never carries local_files (only local_root, a
+            # path), and re-deriving it there would mean a second
+            # scan_local_files() walk of a potentially huge tree just to
+            # redo work already done on this line. relocated_files is a
+            # small, JSON-serializable summary - cheap to carry through.
+            relocated_files = di.find_relocated_files(local_files, catalog_files, comparison)
 
             unit_name = di.checksum_unit_name(self.exp_name)
             # Deliberately NOT ".job.json" - _count_active_peers globs
@@ -354,6 +362,7 @@ class _ChecksumLaunchWorker(QtCore.QObject):
                 "catalog_files": catalog_files,
                 "comparison": comparison,
                 "paths_to_verify": paths_to_verify,
+                "relocated_files": relocated_files,
                 "records_dir": records_dir,
                 "status_dirs": self.all_status_dirs,
                 "cpu_budget": self.cpu_budget,
@@ -1829,6 +1838,13 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         file_stats = report["file_stats"]
         good_count = file_stats["good"]
         bad_count = file_stats["bad"]
+        # .get(), not bracket access: this function is only ever fed a
+        # report just produced by build_report() this session, which
+        # always has "relocated" - but an old on-disk report loaded some
+        # other way (e.g. a future caller) wouldn't, and this is cheap
+        # insurance against that, matching HistoryDetailDialog's own
+        # defensive-access convention for report fields.
+        relocated_count = file_stats.get("relocated", 0)
         sojourner_status = report["sojourner_status"]
         upload_status = report["upload_status"]
 
@@ -1837,6 +1853,8 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self.table_widget.setItem(row, status_col, upload_status_item)
 
         files_text = f"{good_count} good / {bad_count} bad"
+        if relocated_count:
+            files_text += f" / {relocated_count} relocated"
         files_item = QtWidgets.QTableWidgetItem(files_text)
 
         # file_stats["remote_only"]/["size_mismatch"] are already the

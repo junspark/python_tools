@@ -66,6 +66,47 @@ def _write_config_with_fake_experiments(tmpdir):
     return config_path
 
 
+def test_paint_experiment_row_shows_relocated_and_excludes_from_problem_color():
+    """A row whose only "bad-looking" entries are actually relocated files
+    (see dm_integrity.find_relocated_files) must not be painted as a
+    problem row - build_report() already excludes relocated files from
+    file_stats["remote_only"], which _paint_experiment_row's has_problem
+    check reads directly. This is the concrete fix for the miscalibration
+    that started this feature: a cleaned-up-after-upload experiment
+    painted every REMOTE_ONLY file red, indistinguishable from real data
+    loss."""
+    print("Testing _paint_experiment_row shows relocated count and skips problem color...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config_with_fake_experiments(tmpdir)
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+
+        row = 0
+        exp_name = panel.table_widget.item(row, 0).text()
+
+        comparison = {
+            "good.h5": "MATCH",
+            "raw/moved.h5": "LOCAL_ONLY",
+            "archive/moved.h5": "REMOTE_ONLY",
+        }
+        relocated_files = [{"local_path": "raw/moved.h5", "remote_path": "archive/moved.h5", "size": 123}]
+        report = dig.di.build_report(
+            exp_name, {"upload_complete": True}, comparison, relocated_files=relocated_files)
+
+        panel._paint_experiment_row(row, report)
+
+        files_col = 3  # six/seven-column layout: Expid, Beamline, Upload Status, Files, ...
+        files_item = panel.table_widget.item(row, files_col)
+        assert "relocated" in files_item.text().lower(), f"expected relocated count in Files text, got {files_item.text()!r}"
+        assert files_item.background().color() != dig.STATUS_COLORS["problem"], \
+            "a purely-relocated (not actually missing) file must not paint the row as a problem"
+
+        app.quit()
+
+    print("✓")
+
+
 def test_data_integrity_panel():
     """Test DataIntegrityPanel standalone."""
     print("Testing DataIntegrityPanel...", end=" ")
@@ -524,6 +565,41 @@ def test_history_detail_dialog_lists_problem_files():
     print("✓")
 
 
+def test_history_detail_dialog_shows_relocated_pair_not_double_listed():
+    """A relocated pair (see dm_integrity.find_relocated_files) should show
+    up as one combined "local -> remote" row, not also as two separate
+    plain LOCAL_ONLY/REMOTE_ONLY rows for the same underlying file."""
+    print("Testing HistoryDetailDialog shows a relocated pair once, combined...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        records_dir = os.path.join(tmpdir, "records")
+        exp_name = "test_jan24"
+
+        comparison = {
+            "good.h5": "MATCH",
+            "raw/moved.h5": "LOCAL_ONLY",
+            "archive/moved.h5": "REMOTE_ONLY",
+        }
+        relocated_files = [{"local_path": "raw/moved.h5", "remote_path": "archive/moved.h5", "size": 123}]
+        report = dig.di.build_report(exp_name, {"upload_complete": False}, comparison, relocated_files=relocated_files)
+        dig.di.save_record(records_dir, exp_name, report)
+        records = dig.di.list_records(records_dir, exp_name)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        dialog = dig.HistoryDetailDialog(None, exp_name, records)
+
+        row_texts = [dialog.table.item(row, 0).text() for row in range(dialog.table.rowCount())]
+        assert "raw/moved.h5 -> archive/moved.h5" in row_texts, \
+            f"expected one combined relocated row, got {row_texts}"
+        assert "raw/moved.h5" not in row_texts, "the relocated local path must not also appear as a plain entry"
+        assert "archive/moved.h5" not in row_texts, "the relocated remote path must not also appear as a plain entry"
+        assert "relocated" in dialog.summary_label.text().lower()
+
+        app.quit()
+
+    print("✓")
+
+
 def test_data_integrity_window():
     """Test DataIntegrityWindow standalone."""
     print("Testing DataIntegrityWindow...", end=" ")
@@ -544,6 +620,7 @@ def test_data_integrity_window():
 if __name__ == "__main__":
     try:
         test_data_integrity_panel()
+        test_paint_experiment_row_shows_relocated_and_excludes_from_problem_color()
         test_log_updates_label_and_appends_to_console()
         test_add_experiment_persists_and_appends_row()
         test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates()
@@ -552,6 +629,7 @@ if __name__ == "__main__":
         test_remove_experiment_only_offered_for_manual_rows()
         test_history_summary_indicator_populates_and_refreshes()
         test_history_detail_dialog_lists_problem_files()
+        test_history_detail_dialog_shows_relocated_pair_not_double_listed()
         test_data_integrity_window()
         print("\nGUI smoke tests passed! ✓")
     except Exception as e:
