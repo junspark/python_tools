@@ -191,9 +191,17 @@ Each row has these actions:
   same host as DM catalog queries or Verify MD5) to push local files
   into Sojourner. Shows the exact command and asks for confirmation
   first - this writes into shared production infrastructure and can't
-  be undone from here. Only confirms the request was *accepted*; DM's
-  own backend does the transfer asynchronously - re-run Scan/Verify MD5
-  afterward to see it land.
+  be undone from here. dm-upload confirms the request was *accepted* and
+  hands back an upload id; if that id parses cleanly (it normally does),
+  the Upload Status/Files columns then update automatically every few
+  seconds - `Uploading N% (X/Y uploaded)` while it runs, settling into
+  `Done`/`Failed`/`Skipped`/`Aborted` once DM finishes - by querying that
+  specific upload by id (`dm-get-upload-info`, via the same
+  `ExperimentDaqApi` used elsewhere in this tool), not by
+  re-running Scan/Verify MD5. If the id can't be parsed for some reason,
+  it falls back to the old guidance: re-run Scan/Verify MD5 in a bit to
+  see it reflected. Either way, a later Scan/Verify MD5 still overwrites
+  the row with its own authoritative view.
 
 Row coloring (`Files` column and beyond):
 - **Green**: fully landed, upload complete, no problems - safe to delete

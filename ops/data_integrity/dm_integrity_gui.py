@@ -739,6 +739,33 @@ class _DmUploadWorker(QtCore.QObject):
             self.error.emit(str(e))
 
 
+class _DmUploadInfoWorker(QtCore.QObject):
+    """Queries DM for one tracked upload's live progress by id, off the
+    GUI thread - same reason _ScanWorker runs get_upload_status off-thread
+    (an SSH round trip, occasionally a slow one per get_dm_upload_info's
+    own docstring). One of these is spawned per exp_name per
+    _poll_dm_uploads tick, guarded by _upload_poll_workers so a slow query
+    for one experiment can't pile up duplicate queries for the same one."""
+
+    done = QtCore.pyqtSignal(str, dict)
+    error = QtCore.pyqtSignal(str, str)
+
+    def __init__(self, exp_name, upload_id, host, user, setup_script):
+        super().__init__()
+        self.exp_name = exp_name
+        self.upload_id = upload_id
+        self.host = host
+        self.user = user
+        self.setup_script = setup_script
+
+    def run(self):
+        try:
+            info = di.get_dm_upload_info(self.upload_id, self.host, self.user, self.setup_script)
+            self.done.emit(self.exp_name, info)
+        except Exception as e:
+            self.error.emit(self.exp_name, str(e))
+
+
 class AddExperimentDialog(QtWidgets.QDialog):
     """Manually add an experiment to the dashboard that auto-discovery
     didn't pick up - either because it's not among the most-recent
@@ -889,6 +916,18 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self._tracked_checksum_jobs = {}
         self._checksum_launch_workers = {}
         self._checksum_stop_workers = {}
+        # DM upload progress tracking: _active_uploads holds {"id", "host",
+        # "user", "setup_script"} per experiment with an upload id we've
+        # parsed from a triggered dm-upload's own output (see
+        # _on_upload_done/parse_dm_upload_id) - _poll_dm_uploads queries
+        # each by id every checksum-poll tick. _upload_poll_workers is the
+        # same in-flight-guard idea as _checksum_launch_workers: don't
+        # spawn a second query for an experiment whose previous one hasn't
+        # returned yet (get_upload_status's own docstring notes DM's API
+        # can occasionally hang for tens of seconds on a specific
+        # experiment).
+        self._active_uploads = {}
+        self._upload_poll_workers = {}
 
         self._load_config()
         self._init_ui()
@@ -899,6 +938,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         poll_interval_ms = int(self.config.get("settings", {}).get("checksum_poll_interval_sec", 4) * 1000)
         self._checksum_poll_timer = QtCore.QTimer(self)
         self._checksum_poll_timer.timeout.connect(self._poll_checksum_jobs)
+        self._checksum_poll_timer.timeout.connect(self._poll_dm_uploads)
         self._checksum_poll_timer.start(poll_interval_ms)
 
     def _discover_and_populate_experiments(self):
@@ -1357,7 +1397,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         worker = _DmUploadWorker(host, user, setup_script, exp_name, data_directory)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
-        worker.done.connect(lambda output: self._on_upload_done(exp_name, output))
+        worker.done.connect(lambda output: self._on_upload_done(exp_name, output, host, user, setup_script))
         worker.error.connect(lambda msg: self._on_upload_error(exp_name, msg))
         worker.done.connect(thread.quit)
         worker.error.connect(thread.quit)
@@ -1365,19 +1405,35 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self._upload_workers[exp_name] = (thread, worker)
         thread.start()
 
-    def _on_upload_done(self, exp_name, output):
-        """dm-upload prints an upload/job id on acceptance - shown here
-        (not just a generic "triggered" message) since that's the only
-        record of it; DM doesn't surface it anywhere else this tool
-        already queries. get_upload_status (what Scan/Verify MD5's
-        "Upload Status"/"Files" columns already show) is the way to check
-        progress afterward - no separate polling added here since that
-        path already exists."""
+    def _on_upload_done(self, exp_name, output, host, user, setup_script):
+        """dm-upload prints an upload/job id on acceptance - parsed here
+        (di.parse_dm_upload_id) so _poll_dm_uploads can track this
+        specific upload's progress by id going forward, rather than only
+        pointing the user at re-running Scan/Verify MD5 later. Falls back
+        to that same old guidance if no id parses (unexpected dm-upload
+        output, older DM CLI without JSON support, etc.) - the trigger
+        itself already succeeded either way."""
         self._upload_workers.pop(exp_name, None)
         upload_btn = self._row_upload_buttons.get(exp_name)
         if upload_btn:
             upload_btn.setEnabled(True)
         output = output.strip()
+        upload_id = di.parse_dm_upload_id(output)
+
+        if upload_id:
+            self._active_uploads[exp_name] = {
+                "id": upload_id, "host": host, "user": user, "setup_script": setup_script,
+            }
+            self._log(
+                f"Upload triggered for '{exp_name}' (id {upload_id}) - Upload Status/Files will "
+                "update automatically as it progresses.")
+            _message_box(
+                QtWidgets.QMessageBox.Information, self, "Upload triggered",
+                f"dm-upload accepted the request for '{exp_name}'.\n\n"
+                f"Upload id: {upload_id}\n\n"
+                "Progress will now show automatically in the Upload Status/Files columns.")
+            return
+
         self._log(
             f"Upload triggered for '{exp_name}'. dm-upload output: {output or '(none)'} - "
             "re-run Scan/Verify MD5 in a bit to see it reflected in Upload Status/Files.")
@@ -1385,9 +1441,10 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             QtWidgets.QMessageBox.Information, self, "Upload triggered",
             f"dm-upload accepted the request for '{exp_name}'.\n\n"
             f"Output:\n{output or '(dm-upload produced no output)'}\n\n"
-            "To check progress: re-run Scan or Verify MD5 for this row in a bit - both already "
-            "query DM's own upload status (the same listUploadRecords lookup DM's job id would "
-            "point at) and refresh the Upload Status/Files columns from it.")
+            "Couldn't parse an upload id from that output, so progress can't be tracked "
+            "automatically here - re-run Scan or Verify MD5 for this row in a bit instead, "
+            "which queries DM's own upload status independently and refreshes the Upload "
+            "Status/Files columns from it.")
 
     def _on_upload_error(self, exp_name, msg):
         self._upload_workers.pop(exp_name, None)
@@ -1549,6 +1606,97 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         pct = int(100 * checked / total) if total else 0
         color = STATUS_COLORS["stale"] if stale else STATUS_COLORS["in_progress"]
         files_item = QtWidgets.QTableWidgetItem(f"{checked}/{total} checked ({pct}%)")
+        files_item.setBackground(color)
+        self.table_widget.setItem(row, files_col, files_item)
+
+        for col in range(files_col + 1):
+            cell = self.table_widget.item(row, col)
+            if cell:
+                cell.setBackground(color)
+
+    def _poll_dm_uploads(self):
+        """For every experiment with a tracked upload id (see
+        _on_upload_done), query its live progress by id - one
+        _DmUploadInfoWorker per tick per experiment, guarded by
+        _upload_poll_workers so a slow/stuck query for one experiment
+        doesn't queue up duplicates for the same one while it's still
+        outstanding. Shares the checksum poll timer's cadence rather than
+        running its own - DM upload activity is infrequent enough that a
+        second timer/setting would be pure overhead."""
+        if di is None or not self._active_uploads:
+            return
+
+        for exp_name, entry in list(self._active_uploads.items()):
+            if exp_name in self._upload_poll_workers:
+                continue
+
+            thread = QtCore.QThread(self)
+            worker = _DmUploadInfoWorker(exp_name, entry["id"], entry["host"], entry["user"], entry["setup_script"])
+            worker.moveToThread(thread)
+            thread.started.connect(worker.run)
+            worker.done.connect(self._on_upload_info)
+            worker.error.connect(self._on_upload_info_error)
+            worker.done.connect(thread.quit)
+            worker.error.connect(thread.quit)
+            thread.finished.connect(thread.deleteLater)
+            self._upload_poll_workers[exp_name] = (thread, worker)
+            thread.start()
+
+    def _on_upload_info(self, exp_name, info):
+        """Repaint exp_name's Upload Status/Files cells from a fresh
+        get_dm_upload_info result, and stop tracking once it reaches a
+        terminal status. The row's final painted state is left as-is
+        afterward - a later Scan/Verify MD5 still overwrites it with the
+        authoritative build_report-based view, exactly as before this
+        tracking existed."""
+        self._upload_poll_workers.pop(exp_name, None)
+
+        row = self._row_for_exp(exp_name)
+        if row is not None:
+            self._paint_upload_progress(row, info)
+
+        status = info.get("status", "unknown")
+        if status not in di._DM_UPLOAD_TERMINAL_STATUSES:
+            return
+
+        del self._active_uploads[exp_name]
+        self._log(
+            f"DM upload for '{exp_name}' finished: {status} "
+            f"({info.get('n_completed', 0)}/{info.get('count_files', 0)} files, "
+            f"{info.get('n_errors', 0)} errors) - re-run Scan/Verify MD5 for the authoritative view.")
+
+    def _on_upload_info_error(self, exp_name, msg):
+        """A failed progress query (SSH/connection-level, not a DM-API
+        error - those come back as a normal {"status": "error"} info dict
+        via _on_upload_info instead) - logged and left tracked so the next
+        tick just retries, since a transient SSH hiccup shouldn't
+        permanently drop progress tracking for an upload that's still
+        genuinely running on DM's side."""
+        self._upload_poll_workers.pop(exp_name, None)
+        self._log(f"Couldn't check DM upload progress for '{exp_name}': {msg} (will retry)")
+
+    def _paint_upload_progress(self, row, info):
+        six_col = self.table_widget.columnCount() >= 6
+        status_col, files_col = (2, 3) if six_col else (1, 2)
+
+        status = info.get("status", "unknown")
+        labels = {
+            "pending": "Uploading", "running": "Uploading", "finalizing": "Uploading",
+            "aborting": "Aborting...", "done": "Done", "failed": "Failed",
+            "skipped": "Skipped", "aborted": "Aborted",
+        }
+        colors = {
+            "done": STATUS_COLORS["good"], "failed": STATUS_COLORS["problem"],
+            "aborted": STATUS_COLORS["problem"], "skipped": STATUS_COLORS["attention"],
+        }
+        color = colors.get(status, STATUS_COLORS["in_progress"])
+
+        status_item = QtWidgets.QTableWidgetItem(labels.get(status, status))
+        self.table_widget.setItem(row, status_col, status_item)
+
+        files_item = QtWidgets.QTableWidgetItem(
+            f"{info.get('n_completed', 0)}/{info.get('count_files', 0)} uploaded "
+            f"({info.get('percentage_complete', '0.00')}%)")
         files_item.setBackground(color)
         self.table_widget.setItem(row, files_col, files_item)
 

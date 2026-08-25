@@ -164,8 +164,14 @@ def upload_info_for_experiment(config, beamline, exp_name):
 def dm_upload_command(exp_name, data_directory):
     """The literal `dm-upload` invocation - a separate function so the GUI
     can show the exact command in a confirmation dialog before running it,
-    not just describe it in prose."""
-    return f"dm-upload --experiment={shlex.quote(exp_name)} --data-directory={shlex.quote(data_directory)} --reprocess"
+    not just describe it in prose. --display-format json makes the id DM
+    assigns on acceptance (see parse_dm_upload_id) machine-readable instead
+    of only visible in free-text output - confirmed directly that the
+    default display keys already include "id", so no other flag needed."""
+    return (
+        f"dm-upload --experiment={shlex.quote(exp_name)} --data-directory={shlex.quote(data_directory)} "
+        "--reprocess --display-format json"
+    )
 
 
 def run_dm_upload(host, user, setup_script, exp_name, data_directory, timeout=120):
@@ -176,6 +182,61 @@ def run_dm_upload(host, user, setup_script, exp_name, data_directory, timeout=12
     """
     inner = f"source {setup_script} && conda activate dm-user && {dm_upload_command(exp_name, data_directory)}"
     return run_shell_command(host, user, "bash -c {}".format(shlex.quote(inner)), timeout=timeout)
+
+
+def parse_dm_upload_id(output):
+    """Best-effort extraction of the upload id dm-upload prints on
+    acceptance (its stdout, in the --display-format json shape dm_upload_
+    command now requests). Returns None - not an exception - on anything
+    unexpected (older DM CLI without JSON support, stray text mixed into
+    stdout, a missing "id" key) so callers can fall back to today's
+    "no id available" behavior rather than crashing on a CLI detail this
+    tool doesn't control."""
+    try:
+        return json.loads(output.strip()).get("id")
+    except (json.JSONDecodeError, AttributeError):
+        return None
+
+
+_DM_UPLOAD_TERMINAL_STATUSES = ("done", "failed", "skipped", "aborted")
+
+
+def get_dm_upload_info(upload_id, remote_host, remote_user, setup_script, timeout=60):
+    """Query DM for one specific upload's live progress by id - confirmed
+    directly (reading /home/dm/production/bin/dm-get-upload-info's own
+    source on egressy) that this is exactly api.getUploadInfo(id) on the
+    same ExperimentDaqApi get_upload_status already uses, just looked up
+    by id instead of by "latest record for this experiment name". Returns
+    a dict with keys: status, count_files, n_completed, n_processed,
+    n_errors, n_cancelled, percentage_complete, start_timestamp,
+    end_timestamp. On a DM-API-level error, status is "error" with an
+    error_msg key - an SSH/connection-level failure instead raises
+    (RuntimeError/TimeoutExpired), exactly like get_upload_status, for the
+    caller's own broad exception handling.
+    """
+    python_code = f"""
+import json
+from dm.daq_web_service.api.experimentDaqApi import ExperimentDaqApi
+try:
+    api = ExperimentDaqApi()
+    info = api.getUploadInfo("{upload_id}")
+    result = {{
+        "status": info.get("status", "unknown"),
+        "count_files": info.get("countFiles", 0),
+        "n_completed": info.get("nCompletedFiles", 0),
+        "n_processed": info.get("nProcessedFiles", 0),
+        "n_errors": info.get("nProcessingErrors", 0),
+        "n_cancelled": info.get("nCancelledFiles", 0),
+        "percentage_complete": info.get("percentageComplete", "0.00"),
+        "start_timestamp": info.get("startTimestamp"),
+        "end_timestamp": info.get("endTimestamp"),
+    }}
+    print(json.dumps(result))
+except Exception as e:
+    print(json.dumps({{"status": "error", "error_msg": str(e)}}))
+"""
+    setup_cmd = f"source {setup_script} && conda activate dm-user"
+    return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code, timeout=timeout)
 
 
 def beamline_for_path(local_bases, local_root):
