@@ -150,16 +150,18 @@ python disk_monitor_gui.py --config disk_monitor_config.json
   `top-folders`), so on a multi-TB mount it can take a while; the scan
   runs off the GUI thread so the rest of the panel keeps working while
   you wait, and the dialog can be closed at any time.
-- **Cron: ...** — a best-effort, read-only health check of the unattended
-  `check` cron job, refreshed every cycle:
-  - `Cron: OK` — `crond`/`cron` service is active and a crontab entry
-    referencing `disk_monitor.py` exists.
-  - `Cron: SERVICE DOWN` — `crond`/`cron` isn't running on this host at all.
-  - `Cron: not scheduled` — the service is up but no crontab entry
-    references this script (e.g. it was removed, or you're running as a
-    different user than the one with the crontab).
-  - `Cron: unknown` — couldn't determine either (e.g. no `systemctl`/
-    `crontab` on this host); not a reliable signal either way.
+- **Disk monitor: ...** — a best-effort, read-only health check of the
+  unattended `check` cron job, refreshed every cycle, color-coded green/red
+  the same way the table's Status column is:
+  - `Disk monitor: OK` (green) — `crond`/`cron` service is active and a
+    crontab entry referencing `disk_monitor.py` exists.
+  - `Disk monitor: SERVICE DOWN` (red) — `crond`/`cron` isn't running on
+    this host at all.
+  - `Disk monitor: not scheduled` (red) — the service is up but no
+    crontab entry references this script (e.g. it was removed, or you're
+    running as a different user than the one with the crontab).
+  - `Disk monitor: unknown` (gray) — couldn't determine either (e.g. no
+    `systemctl`/`crontab` on this host); not a reliable signal either way.
 
   This only checks that cron *should* run the job, not that it's succeeding.
   Pair it with the monitoring-gap warning below for that.
@@ -169,7 +171,7 @@ python disk_monitor_gui.py --config disk_monitor_config.json
   shown as `⚠ monitoring gap detected: <name> (<N> min)`. This is most
   useful right after (re)opening the GUI: a large gap there means nothing —
   neither cron nor a running GUI — was actually recording samples while you
-  were away, even if `Cron: OK` says the job is scheduled.
+  were away, even if `Disk monitor: OK` says the job is scheduled.
 - **Rate avg (min)** — spinbox to change `rate_window_min` live.
 - **Font size** — spinbox to resize the table text (display-only, not saved
   to config).

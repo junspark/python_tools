@@ -38,6 +38,7 @@ LEVEL_COLORS = {
     "warn": QtGui.QColor("#fff3b0"),
     "alert": QtGui.QColor("#f7c5c5"),
     "error": QtGui.QColor("#e0e0e0"),
+    "unknown": QtGui.QColor("#e0e0e0"),
 }
 
 
@@ -155,6 +156,12 @@ def _cron_status(script_path):
     Best-effort, read-only check of whether crond looks alive and a job
     referencing this script is scheduled. Never raises - crontab/systemctl
     may not exist or be readable on every host.
+
+    Returns (text, level), where level is one of "ok"/"alert"/"unknown" -
+    used to color the toolbar badge the same way the main table's Status
+    column is colored (see LEVEL_COLORS), so a dead/unscheduled cron job
+    (which means disk checks and alert emails stop happening the moment
+    nobody has this GUI open) is as visually obvious as a red table row.
     """
     service_active = None
     for svc in ("crond", "cron"):
@@ -179,12 +186,12 @@ def _cron_status(script_path):
         pass
 
     if service_active is False:
-        return "Cron: SERVICE DOWN"
+        return "Disk monitor: SERVICE DOWN", "alert"
     if job_scheduled is False:
-        return "Cron: not scheduled"
+        return "Disk monitor: not scheduled", "alert"
     if service_active and job_scheduled:
-        return "Cron: OK"
-    return "Cron: unknown"
+        return "Disk monitor: OK", "ok"
+    return "Disk monitor: unknown", "unknown"
 
 
 class _TopFoldersWorker(QtCore.QObject):
@@ -422,7 +429,7 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         toolbar.addAction("Top folders...", self.show_top_folders)
 
         toolbar.addSeparator()
-        self.cron_label = QtWidgets.QLabel(" Cron: checking... ")
+        self.cron_label = QtWidgets.QLabel(" Disk monitor: checking... ")
         toolbar.addWidget(self.cron_label)
 
         toolbar.addSeparator()
@@ -472,8 +479,10 @@ class DiskMonitorPanel(QtWidgets.QWidget):
             if prior_ts is not None and (now - prior_ts) > stale_gap_sec:
                 stale.append((target["name"], now - prior_ts))
 
-        self.cron_label.setText(" {} ".format(_cron_status(
-            os.path.join(dm.SCRIPT_DIR, "disk_monitor.py"))))
+        cron_text, cron_level = _cron_status(os.path.join(dm.SCRIPT_DIR, "disk_monitor.py"))
+        self.cron_label.setText(" {} ".format(cron_text))
+        self.cron_label.setStyleSheet(
+            "background-color: {};".format(LEVEL_COLORS[cron_level].name()))
 
         self.table.setRowCount(len(statuses))
         for row, s in enumerate(statuses):
