@@ -2,7 +2,10 @@
   "settings": {
     "log_interval_sec": 5,
     "connect_timeout_sec": 2.0,
-    "recipients": [],
+    "recipients": [
+      "parkjs@anl.gov",
+      "jun.sang.park@outlook.com"
+    ],
     "sender": "pv_logger@your-host.aps.anl.gov",
     "smtp_host": "apsmail.aps.anl.gov",
     "smtp_port": 25,
