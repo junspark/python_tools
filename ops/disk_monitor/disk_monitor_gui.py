@@ -572,12 +572,23 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         self.status_bar = QtWidgets.QStatusBar()
         layout.addWidget(self.status_bar)
 
-        toolbar.addAction("Refresh now", self.refresh)
-        toolbar.addAction("Add path...", self.add_path)
-        toolbar.addAction("Remove selected", self.remove_selected)
-        toolbar.addAction("Edit recipients...", self.edit_recipients)
-        toolbar.addAction("Send test email", self.send_test_email)
-        toolbar.addAction("Top folders...", self.show_top_folders)
+        # Real QPushButtons, not toolbar.addAction() - a QAction shown in a
+        # QToolBar renders as flat, borderless text on this Qt style/
+        # platform, visually indistinguishable from a plain label. A
+        # QPushButton always renders with a visible raised/bordered look
+        # regardless of style, matching how dm_integrity_gui.py's own
+        # "Add EXPID..." button already does it.
+        for label, handler in [
+            ("Refresh now", self.refresh),
+            ("Add path...", self.add_path),
+            ("Remove selected", self.remove_selected),
+            ("Edit recipients...", self.edit_recipients),
+            ("Send test email", self.send_test_email),
+            ("Top folders...", self.show_top_folders),
+        ]:
+            btn = QtWidgets.QPushButton(label)
+            btn.clicked.connect(handler)
+            toolbar.addWidget(btn)
 
         toolbar.addSeparator()
         self.cron_label = QtWidgets.QLabel(" Disk monitor: checking... ")

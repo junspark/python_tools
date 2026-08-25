@@ -1026,10 +1026,24 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.status_bar = QtWidgets.QStatusBar()
         layout.addWidget(self.status_bar)
 
-        toolbar.addAction("Start new experiment...", self.start_experiment)
-        self.stop_action = toolbar.addAction("Stop", self.stop_monitoring)
-        self.stop_action.setEnabled(False)
-        toolbar.addAction("Edit recipients...", self.edit_recipients)
+        # Real QPushButtons, not toolbar.addAction() - a QAction shown in a
+        # QToolBar renders as flat, borderless text on this Qt style/
+        # platform, visually indistinguishable from a plain label (confirmed
+        # directly from a screenshot: "Start new experiment"/"Stop"/"Edit
+        # recipients" were unreadable as buttons next to "Beamline:"). A
+        # QPushButton always renders with a visible raised/bordered look
+        # regardless of style, matching how dm_integrity_gui.py's own
+        # "Add EXPID..." button already does it.
+        start_btn = QtWidgets.QPushButton("Start new experiment...")
+        start_btn.clicked.connect(self.start_experiment)
+        toolbar.addWidget(start_btn)
+        self.stop_button = QtWidgets.QPushButton("Stop")
+        self.stop_button.clicked.connect(self.stop_monitoring)
+        self.stop_button.setEnabled(False)
+        toolbar.addWidget(self.stop_button)
+        edit_recipients_btn = QtWidgets.QPushButton("Edit recipients...")
+        edit_recipients_btn.clicked.connect(self.edit_recipients)
+        toolbar.addWidget(edit_recipients_btn)
 
         if show_font_control:
             toolbar.addSeparator()
@@ -1090,7 +1104,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
             self.cfg = pl.load_config(self.config_path)
             self.status_bar.showMessage(f"Using default PV list for {beamline_name}")
 
-        self.stop_action.setEnabled(self._beamline_running.get(beamline_name, False))
+        self.stop_button.setEnabled(self._beamline_running.get(beamline_name, False))
 
     def _paint_job_row(self, beamline, running, failed=False):
         item = self._beamline_tree_items[beamline]
@@ -1323,7 +1337,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._beamline_tree_items[beamline].setText(2, "Not configured.")
                 self._set_job_children(beamline, [], [])
                 if beamline == self.current_beamline:
-                    self.stop_action.setEnabled(False)
+                    self.stop_button.setEnabled(False)
                 continue
 
             status_path = pl.pv_logger_status_path(remote_base, beamline)
@@ -1336,7 +1350,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._beamline_tree_items[beamline].setText(2, "No experiment started yet.")
                 self._set_job_children(beamline, [], [])
                 if beamline == self.current_beamline:
-                    self.stop_action.setEnabled(False)
+                    self.stop_button.setEnabled(False)
                 continue
 
             state = status.get("state")
@@ -1368,7 +1382,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                         online_count, total, status.get("outfile", "?")))
                 self._set_job_children(beamline, online_names, offline_names, name_to_pv)
                 if beamline == self.current_beamline:
-                    self.stop_action.setEnabled(True)
+                    self.stop_button.setEnabled(True)
                     updated_at = status.get("updated_at")
                     if updated_at:
                         self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
@@ -1392,7 +1406,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 # possibly-false-green "online" for all of it.
                 self._set_job_children(beamline, [], [], name_to_pv, neutral_names=tracked)
                 if beamline == self.current_beamline:
-                    self.stop_action.setEnabled(False)
+                    self.stop_button.setEnabled(False)
 
                 # Report a FAILED/STOPPED transition exactly once per
                 # beamline, keyed by (state, finished_at) rather than
