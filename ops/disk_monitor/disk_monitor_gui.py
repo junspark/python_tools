@@ -539,13 +539,38 @@ class DiskMonitorPanel(QtWidgets.QWidget):
         self.refresh()
 
     def edit_recipients(self):
-        current = ", ".join(self.cfg["settings"].get("recipients", []))
-        text, ok = QtWidgets.QInputDialog.getText(
-            self, "Alert recipients", "Comma-separated email addresses:",
-            QtWidgets.QLineEdit.Normal, current)
-        if not ok:
+        # A real QDialog we build and pre-fill ourselves, not QInputDialog.
+        # getText's static convenience method - confirmed directly that
+        # the static call's own pre-fill text argument silently failed to
+        # show (an empty field even with real, non-empty recipients
+        # already configured), the same class of black-box-static-dialog
+        # trouble every other one of these has caused this session. One
+        # address per line (not comma-separated) is also just easier to
+        # read/edit for more than a couple of recipients.
+        current = "\n".join(self.cfg["settings"].get("recipients", []))
+
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle("Alert recipients")
+        layout = QtWidgets.QVBoxLayout(dialog)
+        layout.addWidget(QtWidgets.QLabel("One email address per line:"))
+        text_edit = QtWidgets.QPlainTextEdit()
+        text_edit.setPlainText(current)
+        layout.addWidget(text_edit)
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        dialog.resize(400, 300)
+        _center_on_parent(dialog, self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
-        self.cfg["settings"]["recipients"] = [addr.strip() for addr in text.split(",") if addr.strip()]
+
+        # Still tolerates commas within a line, not just newlines - a
+        # pasted old-style "a@x.com, b@x.com" line keeps working rather
+        # than silently becoming one malformed address.
+        addrs = [addr.strip() for line in text_edit.toPlainText().splitlines()
+                 for addr in line.split(",") if addr.strip()]
+        self.cfg["settings"]["recipients"] = addrs
         dm.save_config(self.cfg, self.config_path)
         self.refresh()
 

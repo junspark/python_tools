@@ -134,7 +134,9 @@ python disk_monitor_gui.py --config disk_monitor_config.json
   green/yellow/red by status level.
 - **Add path...** — pick a directory, name it, and set warn/threshold %.
 - **Remove selected** — drop the selected row(s) from monitoring.
-- **Edit recipients...** — comma-separated list of alert email addresses.
+- **Edit recipients...** — opens a dialog listing alert email addresses one
+  per line (still tolerates comma-separated addresses pasted into a single
+  line).
 - **Send test email** — sends (or prints, if `recipients` is empty) a test
   alert for the selected row, or the first target if none selected.
 - **Top folders...** — for the selected row's target (or the first target
