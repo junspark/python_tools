@@ -6,6 +6,7 @@ Dashboard view shows recent 10 experiments with file statistics and status.
 
 import json
 import os
+import shlex
 import sys
 import time
 from pathlib import Path
@@ -34,11 +35,42 @@ STATUS_COLORS = {
     "problem": QtGui.QColor(255, 200, 200),
     "noncritical": QtGui.QColor(255, 220, 150),
     "in_progress": QtGui.QColor(200, 220, 255),
+    "stale": QtGui.QColor(255, 200, 200),
 }
 
 # Terminal checksum-job states - once a tracked job reaches one of these,
 # polling stops treating it as active.
 _CHECKSUM_TERMINAL_STATES = ("DONE", "FAILED", "CANCELLED")
+
+# checksum_worker.py only calls progress_cb (which writes status - see
+# STATUS_WRITE_INTERVAL_SEC in checksum_worker.py) once per whole file
+# hashed, not per chunk within one - so the real gap between writes scales
+# with this beamline's actual file sizes, not a fixed small interval.
+# Confirmed directly against real data: pokharel_jul26's ge5/*.h5 detector
+# files are ~30GB EACH, and a single one can legitimately take several
+# minutes to read+hash over NFS with zero progress_cb calls in between -
+# initially set to 120s on the (wrong) assumption that per-file gaps would
+# stay in the tens-of-seconds range, which produced a false "Stalled?" on
+# a job that was actually alive and correctly working through a huge file
+# (confirmed via `ps`: real, ongoing CPU consumption on the remote host).
+# 900s (15min) still comfortably catches the two real cases that motivated
+# this feature at all - jobs that sat at RUNNING for 78 hours and 20 hours
+# after their process actually died (see checksum_worker.py's ENOSPC
+# traceback in that incident) - while giving real multi-GB files enough
+# room not to trip a false alarm.
+_CHECKSUM_STALE_SEC = 900
+
+
+def _format_age(seconds):
+    """Human-friendly elapsed time for a staleness indicator - "3h", "45m",
+    "20d" - coarse on purpose, this is only ever used to say "a while", not
+    to give a precise duration."""
+    seconds = max(0, seconds)
+    if seconds < 3600:
+        return f"{int(seconds // 60)}m"
+    if seconds < 86400:
+        return f"{int(seconds // 3600)}h"
+    return f"{int(seconds // 86400)}d"
 
 
 def _center_on_parent(dialog, parent):
@@ -596,6 +628,76 @@ class HistoryDetailDialog(QtWidgets.QDialog):
             self.table.setColumnWidth(0, 500)
 
 
+class _ChecksumStopWorker(QtCore.QObject):
+    """Requests a clean stop of a running Verify MD5 job, off the GUI
+    thread (an SSH round trip, same reason every other remote action here
+    runs in a QThread). Just runs `systemctl --user stop <unit>` -
+    checksum_worker.py's own SIGTERM handler (see checksum_worker.py's
+    _handle_sigterm) does the actual clean shutdown and CANCELLED status
+    write; this worker's job ends the moment systemctl confirms the stop
+    request was accepted.
+
+    force_status_path/status: when given (only for a job _paint_checksum_
+    progress has already flagged as stale - see _CHECKSUM_STALE_SEC), also
+    write a CANCELLED status directly after the stop request, regardless
+    of whether systemctl's stop actually did anything. A stale job's own
+    process is usually already dead - confirmed directly against two real
+    jobs stuck at RUNNING for 78h and 20h after their process crashed on a
+    since-resolved "no space left on device" error - so its SIGTERM
+    handler would never run to write that transition itself, leaving the
+    row stuck on "Stop" forever with no way back to Verify MD5 otherwise.
+
+    But staleness alone isn't proof of death: also confirmed directly, a
+    job legitimately hashing this beamline's ~30GB-per-file detector data
+    over NFS can go many minutes between progress_cb calls (it only
+    reports once per whole file, not per chunk) while genuinely still
+    alive. If that's what's actually happening, the systemctl stop call
+    above is not a no-op - it really does stop the job, same as a normal
+    (non-stale) Stop always does; the confirmation dialog in
+    _on_stop_checksum says so rather than promising a stale job is
+    definitely dead. Not done unconditionally (only when the caller has
+    already confirmed staleness): for a job not yet flagged stale, only
+    its own SIGTERM-handler write should ever mark it CANCELLED, to avoid
+    this worker racing a real in-progress status update.
+    """
+
+    done = QtCore.pyqtSignal()
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self, exp_name, host, user, unit_name, force_status_path=None, status=None):
+        super().__init__()
+        self.exp_name = exp_name
+        self.host = host
+        self.user = user
+        self.unit_name = unit_name
+        self.force_status_path = force_status_path
+        self.status = status
+
+    def run(self):
+        try:
+            try:
+                di.run_shell_command(self.host, self.user, f"systemctl --user stop {shlex.quote(self.unit_name)}")
+            except Exception:
+                # Best-effort only when force-clearing a stale job: the
+                # unit is expected to already be gone/unknown in that case
+                # (that's the whole reason it's stale), so a failure here
+                # isn't informative - the force-write below is what
+                # actually matters. Re-raised as normal (below) for a
+                # non-stale stop, where a systemctl failure IS the answer.
+                if self.force_status_path is None:
+                    raise
+            if self.force_status_path is not None:
+                cleared = dict(self.status or {})
+                cleared["state"] = "CANCELLED"
+                cleared["finished_at"] = time.time()
+                cleared["error_message"] = "Force-cleared from the GUI: no progress reported for " \
+                    f"{_format_age(time.time() - (self.status or {}).get('updated_at', 0))}."
+                di.write_remote_file(self.host, self.user, self.force_status_path, json.dumps(cleared, indent=2))
+            self.done.emit()
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class AddExperimentDialog(QtWidgets.QDialog):
     """Manually add an experiment to the dashboard that auto-discovery
     didn't pick up - either because it's not among the most-recent
@@ -739,8 +841,11 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         # timer from the beamline's shared status file (plain local reads -
         # no SSH). _checksum_launch_workers keeps launch-in-progress
         # QThread/worker pairs alive, same reason _active_workers does.
+        # _checksum_stop_workers is the same idea for an in-flight Stop
+        # request (see _on_stop_checksum).
         self._tracked_checksum_jobs = {}
         self._checksum_launch_workers = {}
+        self._checksum_stop_workers = {}
 
         self._load_config()
         self._init_ui()
@@ -900,10 +1005,17 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         buttons_layout = QtWidgets.QHBoxLayout()
         scan_btn = QtWidgets.QPushButton("Scan")
         scan_btn.clicked.connect(lambda checked, e=exp_name: self._on_scan(e))
-        verify_md5_btn = QtWidgets.QPushButton("Verify MD5")
-        verify_md5_btn.clicked.connect(lambda checked, e=exp_name: self._on_verify_md5(e))
+        # One button, not two swapped by visibility: it reads "Verify MD5"
+        # normally and "Stop" while a checksum job is tracked as QUEUED/
+        # RUNNING (see _set_checksum_running_ui), dispatching to whichever
+        # action is currently live. A single widget whose label/handler
+        # change removes any chance of the two states laying out
+        # differently - confirmed the earlier two-button-with-visibility-
+        # toggle approach could still visibly misalign row-to-row.
+        verify_btn = QtWidgets.QPushButton("Verify MD5")
+        verify_btn.clicked.connect(lambda checked, e=exp_name: self._on_verify_or_stop(e))
         buttons_layout.addWidget(scan_btn)
-        buttons_layout.addWidget(verify_md5_btn)
+        buttons_layout.addWidget(verify_btn)
         if is_manual:
             remove_btn = QtWidgets.QPushButton("Remove")
             remove_btn.clicked.connect(lambda checked, e=exp_name: self._on_remove_experiment(e))
@@ -919,7 +1031,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         history_summary_label = QtWidgets.QLabel("")
         buttons_layout.addWidget(history_summary_label)
         self._row_history_labels[exp_name] = history_summary_label
-        self._row_buttons[exp_name] = (scan_btn, verify_md5_btn)
+        self._row_buttons[exp_name] = (scan_btn, verify_btn)
         buttons_layout.setContentsMargins(0, 0, 0, 0)
         # Without a trailing stretch, a QHBoxLayout with only Minimum-size-
         # policy widgets (QPushButton's default) grows them to fill
@@ -1187,7 +1299,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                 continue
 
             self._tracked_checksum_jobs[exp_name] = status
-            self._set_verify_button_enabled(exp_name, False)
+            self._set_checksum_running_ui(exp_name, True)
             row = self._row_for_exp(exp_name)
             if row is not None:
                 self._paint_checksum_progress(row, status)
@@ -1224,10 +1336,10 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                     self._paint_checksum_progress(row, status)
                 continue
 
-            # Terminal - stop tracking and re-enable the button regardless
-            # of outcome.
+            # Terminal - stop tracking and swap Stop back for Verify MD5
+            # regardless of outcome (DONE, FAILED, or CANCELLED via Stop).
             del self._tracked_checksum_jobs[exp_name]
-            self._set_verify_button_enabled(exp_name, True)
+            self._set_checksum_running_ui(exp_name, False)
 
             if state == "DONE" and status.get("report_path"):
                 try:
@@ -1254,26 +1366,141 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         status_col, files_col = (2, 3) if six_col else (1, 2)
 
         state = status.get("state", "QUEUED")
-        label = "Queued" if state == "QUEUED" else "Verifying"
+        age = time.time() - status.get("updated_at", 0)
+        stale = state == "RUNNING" and age > _CHECKSUM_STALE_SEC
+        label = "Queued" if state == "QUEUED" else ("Stalled?" if stale else "Verifying")
         status_item = QtWidgets.QTableWidgetItem(label)
+        if stale:
+            status_item.setToolTip(
+                f"No progress reported in {_format_age(age)}. Likely dead (crashed, killed, host "
+                "issue) - but a single very large file can also legitimately take this long to "
+                "hash with no progress update in between, so check before assuming it's stuck. "
+                "If it really is dead, use Stop to force-clear it and re-run Verify MD5.")
         self.table_widget.setItem(row, status_col, status_item)
 
         total = status.get("total_files", 0)
         checked = status.get("checked_files", 0)
         pct = int(100 * checked / total) if total else 0
+        color = STATUS_COLORS["stale"] if stale else STATUS_COLORS["in_progress"]
         files_item = QtWidgets.QTableWidgetItem(f"{checked}/{total} checked ({pct}%)")
-        files_item.setBackground(STATUS_COLORS["in_progress"])
+        files_item.setBackground(color)
         self.table_widget.setItem(row, files_col, files_item)
 
         for col in range(files_col + 1):
             cell = self.table_widget.item(row, col)
             if cell:
-                cell.setBackground(STATUS_COLORS["in_progress"])
+                cell.setBackground(color)
 
     def _set_verify_button_enabled(self, exp_name, enabled):
         buttons = self._row_buttons.get(exp_name)
         if buttons:
             buttons[1].setEnabled(enabled)
+
+    def _set_checksum_running_ui(self, exp_name, running):
+        """Relabel the Verify MD5/Stop button (one widget, not two swapped
+        by visibility - see _populate_experiment_row) once a checksum job
+        is confirmed tracked as QUEUED/RUNNING - called from
+        _reattach_checksum_jobs, _on_checksum_launched, and
+        _poll_checksum_jobs' terminal branch. Deliberately separate from
+        _set_verify_button_enabled, which _launch_checksum_job still uses
+        on its own during the brief pre-launch window (nothing to stop yet
+        - no unit_name exists until the launch actually succeeds)."""
+        buttons = self._row_buttons.get(exp_name)
+        if not buttons:
+            return
+        _, verify_btn = buttons
+        verify_btn.setText("Stop" if running else "Verify MD5")
+        verify_btn.setEnabled(True)
+
+    def _on_verify_or_stop(self, exp_name):
+        """Dispatch the combined Verify MD5/Stop button click to whichever
+        action its current label represents."""
+        if exp_name in self._tracked_checksum_jobs:
+            self._on_stop_checksum(exp_name)
+        else:
+            self._on_verify_md5(exp_name)
+
+    def _on_stop_checksum(self, exp_name):
+        """Ask for confirmation, then request a clean stop of exp_name's
+        running checksum job via `systemctl --user stop <unit>` over SSH -
+        checksum_worker.py's own SIGTERM handler (see checksum_worker.py's
+        _handle_sigterm) turns that into a CANCELLED status write, which
+        the next _poll_checksum_jobs tick picks up exactly like any other
+        terminal transition. No progress is saved/resumed - a future
+        Verify MD5 run for this experiment starts over from scratch.
+
+        If the tracked status is already stale (see _CHECKSUM_STALE_SEC/
+        _paint_checksum_progress), the job's own process is presumed dead
+        and won't ever write that CANCELLED transition itself - the
+        confirmation dialog says so, and _ChecksumStopWorker is told to
+        force-write it directly instead of waiting for a SIGTERM handler
+        that will never run."""
+        if di is None:
+            return
+
+        beamline = self._beamline_for_exp(exp_name)
+        checksum_host, checksum_user, remote_base = di.remote_identity_for_beamline(self.config, beamline)
+        if not checksum_host:
+            self._log(f"Can't stop '{exp_name}': no checksum host configured for beamline '{beamline}'")
+            return
+
+        status = self._tracked_checksum_jobs.get(exp_name) or {}
+        unit_name = status.get("unit_name") or di.checksum_unit_name(exp_name)
+        age = time.time() - status.get("updated_at", 0)
+        stale = status.get("state") == "RUNNING" and age > _CHECKSUM_STALE_SEC
+
+        if stale:
+            reply = _message_box(
+                QtWidgets.QMessageBox.Question, self, "Force-clear stalled verification",
+                f"'{exp_name}' hasn't reported progress in {_format_age(age)} - likely dead (crashed, "
+                "killed, host issue), but an exceptionally large file can occasionally take this long "
+                "to hash with no update in between.\n\n"
+                "Force-clear it so you can start a fresh Verify MD5? If it turns out to still be "
+                "alive, this stops it (same tradeoff as a normal Stop: progress on this run isn't "
+                "saved either way).",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        else:
+            reply = _message_box(
+                QtWidgets.QMessageBox.Question, self, "Stop verification",
+                f"Stop the running MD5 verification for '{exp_name}'?\n\n"
+                "Progress isn't saved - a future Verify MD5 run starts over from the beginning.",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        buttons = self._row_buttons.get(exp_name)
+        if buttons:
+            buttons[1].setEnabled(False)  # avoid double-firing while the stop request is in flight
+        self._log(f"{'Force-clearing stalled' if stale else 'Stopping'} verification for '{exp_name}'...")
+
+        force_status_path = di.checksum_status_path(remote_base, exp_name) if stale and remote_base else None
+        thread = QtCore.QThread(self)
+        worker = _ChecksumStopWorker(exp_name, checksum_host, checksum_user, unit_name,
+                                      force_status_path=force_status_path, status=status)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.done.connect(lambda: self._on_stop_checksum_done(exp_name))
+        worker.error.connect(lambda msg: self._on_stop_checksum_error(exp_name, msg))
+        worker.done.connect(thread.quit)
+        worker.error.connect(thread.quit)
+        thread.finished.connect(thread.deleteLater)
+        self._checksum_stop_workers[exp_name] = (thread, worker)
+        thread.start()
+
+    def _on_stop_checksum_done(self, exp_name):
+        self._checksum_stop_workers.pop(exp_name, None)
+        self._log(f"Stop requested for '{exp_name}' - the row will update once it's confirmed cancelled.")
+        # Deliberately leave _tracked_checksum_jobs/button state alone here:
+        # the next _poll_checksum_jobs tick reads the CANCELLED status
+        # checksum_worker.py's SIGTERM handler writes and does the normal
+        # terminal-state cleanup, exactly like a DONE/FAILED job would.
+
+    def _on_stop_checksum_error(self, exp_name, msg):
+        self._checksum_stop_workers.pop(exp_name, None)
+        buttons = self._row_buttons.get(exp_name)
+        if buttons:
+            buttons[1].setEnabled(True)
+        self._log(f"Failed to stop '{exp_name}': {msg}")
 
     def _load_config(self):
         if os.path.exists(self.config_path):
@@ -1699,6 +1926,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
     def _on_checksum_launched(self, exp_name, status):
         self._checksum_launch_workers.pop(exp_name, None)
         self._tracked_checksum_jobs[exp_name] = status
+        self._set_checksum_running_ui(exp_name, True)
         self._log(f"Checksum verification for '{exp_name}' launched on zion (running in background, survives closing this GUI)")
         row = self._row_for_exp(exp_name)
         if row is not None:
@@ -1706,7 +1934,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
 
     def _on_checksum_launch_error(self, exp_name, msg):
         self._checksum_launch_workers.pop(exp_name, None)
-        self._set_verify_button_enabled(exp_name, True)
+        self._set_checksum_running_ui(exp_name, False)
         self._log(f"Failed to launch checksum verification for '{exp_name}': {msg}")
 
     def _on_history(self, exp_name):

@@ -89,6 +89,7 @@ def save_config(config, path):
 # updating every di.<name> call site in dm_integrity_gui.py, since this is
 # a behavior-preserving refactor of already-relied-upon production code.
 canonical_local_root = rj.canonical_path
+run_shell_command = rj.run_shell_command
 
 
 _BEAMLINE_DM_DEFAULTS = {

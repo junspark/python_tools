@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 from unittest import mock
 
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -202,6 +203,86 @@ def test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates():
     print("✓")
 
 
+def test_stop_checksum_button_swaps_and_calls_systemctl_stop():
+    """The combined Verify MD5/Stop button relabels to "Stop" while a
+    checksum job is tracked (not just grayed out), and clicking it (after
+    confirming) issues `systemctl --user stop <unit>` for that job's real
+    unit name rather than just disabling the UI."""
+    print("Testing Verify MD5 <-> Stop button relabel and systemctl stop call...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        os.makedirs(os.path.join(s1_base, "test_jan24"))
+
+        config_path = os.path.join(tmpdir, "config.json")
+        config = {
+            "settings": {
+                "station_name": "SOJOURNER",
+                "records_dir": os.path.join(tmpdir, "records"),
+                "local_bases": {"s1": s1_base},
+                "experiments_per_beamline": 3,
+                "checksum_hosts": {
+                    "s1": {"host": "zion", "user": "s1iduser", "remote_base": "/home/s1iduser/dm_record"}
+                },
+            },
+        }
+        with open(config_path, "w") as f:
+            json.dump(config, f)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+        exp_name = "test_jan24"
+        assert panel._row_for_exp(exp_name) is not None
+
+        scan_btn, verify_btn = panel._row_buttons[exp_name]
+        assert verify_btn.text() == "Verify MD5", "should read Verify MD5 with no job running"
+
+        panel._tracked_checksum_jobs[exp_name] = {"unit_name": "checksum-verify@test_jan24.service", "state": "RUNNING"}
+        panel._set_checksum_running_ui(exp_name, True)
+        assert verify_btn.text() == "Stop", "should relabel to Stop while a job is tracked"
+        assert verify_btn.isEnabled()
+
+        calls = []
+
+        def _fake_run_shell_command(host, user, command, timeout=15):
+            calls.append((host, user, command))
+
+        with mock.patch.object(dig.di, "run_shell_command", _fake_run_shell_command), \
+             mock.patch.object(dig, "_message_box", return_value=QtWidgets.QMessageBox.Yes):
+            panel._on_stop_checksum(exp_name)
+            for _ in range(200):
+                app.processEvents()
+                if exp_name not in panel._checksum_stop_workers:
+                    break
+                time.sleep(0.01)
+            # The worker dict entry is popped by _on_stop_checksum_done as
+            # soon as its `done` signal is delivered, but the underlying
+            # QThread's own quit()/finished/deleteLater() chain (queued,
+            # cross-thread) hasn't necessarily finished by then - give it a
+            # few more event-loop passes so the QThread is actually gone
+            # before this test (and the process) tears down, same
+            # "QThread: Destroyed while thread is still running" hazard
+            # test_disk_monitor_gui.py already documents and works around.
+            app.processEvents()
+            time.sleep(0.05)
+            app.processEvents()
+
+        assert exp_name not in panel._checksum_stop_workers, "stop worker should have finished"
+        assert len(calls) == 1, f"expected exactly one systemctl call, got {calls}"
+        host, user, command = calls[0]
+        assert host == "zion" and user == "s1iduser"
+        assert "systemctl" in command and "stop" in command and "checksum-verify@test_jan24.service" in command
+
+        # Simulate the poll tick discovering the CANCELLED status
+        # checksum_worker.py's own SIGTERM handler would have written.
+        panel._set_checksum_running_ui(exp_name, False)
+        assert verify_btn.text() == "Verify MD5"
+
+        app.quit()
+
+    print("✓")
+
+
 def test_remove_experiment_only_offered_for_manual_rows():
     """Only manually-added rows get a Remove button; removing one deletes
     its row and its beamline-tagged config entry, without touching
@@ -379,6 +460,7 @@ if __name__ == "__main__":
         test_log_updates_label_and_appends_to_console()
         test_add_experiment_persists_and_appends_row()
         test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates()
+        test_stop_checksum_button_swaps_and_calls_systemctl_stop()
         test_remove_experiment_only_offered_for_manual_rows()
         test_history_summary_indicator_populates_and_refreshes()
         test_history_detail_dialog_lists_problem_files()
