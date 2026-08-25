@@ -84,6 +84,34 @@ def test_data_integrity_panel():
     print("✓")
 
 
+def test_log_updates_label_and_appends_to_console():
+    """_log (what every status message now routes through, see
+    dm_integrity_gui.py) should update the one-line status label AND
+    append a timestamped, non-truncated entry to the scrollable console -
+    the label alone can only ever show the latest message, which is what
+    made a long SSH failure unreadable before the console was added."""
+    print("Testing _log updates both the status label and the console...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config_with_fake_experiments(tmpdir)
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+
+        panel.console.clear()
+        panel._log("first message")
+        panel._log("second message: failed to reach host")
+
+        assert panel.status_label.text() == "second message: failed to reach host", \
+            "label should show only the latest message"
+        console_text = panel.console.toPlainText()
+        assert "first message" in console_text, "console must retain earlier messages, not just the latest"
+        assert "second message: failed to reach host" in console_text
+
+        app.quit()
+
+    print("✓")
+
+
 def test_data_integrity_window():
     """Test DataIntegrityWindow standalone."""
     print("Testing DataIntegrityWindow...", end=" ")
@@ -104,6 +132,7 @@ def test_data_integrity_window():
 if __name__ == "__main__":
     try:
         test_data_integrity_panel()
+        test_log_updates_label_and_appends_to_console()
         test_data_integrity_window()
         print("\nGUI smoke tests passed! ✓")
     except Exception as e:

@@ -425,7 +425,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                     self._register_local_root(exp_name, local_root)
 
             if not recent_exps:
-                self.status_label.setText("No experiment directories found under " + ", ".join(local_bases.values()))
+                self._log("No experiment directories found under " + ", ".join(local_bases.values()))
                 return
 
             # Switch to the 6-column layout (adds Beamline + History) - the
@@ -498,10 +498,10 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             for _, beamline, _ in recent_exps:
                 counts[beamline] = counts.get(beamline, 0) + 1
             summary = ", ".join(f"{n} from {b}" for b, n in counts.items())
-            self.status_label.setText(f"Loaded {summary} (from local s1c/s20a directories)")
+            self._log(f"Loaded {summary} (from local s1c/s20a directories)")
 
         except Exception as e:
-            self.status_label.setText(f"Error discovering experiments: {str(e)[:100]}")
+            self._log(f"Error discovering experiments: {str(e)[:100]}")
 
     def _row_for_exp(self, exp_name):
         for row in range(self.table_widget.rowCount()):
@@ -598,13 +598,13 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                            f"({file_stats['good']} good / {file_stats['bad']} bad)")
                     if report["recommend_deletion"]:
                         msg += " - SAFE TO DELETE"
-                    self.status_label.setText(msg)
+                    self._log(msg)
                 except (OSError, json.JSONDecodeError) as e:
-                    self.status_label.setText(f"Checksum job for '{exp_name}' finished but its report couldn't be read: {e}")
+                    self._log(f"Checksum job for '{exp_name}' finished but its report couldn't be read: {e}")
             elif state == "FAILED":
-                self.status_label.setText(f"Checksum verification failed for '{exp_name}': {status.get('error_message', 'unknown error')}")
+                self._log(f"Checksum verification failed for '{exp_name}': {status.get('error_message', 'unknown error')}")
             elif state == "CANCELLED":
-                self.status_label.setText(f"Checksum verification for '{exp_name}' was cancelled")
+                self._log(f"Checksum verification for '{exp_name}' was cancelled")
 
     def _paint_checksum_progress(self, row, status):
         six_col = self.table_widget.columnCount() >= 6
@@ -681,10 +681,35 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         layout.addWidget(self.table_widget)
 
         self.aggregate_label = QtWidgets.QLabel("")
+        self.aggregate_label.setWordWrap(True)
         layout.addWidget(self.aggregate_label)
 
+        # Word-wrapped: some error messages here embed a full remote
+        # command line (see _on_checksum_launch_error/_on_upload_error) -
+        # without wrapping, a QLabel's sizeHint grows to fit that text on
+        # one line, which stretches the whole window wider every time one
+        # of those fires instead of just growing the status bar's height.
         self.status_label = QtWidgets.QLabel("")
+        self.status_label.setWordWrap(True)
         layout.addWidget(self.status_label)
+
+        # Scrollable history of every status/error message (see _log) -
+        # the label above only ever shows the latest one, so a long SSH
+        # failure got overwritten by the next poll tick before it could be
+        # read in full, even after word-wrapping fixed the width problem.
+        console_header = QtWidgets.QHBoxLayout()
+        console_header.addWidget(QtWidgets.QLabel("Console:"))
+        console_header.addStretch()
+        clear_console_btn = QtWidgets.QPushButton("Clear")
+        clear_console_btn.clicked.connect(lambda: self.console.clear())
+        console_header.addWidget(clear_console_btn)
+        layout.addLayout(console_header)
+
+        self.console = QtWidgets.QPlainTextEdit()
+        self.console.setReadOnly(True)
+        self.console.setMaximumBlockCount(2000)  # cap growth for a long-running session
+        self.console.setFixedHeight(140)
+        layout.addWidget(self.console)
 
         self.setLayout(layout)
 
@@ -876,11 +901,11 @@ class DataIntegrityPanel(QtWidgets.QWidget):
 
     def _run_scan(self, exp_name):
         if di is None:
-            self.status_label.setText("ERROR: dm module not available")
+            self._log("ERROR: dm module not available")
             return
 
         if exp_name in self._active_workers:
-            self.status_label.setText(f"Scan already running for '{exp_name}'")
+            self._log(f"Scan already running for '{exp_name}'")
             return
 
         # Resolving local_root can pop a folder picker (QFileDialog), which
@@ -889,7 +914,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         beamline = self._beamline_for_exp(exp_name)
         local_root = self._resolve_local_root(exp_name, beamline, try_convention=True, allow_prompt=True)
         if not local_root:
-            self.status_label.setText(f"Scan cancelled: no local folder selected for '{exp_name}'")
+            self._log(f"Scan cancelled: no local folder selected for '{exp_name}'")
             return
 
         exp_config = None
@@ -908,7 +933,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         save_host, save_user, remote_base = di.remote_identity_for_beamline(self.config, beamline)
         legacy_records_dir = settings.get("records_dir", di.DEFAULT_RECORDS_DIR)
 
-        self.status_label.setText(f"Running lightweight scan for '{exp_name}' (running in background)...")
+        self._log(f"Running lightweight scan for '{exp_name}' (running in background)...")
         self._set_scan_button_enabled(exp_name, False)
 
         thread = QtCore.QThread(self)
@@ -935,7 +960,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         msg = f"Scan complete: {report['sojourner_summary']} ({file_stats['good']} good / {file_stats['bad']} bad)"
         if report["recommend_deletion"]:
             msg += " - SAFE TO DELETE"
-        self.status_label.setText(msg)
+        self._log(msg)
 
         row = self._row_for_exp(exp_name)
         if row is not None:
@@ -944,7 +969,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
     def _on_scan_error(self, exp_name, msg):
         self._active_workers.pop(exp_name, None)
         self._set_scan_button_enabled(exp_name, True)
-        self.status_label.setText(f"Scan failed: {msg}")
+        self._log(f"Scan failed: {msg}")
 
     def _on_verify_md5(self, exp_name):
         self._launch_checksum_job(exp_name)
@@ -956,17 +981,17 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         progress/completion purely from the shared status file from then
         on, with no ongoing connection to this launch."""
         if di is None:
-            self.status_label.setText("ERROR: dm module not available")
+            self._log("ERROR: dm module not available")
             return
 
         if exp_name in self._tracked_checksum_jobs or exp_name in self._checksum_launch_workers:
-            self.status_label.setText(f"Verification already running for '{exp_name}'")
+            self._log(f"Verification already running for '{exp_name}'")
             return
 
         beamline = self._beamline_for_exp(exp_name)
         local_root = self._resolve_local_root(exp_name, beamline, try_convention=True, allow_prompt=True)
         if not local_root:
-            self.status_label.setText(f"Verification cancelled: no local folder selected for '{exp_name}'")
+            self._log(f"Verification cancelled: no local folder selected for '{exp_name}'")
             return
         # Canonicalize before it ever leaves this process: the job runs as
         # s1iduser/s20iduser on zion, not whoever launched this GUI, so a
@@ -975,7 +1000,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
 
         checksum_host, checksum_user, remote_base = di.remote_identity_for_beamline(self.config, beamline)
         if not checksum_host or not remote_base:
-            self.status_label.setText(f"No checksum_hosts entry configured for beamline '{beamline}'")
+            self._log(f"No checksum_hosts entry configured for beamline '{beamline}'")
             return
 
         exp_config = None
@@ -991,7 +1016,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         cpu_budget = settings.get("checksum_cpu_budget", 0.20)
         all_status_dirs = self._all_checksum_status_dirs()
 
-        self.status_label.setText(f"Launching checksum verification for '{exp_name}' (running in background)...")
+        self._log(f"Launching checksum verification for '{exp_name}' (running in background)...")
         self._set_verify_button_enabled(exp_name, False)
 
         thread = QtCore.QThread(self)
@@ -1011,7 +1036,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
     def _on_checksum_launched(self, exp_name, status):
         self._checksum_launch_workers.pop(exp_name, None)
         self._tracked_checksum_jobs[exp_name] = status
-        self.status_label.setText(f"Checksum verification for '{exp_name}' launched on zion (running in background, survives closing this GUI)")
+        self._log(f"Checksum verification for '{exp_name}' launched on zion (running in background, survives closing this GUI)")
         row = self._row_for_exp(exp_name)
         if row is not None:
             self._paint_checksum_progress(row, status)
@@ -1019,7 +1044,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
     def _on_checksum_launch_error(self, exp_name, msg):
         self._checksum_launch_workers.pop(exp_name, None)
         self._set_verify_button_enabled(exp_name, True)
-        self.status_label.setText(f"Failed to launch checksum verification for '{exp_name}': {msg}")
+        self._log(f"Failed to launch checksum verification for '{exp_name}': {msg}")
 
     def _on_history(self, exp_name):
         if di is None:
@@ -1061,6 +1086,27 @@ class DataIntegrityPanel(QtWidgets.QWidget):
 
         _message_box(QtWidgets.QMessageBox.Information, self, "History", msg)
 
+    def _log(self, msg):
+        """Update the one-line status label AND append a timestamped entry
+        to the scrollable console below it. The label alone can only ever
+        show the latest message - a long SSH failure (a full remote
+        command line, or DM's own stderr) got overwritten by the next poll
+        tick before it could be read in full, even after word-wrapping
+        fixed the label's width problem. Every self.status_label.setText
+        call site in this class goes through here instead."""
+        self.status_label.setText(msg)
+        line = "[{}] {}".format(time.strftime("%H:%M:%S"), msg)
+        cursor = self.console.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        if any(kw in msg.lower() for kw in ("failed", "error", "can't", "cancelled")):
+            fmt = QtGui.QTextCharFormat()
+            fmt.setForeground(QtGui.QColor("#c0392b"))
+            cursor.insertText(line + "\n", fmt)
+        else:
+            cursor.insertText(line + "\n")
+        self.console.setTextCursor(cursor)
+        self.console.ensureCursorVisible()
+
     def set_font_size(self, size):
         self.font_size = size
         font = self.font()
@@ -1068,6 +1114,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self.setFont(font)
         self.table_widget.setFont(font)
         self.table_widget.horizontalHeader().setFont(font)
+        self.console.setFont(font)
         if self.show_font_control:
             self.font_size_spin.setFont(font)
         # Column widths are content-driven (see _init_ui/_discover_and_
