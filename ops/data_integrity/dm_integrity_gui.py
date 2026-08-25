@@ -41,6 +41,129 @@ STATUS_COLORS = {
 _CHECKSUM_TERMINAL_STATES = ("DONE", "FAILED", "CANCELLED")
 
 
+def _center_on_parent(dialog, parent):
+    """Explicitly position dialog over parent's current on-screen geometry
+    before it's shown, rather than trusting the window manager/compositor's
+    default placement for a new top-level window - confirmed necessary on
+    at least one real deployment: a Wayland/Mutter compositor with an
+    unusual multi-monitor layout placed brand-new, position-less windows
+    entirely off every monitor. An explicit move() issued after a window
+    is already mapped gets silently overridden by that same compositor,
+    but a position requested before the window is first shown is honored.
+    No-op if parent isn't currently visible (e.g. a dialog opened before
+    the main window is shown) - nothing sensible to center on yet."""
+    if parent is None or not parent.isVisible():
+        return
+    # adjustSize() first, but ONLY for a dialog that never explicitly
+    # resize()d itself (e.g. AddExperimentDialog, sized purely by its
+    # layout) - it otherwise still reports a placeholder width/height at
+    # this point, which would center it wrong once it snaps to its real
+    # size. WA_Resized is set automatically by resize() (Qt's own way of
+    # tracking "has this widget been given an explicit size"), so this
+    # skips adjustSize() for a dialog like HistoryDetailDialog that
+    # deliberately resized itself larger than its layout's natural
+    # minimum - calling adjustSize() there would shrink it back down.
+    if not dialog.testAttribute(QtCore.Qt.WA_Resized):
+        dialog.adjustSize()
+    parent_geo = parent.window().frameGeometry()
+    x = parent_geo.center().x() - dialog.width() // 2
+    y = parent_geo.center().y() - dialog.height() // 2
+    # Clamp the WHOLE rectangle inside whichever screen the parent window
+    # is actually on - not just floor negative coordinates. Confirmed
+    # directly not enough on a real unusual multi-monitor layout (mixed
+    # sizes/offsets): centering on parent_geo's center point can still
+    # place a dialog's edges past that monitor's actual bounds even though
+    # the center point itself looks reasonable, landing it partly or
+    # entirely on/past a neighboring monitor with a different origin - a
+    # modal HistoryDetailDialog reproduced exactly this (main window
+    # provably blocked by the modal dialog, nothing visible anywhere).
+    # screenAt(parent_geo.center()) - not primaryScreen() - because the
+    # window actually being centered on may not be on the primary screen
+    # at all in a multi-monitor setup.
+    screen = QtWidgets.QApplication.screenAt(parent_geo.center()) or QtWidgets.QApplication.primaryScreen()
+    if screen is not None:
+        avail = screen.availableGeometry()
+        x = max(avail.x(), min(x, avail.x() + avail.width() - dialog.width()))
+        y = max(avail.y(), min(y, avail.y() + avail.height() - dialog.height()))
+    else:
+        x, y = max(0, x), max(0, y)
+    dialog.move(x, y)
+    # WindowStaysOnTopHint - set before the show() below, not after:
+    # confirmed directly that even a completely unrelated, bare Xlib app
+    # (xterm, no Qt/GTK involved) is unreliably mapped/focused on this
+    # remote X11-forwarding setup, while a modern GTK app (gedit) shows up
+    # every time - a window-manager/focus-stealing-prevention heuristic
+    # neither plain Xlib nor Qt's xcb backend satisfies the way GTK's
+    # does, not a bug specific to any one dialog here. Staying-on-top
+    # bypasses that heuristic entirely rather than politely requesting
+    # around it via raise_()/activateWindow() alone, which were not
+    # sufficient on their own (confirmed directly - History/Add EXPID
+    # produced no window, no taskbar entry, and no error either).
+    dialog.setWindowFlags(dialog.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+    # show()/raise_()/activateWindow() here, not left to the caller's
+    # later exec_(): plain show()/exec_() can map a window at a perfectly
+    # valid, on-screen position on this display setup without ever
+    # bringing it to the front - no error, no crash, the dialog is simply
+    # invisible until manually found. exec_() on an already-shown widget
+    # is fine (it just switches on modality and starts the local event
+    # loop), so doing the actual mapping here - right after positioning,
+    # before the caller's exec_() call - is what lets raise_()/
+    # activateWindow() apply to a window that actually exists yet, rather
+    # than being no-ops against a window that isn't mapped until exec_()
+    # gets to it.
+    dialog.show()
+    dialog.raise_()
+    dialog.activateWindow()
+
+
+def _message_box(icon, parent, title, text, buttons=QtWidgets.QMessageBox.Ok, default_button=None):
+    """Drop-in replacement for QtWidgets.QMessageBox.information/warning/
+    critical/question's static convenience methods, with the same
+    explicit-positioning fix _center_on_parent already applies to every
+    custom QDialog here. Those static methods constructed and exec_'d their
+    own QMessageBox internally with no hook to position it first - on the
+    same Wayland/Mutter setup that placed brand-new top-level windows
+    off-screen by default (see _center_on_parent's docstring), a plain
+    QMessageBox.information() call is just as invisible as an unpositioned
+    QDialog would have been. Confirmed directly: History's own "No records
+    found" QMessageBox.information call (the one plain call site nothing
+    else in this file routed through _center_on_parent) reproduced exactly
+    that symptom - clicking History for an experiment with zero saved
+    records appeared to do nothing at all.
+    """
+    box = QtWidgets.QMessageBox(icon, title, text, buttons, parent)
+    if default_button is not None:
+        box.setDefaultButton(default_button)
+    _center_on_parent(box, parent)
+    return box.exec_()
+
+
+def _choose_directory(parent, title, start_dir=""):
+    """Drop-in replacement for QtWidgets.QFileDialog.getExistingDirectory's
+    static convenience method, for the same reason _message_box replaces
+    QMessageBox's - confirmed directly, "Browse..." in AddExperimentDialog
+    reproduced the identical symptom (no error, nothing visible) every
+    other unpositioned dialog in this file already had.
+
+    DontUseNativeDialog is the key difference from _message_box, not just
+    the positioning: getExistingDirectory defaults to the platform's own
+    native picker (GTK's, here) when available, which is a completely
+    separate windowing stack outside Qt's show()/raise_()/activateWindow()
+    control - _center_on_parent can't do anything for a window it was
+    never involved in creating. Forcing Qt's own implementation keeps this
+    dialog on the same footing (and the same fix) as every other one here.
+    """
+    dialog = QtWidgets.QFileDialog(parent, title, start_dir)
+    dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+    dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, True)
+    dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+    _center_on_parent(dialog, parent)
+    if dialog.exec_() == QtWidgets.QDialog.Accepted:
+        selected = dialog.selectedFiles()
+        return selected[0] if selected else ""
+    return ""
+
+
 class _ScanWorker(QtCore.QObject):
     """Runs a Scan pass off the GUI thread - get_upload_status/
     get_catalog_files are SSH round-trips (seconds each), which would
@@ -632,8 +755,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             return None
 
         start_dir = os.path.dirname(di.canonical_local_root(template.format(expid=exp_name))) if template else ""
-        chosen = QtWidgets.QFileDialog.getExistingDirectory(
-            self, f"Select local data folder for '{exp_name}'", start_dir)
+        chosen = _choose_directory(self, f"Select local data folder for '{exp_name}'", start_dir)
         return chosen or None
 
     def _paint_experiment_row(self, row, report):
@@ -901,14 +1023,14 @@ class DataIntegrityPanel(QtWidgets.QWidget):
 
     def _on_history(self, exp_name):
         if di is None:
-            QtWidgets.QMessageBox.critical(self, "Error", "dm module not available")
+            _message_box(QtWidgets.QMessageBox.Critical, self, "Error", "dm module not available")
             return
 
         # Check both the current per-beamline shared location (where new
-        # Scan/Verify MD5 records land, regardless of who launched the GUI)
-        # and the legacy flat settings.records_dir (parkjs's own, from
-        # before records moved per-beamline) so history saved either way
-        # stays visible.
+        # records land) and the legacy flat settings.records_dir (so
+        # history from before the per-beamline layout existed is still
+        # visible) - same dual-location read _reattach_checksum_jobs and
+        # _poll_checksum_jobs already rely on.
         beamline = self._beamline_for_exp(exp_name)
         settings = self.config.get("settings", {})
         records_dirs = []
@@ -926,7 +1048,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         records.sort(key=lambda r: r[0])
 
         if not records:
-            QtWidgets.QMessageBox.information(self, "History", f"No records found for '{exp_name}'")
+            _message_box(QtWidgets.QMessageBox.Information, self, "History", f"No records found for '{exp_name}'")
             return
 
         msg = f"Records for '{exp_name}':\n\n"
@@ -937,7 +1059,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             rec_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
             msg += f"{rec_time}: {stats['good']} good / {stats['bad']} bad\n"
 
-        QtWidgets.QMessageBox.information(self, "History", msg)
+        _message_box(QtWidgets.QMessageBox.Information, self, "History", msg)
 
     def set_font_size(self, size):
         self.font_size = size
