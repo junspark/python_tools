@@ -289,6 +289,37 @@ def write_row(csv_path, names, values, timestamp):
         f.write(", ".join(row) + "\n")
 
 
+def read_logged_pv_names(csv_path):
+    """The list of PV names (write_header's own `name` values, not raw PV
+    strings) that a previously-logged CSV actually tracked - read back
+    from its header row, so a GUI can offer "load this run's PV
+    selection" from any past CSV rather than only ever remembering the
+    single most recent dialog session.
+
+    Skips '#'-prefixed audit-trail comment lines (see write_header) and
+    blank lines to find the real header - the first "Date, name1, name2,
+    ..." line. Tolerant of write_header's trailing ", " after the last
+    column (splitting on "," and dropping empty/whitespace-only pieces
+    handles it without a special case). Returns [] for a file that's
+    missing, empty, or doesn't start with the expected "Date" column -
+    better to come back with nothing to select than guess at a format
+    this wasn't actually built for.
+    """
+    try:
+        with open(csv_path) as f:
+            for line in f:
+                if line.startswith("#") or not line.strip():
+                    continue
+                parts = [p.strip() for p in line.rstrip("\n").split(",")]
+                parts = [p for p in parts if p]
+                if parts and parts[0] == "Date":
+                    return parts[1:]
+                return []
+    except OSError:
+        return []
+    return []
+
+
 def write_skipped_report(csv_path, offline):
     """Record which master-list PVs weren't online at discovery time, next
     to the CSV, so it's clear per-experiment what wasn't hooked up."""
@@ -431,9 +462,23 @@ def cmd_start(args):
 
     names = sorted(online)
     write_header(args.outfile, names)
+    offline_at_discovery = sorted(entry["name"] for entry in offline)
     if offline:
         skipped_path = write_skipped_report(args.outfile, offline)
         print("Offline-at-start PVs recorded in: {}".format(skipped_path))
+
+    # Every PV this job was asked to track, whether or not it ever
+    # actually connected - lets a status-file reader (pv_logger_gui.py's
+    # expandable per-beamline PV list) show a PV that's been offline
+    # since before logging even started, not just one that dropped
+    # mid-run. `names`/`online` alone can't do this: sample() only ever
+    # re-checks PVs that connected at discovery time (see its own
+    # docstring), so a PV offline from the start would otherwise never
+    # appear in `currently_offline` at all - confirmed directly, a run
+    # with 4 already-offline PVs showed "13 of 17 online" but the
+    # expandable list only ever listed the 13, all green, no way to see
+    # which 4 were the problem.
+    tracked = sorted(names + offline_at_discovery)
 
     if args.test_email:
         ok = send_drop_alert(cfg, [names[0]], args.outfile, dry_run=args.dry_run)
@@ -444,14 +489,27 @@ def cmd_start(args):
     def _write_status(state, currently_offline=(), error_message=None):
         if not status_file:
             return
+        # currently_offline (from sample(), if any) only ever names PVs
+        # that dropped AFTER connecting at discovery - union in the
+        # PVs that were already offline at discovery (permanently, since
+        # sample() never re-checks them) so the status file always
+        # reflects every currently-offline PV, not just newly-dropped
+        # ones.
+        all_offline = sorted(set(offline_at_discovery) | set(currently_offline))
         payload = {
             "state": state,
             "outfile": args.outfile,
             "started_at": started_at,
             "updated_at": time.time(),
-            "online_count": len(online) - len(currently_offline),
-            "total_count": len(online) + len(offline),
-            "currently_offline": sorted(currently_offline),
+            "online_count": len(tracked) - len(all_offline),
+            "total_count": len(tracked),
+            "currently_offline": all_offline,
+            # Every PV actually being tracked, whether online at discovery
+            # or not - lets a GUI show the full online/offline breakdown
+            # for a running job, not only whichever subset happened to be
+            # reachable at the very start. Fixed for the job's lifetime,
+            # same as `names`/`online` themselves.
+            "tracked": tracked,
         }
         if error_message is not None:
             payload["error_message"] = error_message
