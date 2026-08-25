@@ -353,6 +353,249 @@ class _ChecksumLaunchWorker(QtCore.QObject):
             di.release_remote_lock(self.checksum_host, self.checksum_user, lock_path)
 
 
+class HistoryDetailDialog(QtWidgets.QDialog):
+    """Drill-down for one experiment's saved Scan/Verify MD5 records - which
+    specific files are missing from Sojourner, which are size- or
+    checksum-mismatched, and which whole subdirectories never landed at
+    all. The prior "History" view (a plain QMessageBox of good/bad counts
+    per past run) could say *that* something was wrong but never *what* -
+    this reads the same report already saved to disk (report["comparison"],
+    ["checksum_results"], ["directory_stats"]) and just surfaces the detail
+    that was always computed but never shown.
+    """
+
+    # Built per-instance (see __init__) rather than as this class-level
+    # default, since LOCAL_ONLY/REMOTE_ONLY read more clearly naming the
+    # actual side ("s1c"/"s20a") than the generic "locally" they'd
+    # otherwise say regardless of which beamline's experiment this is.
+    _CATEGORY_LABELS_DEFAULT = {
+        "LOCAL_ONLY": "Missing from Sojourner",
+        "REMOTE_ONLY": "On Sojourner, not found locally",
+        "SIZE_MISMATCH": "Size mismatch",
+        "CHECKSUM_MISMATCH": "Checksum mismatch",
+        "CHECKSUM_ERROR": "Checksum error (couldn't verify)",
+    }
+
+    def __init__(self, parent, exp_name, records, local_label="local"):
+        """records: [(timestamp, filepath), ...] oldest-first (list_records'
+        own return shape) - shown most-recent-first in the picker.
+        local_label: basename of this experiment's local_bases entry (e.g.
+        "s1c"/"s20a") - used only to name the LOCAL_ONLY/REMOTE_ONLY
+        categories below, never for path computation."""
+        super().__init__(parent)
+        self.setWindowTitle(f"History for '{exp_name}'")
+        self.resize(900, 550)
+        self._records = list(reversed(records))
+        self._category_labels = dict(self._CATEGORY_LABELS_DEFAULT)
+        self._category_labels["LOCAL_ONLY"] = f"On {local_label}, not on Sojourner"
+        self._category_labels["REMOTE_ONLY"] = f"On Sojourner, not on {local_label}"
+        self._relocated_label = f"Relocated (same file, different path under {local_label})"
+        self._all_rows = []  # (path, category_key, issue_label) for the currently loaded snapshot - filtered into self.table by _apply_filter
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        picker_row = QtWidgets.QHBoxLayout()
+        picker_row.addWidget(QtWidgets.QLabel("Snapshot:"))
+        self.snapshot_combo = QtWidgets.QComboBox()
+        for timestamp, _ in self._records:
+            self.snapshot_combo.addItem(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp)))
+        picker_row.addWidget(self.snapshot_combo)
+        picker_row.addStretch()
+        layout.addLayout(picker_row)
+
+        self.summary_label = QtWidgets.QLabel("")
+        self.summary_label.setWordWrap(True)
+        layout.addWidget(self.summary_label)
+
+        # Category -> count tabulation (good/bad broken down, plus
+        # relocated) - the free-text summary_label above only ever gave
+        # aggregate good/bad/relocated totals, never which categories of
+        # "bad" (missing vs mismatched vs error) made up that count or how
+        # many. One row per category actually present in this snapshot, so
+        # an all-good snapshot shows just a single "Good" row rather than
+        # five zero rows.
+        self.stats_table = QtWidgets.QTableWidget(0, 2)
+        self.stats_table.setHorizontalHeaderLabels(["Category", "Count"])
+        self.stats_table.horizontalHeader().setStretchLastSection(True)
+        self.stats_table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.stats_table.verticalHeader().setVisible(False)
+        self.stats_table.setMaximumHeight(160)
+        self.stats_table.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
+        layout.addWidget(self.stats_table)
+
+        # Bounded, scrollable box, not a plain word-wrapped QLabel: an
+        # experiment with dozens of whole missing subdirectories (a real
+        # case, not hypothetical) wrapped into enough lines to push the
+        # actual per-file table down to a sliver at the bottom of the
+        # dialog - the more useful, actionable content squeezed out by the
+        # less useful summary text above it. Same fixed-height-QPlainTextEdit
+        # pattern already used for the console (see DataIntegrityPanel._init_ui).
+        self.dirs_label = QtWidgets.QPlainTextEdit()
+        self.dirs_label.setReadOnly(True)
+        self.dirs_label.setMaximumHeight(100)
+        layout.addWidget(self.dirs_label)
+
+        filter_row = QtWidgets.QHBoxLayout()
+        filter_row.addWidget(QtWidgets.QLabel("Show:"))
+        self.filter_combo = QtWidgets.QComboBox()
+        filter_row.addWidget(self.filter_combo)
+        filter_row.addStretch()
+        layout.addLayout(filter_row)
+
+        self.table = QtWidgets.QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["File", "Issue"])
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        layout.addWidget(self.table, 1)  # stretch factor: the table gets any extra space, not the fixed-height widgets around it
+
+        buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.accepted.connect(self.accept)
+        layout.addWidget(buttons)
+
+        self.snapshot_combo.currentIndexChanged.connect(self._load_snapshot)
+        self.filter_combo.currentIndexChanged.connect(self._apply_filter)
+        self._load_snapshot(0)
+
+    def _load_snapshot(self, index):
+        if index < 0 or index >= len(self._records):
+            return
+        _, filepath = self._records[index]
+        try:
+            with open(filepath) as f:
+                report = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            self.summary_label.setText(f"Couldn't read this record: {e}")
+            self.stats_table.setRowCount(0)
+            self.dirs_label.setPlainText("")
+            self.dirs_label.setVisible(False)
+            self._all_rows = []
+            self.filter_combo.clear()
+            self.table.setRowCount(0)
+            return
+
+        stats = report.get("file_stats", {})
+        self.summary_label.setText("{} ({} total, {} good, {} bad, {} relocated)".format(
+            report.get("sojourner_summary", ""),
+            stats.get("total", 0), stats.get("good", 0), stats.get("bad", 0), stats.get("relocated", 0)))
+
+        dir_stats = report.get("directory_stats", {})
+        missing_dirs = dir_stats.get("missing", [])
+        extra_dirs = dir_stats.get("extra", [])
+        # One directory per line, not one giant comma-joined run-on string -
+        # a real experiment can have dozens of these, and a wall of names
+        # separated only by commas is much harder to scan than a list.
+        dir_lines = []
+        if missing_dirs:
+            dir_lines.append(f"Whole subdirectories not on Sojourner at all ({len(missing_dirs)}):")
+            dir_lines.extend("  " + d for d in missing_dirs)
+        if extra_dirs:
+            dir_lines.append(f"Whole subdirectories on Sojourner but not found locally ({len(extra_dirs)}):")
+            dir_lines.extend("  " + d for d in extra_dirs)
+        self.dirs_label.setPlainText("\n".join(dir_lines))
+        self.dirs_label.setVisible(bool(dir_lines))
+
+        # comparison/checksum_results are independent per-path status maps
+        # (see compare()/verify_checksums()) - a path can legitimately
+        # appear in both if it's e.g. size-matched but checksum-mismatched,
+        # so this lists each problem separately rather than trying to
+        # collapse them into one row per path.
+        comparison = report.get("comparison", {})
+        checksum_results = report.get("checksum_results", {})
+        relocated_files = report.get("relocated_files", [])
+
+        # A relocated pair's two paths still show up as plain LOCAL_ONLY/
+        # REMOTE_ONLY entries in comparison (find_relocated_files never
+        # touches compare()'s own output) - skip them here so each gets
+        # exactly one row, as the paired "-> " entry below, not also as a
+        # separate "missing" entry that would misrepresent it as unexplained.
+        relocated_paths = set()
+        for rf in relocated_files:
+            relocated_paths.add(rf["local_path"])
+            relocated_paths.add(rf["remote_path"])
+
+        rows = []  # (path, category_key, issue_label)
+        for path, status in comparison.items():
+            if status == "MATCH" or path in relocated_paths:
+                continue
+            rows.append((path, status, self._category_labels.get(status, status)))
+        for path, status in checksum_results.items():
+            if status in ("CHECKSUM_MATCH", "CHECKSUM_UNKNOWN"):
+                continue
+            rows.append((path, status, self._category_labels.get(status, status)))
+        for rf in relocated_files:
+            rows.append(("{} -> {}".format(rf["local_path"], rf["remote_path"]),
+                          "RELOCATED", self._relocated_label))
+        rows.sort()
+        self._all_rows = rows
+
+        # Tabulate: one row per category actually present, in a fixed,
+        # good-first/most-common-problem-first order rather than whatever
+        # order dict iteration or sorting would give - "Good" is always the
+        # first line so the reader doesn't have to hunt for the one number
+        # that says "how much of this actually matched".
+        category_order = ["GOOD", "LOCAL_ONLY", "REMOTE_ONLY", "RELOCATED",
+                           "SIZE_MISMATCH", "CHECKSUM_MISMATCH", "CHECKSUM_ERROR"]
+        counts = {"GOOD": stats.get("good", 0)}
+        for _, category, _ in rows:
+            counts[category] = counts.get(category, 0) + 1
+        stats_labels = dict(self._category_labels)
+        stats_labels["GOOD"] = "Good (matched)"
+        stats_labels["RELOCATED"] = "Relocated"
+        present = [c for c in category_order if counts.get(c, 0)]
+        present.extend(c for c in counts if c not in category_order and counts[c])
+        self.stats_table.setRowCount(len(present))
+        for row, category in enumerate(present):
+            self.stats_table.setItem(row, 0, QtWidgets.QTableWidgetItem(stats_labels.get(category, category)))
+            count_item = QtWidgets.QTableWidgetItem(str(counts[category]))
+            count_item.setTextAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            self.stats_table.setItem(row, 1, count_item)
+        self.stats_table.resizeColumnsToContents()
+
+        # Filter dropdown: "All problem files" plus one entry per category
+        # actually present in *this* snapshot (not a fixed list) - a
+        # snapshot with only missing files shouldn't offer a "Checksum
+        # mismatch" choice that's guaranteed to show nothing. Rebuilt (not
+        # just repopulated) on every snapshot switch since which categories
+        # exist can differ per snapshot; signal is blocked around this so
+        # rebuilding doesn't itself trigger a redundant _apply_filter call
+        # before self._all_rows above is even meaningful to it.
+        self.filter_combo.blockSignals(True)
+        self.filter_combo.clear()
+        self.filter_combo.addItem(f"All problem files ({len(rows)})", None)
+        problem_categories = [c for c in category_order if c != "GOOD" and counts.get(c, 0)]
+        for category in problem_categories:
+            self.filter_combo.addItem(f"{stats_labels.get(category, category)} ({counts[category]})", category)
+        self.filter_combo.blockSignals(False)
+
+        self._apply_filter()
+
+    def _apply_filter(self):
+        selected = self.filter_combo.currentData() if self.filter_combo.count() else None
+        rows = self._all_rows if selected is None else [r for r in self._all_rows if r[1] == selected]
+
+        if not rows:
+            self.table.setRowCount(1)
+            self.table.setItem(0, 0, QtWidgets.QTableWidgetItem("(no problem files in this snapshot)"))
+            self.table.setItem(0, 1, QtWidgets.QTableWidgetItem(""))
+        else:
+            self.table.setRowCount(len(rows))
+            for row, (path, _category, issue) in enumerate(rows):
+                self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(path))
+                self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(issue))
+        self.table.resizeColumnsToContents()
+        # Cap the File column rather than leaving resizeColumnsToContents's
+        # raw result: a single long real path (confirmed directly - a
+        # dozens-of-directories-deep experiment path) can otherwise claim
+        # the entire dialog width and push the Issue column off the visible
+        # area even with setStretchLastSection(True), since that only
+        # controls how leftover space is distributed, not a maximum on
+        # earlier columns. Capped, not fixed, so short paths still get a
+        # narrow column instead of always reserving 500px.
+        if self.table.columnWidth(0) > 500:
+            self.table.setColumnWidth(0, 500)
+
+
 class DataIntegrityPanel(QtWidgets.QWidget):
     def __init__(self, config_path, show_font_control=True):
         super().__init__()
@@ -1052,10 +1295,10 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             return
 
         # Check both the current per-beamline shared location (where new
-        # records land) and the legacy flat settings.records_dir (so
-        # history from before the per-beamline layout existed is still
-        # visible) - same dual-location read _reattach_checksum_jobs and
-        # _poll_checksum_jobs already rely on.
+        # Scan/Verify MD5 records land, regardless of who launched the GUI)
+        # and the legacy flat settings.records_dir (parkjs's own, from
+        # before records moved per-beamline) so history saved either way
+        # stays visible.
         beamline = self._beamline_for_exp(exp_name)
         settings = self.config.get("settings", {})
         records_dirs = []
@@ -1076,15 +1319,33 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             _message_box(QtWidgets.QMessageBox.Information, self, "History", f"No records found for '{exp_name}'")
             return
 
-        msg = f"Records for '{exp_name}':\n\n"
-        for timestamp, filepath in records[-10:]:
-            with open(filepath) as f:
-                record = json.load(f)
-            stats = record["file_stats"]
-            rec_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
-            msg += f"{rec_time}: {stats['good']} good / {stats['bad']} bad\n"
+        # Same "dserv" convention upload_info_for_experiment uses (the
+        # basename of settings.local_bases[beamline], e.g. "s1c"/"s20a") -
+        # just for labeling the local-only/relocated categories in the
+        # dialog, not for any path computation.
+        local_base = settings.get("local_bases", {}).get(beamline)
+        local_label = os.path.basename(local_base.rstrip("/")) if local_base else "local"
 
-        _message_box(QtWidgets.QMessageBox.Information, self, "History", msg)
+        # Logged unconditionally before attempting to open, and the whole
+        # attempt wrapped in try/except reporting through self._log (the
+        # main window's own status label/console - already confirmed
+        # rendering correctly, unlike a brand-new dialog on this flaky
+        # display) rather than a fresh _message_box: confirmed directly
+        # that History could silently do nothing - no new window, no
+        # taskbar entry, and no terminal output either - with no way to
+        # tell whether the click was even received, a dialog construction
+        # exception happened, or the dialog was created but never mapped
+        # by the X server. This makes each of those cases distinguishable
+        # instead of all looking identical from the user's side.
+        self._log(f"Opening History for '{exp_name}'...")
+        try:
+            dialog = HistoryDetailDialog(self, exp_name, records, local_label)
+            _center_on_parent(dialog, self)
+            dialog.exec_()
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._log(f"Failed to open History for '{exp_name}': {e}")
 
     def _log(self, msg):
         """Update the one-line status label AND append a timestamped entry

@@ -112,6 +112,52 @@ def test_log_updates_label_and_appends_to_console():
     print("✓")
 
 
+def test_history_detail_dialog_lists_problem_files():
+    """HistoryDetailDialog should surface which specific files are missing/
+    mismatched, not just a good/bad count - the detail the old plain
+    QMessageBox history view never showed."""
+    print("Testing HistoryDetailDialog surfaces per-file problem detail...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        records_dir = os.path.join(tmpdir, "records")
+        exp_name = "test_jan24"
+
+        comparison = {
+            "good.h5": "MATCH",
+            "corrupted.h5": "CHECKSUM_MISMATCH",  # comparison-level MATCH but checksum failed below
+            "missing_locally.h5": "REMOTE_ONLY",
+            "not_uploaded.h5": "LOCAL_ONLY",
+            "resized.h5": "SIZE_MISMATCH",
+        }
+        checksum_results = {
+            "good.h5": "CHECKSUM_MATCH",
+            "corrupted.h5": "CHECKSUM_MISMATCH",
+        }
+        report = dig.di.build_report(exp_name, {"upload_complete": False}, comparison, checksum_results)
+        dig.di.save_record(records_dir, exp_name, report)
+
+        records = dig.di.list_records(records_dir, exp_name)
+        assert records, "fixture record should be found by list_records"
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        dialog = dig.HistoryDetailDialog(None, exp_name, records)
+
+        problem_paths = set()
+        for row in range(dialog.table.rowCount()):
+            problem_paths.add(dialog.table.item(row, 0).text())
+
+        assert "missing_locally.h5" in problem_paths
+        assert "not_uploaded.h5" in problem_paths
+        assert "resized.h5" in problem_paths
+        assert "corrupted.h5" in problem_paths
+        assert "good.h5" not in problem_paths, "a fully-matched file should not be listed as a problem"
+        assert dialog.summary_label.text(), "summary should be populated"
+
+        app.quit()
+
+    print("✓")
+
+
 def test_data_integrity_window():
     """Test DataIntegrityWindow standalone."""
     print("Testing DataIntegrityWindow...", end=" ")
@@ -132,7 +178,7 @@ def test_data_integrity_window():
 if __name__ == "__main__":
     try:
         test_data_integrity_panel()
-        test_log_updates_label_and_appends_to_console()
+        test_history_detail_dialog_lists_problem_files()
         test_data_integrity_window()
         print("\nGUI smoke tests passed! ✓")
     except Exception as e:
