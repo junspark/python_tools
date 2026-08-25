@@ -18,6 +18,7 @@ Usage
 import argparse
 import json
 import os
+import signal
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -154,6 +155,11 @@ class OpsGuiWindow(QtWidgets.QMainWindow):
         self._prefs["width"] = self.width()
         self._prefs["height"] = self.height()
         _save_prefs(self._prefs)
+        # disk_panel may have a "Recent activity" background scan still
+        # running (see DiskMonitorPanel._start_activity_scan) - cancel and
+        # wait for it here rather than letting Qt tear down its QThread
+        # while still running underneath it.
+        self.disk_panel.shutdown()
         super().closeEvent(event)
 
 
@@ -191,6 +197,28 @@ def main(argv=None):
     # way.
     window.raise_()
     window.activateWindow()
+
+    # Ctrl+C (SIGINT) during app.exec_() doesn't reach window.closeEvent()
+    # at all - Python's default SIGINT handling unwinds straight through
+    # Qt's C++ event loop, so disk_panel.shutdown() (which cancels the
+    # background "Recent activity" scanner - see DiskMonitorPanel.shutdown)
+    # never runs. Confirmed directly: Ctrl+C during that scan reliably
+    # produced "QThread: Destroyed while thread is still running" followed
+    # by a SIGABRT/core dump, and left the scan's `du` subprocess orphaned
+    # and still running (competing for I/O with any later relaunch's own
+    # scan) - matching a bug this codebase already fixed once for
+    # TopFoldersDialog, just not for this earlier, always-runs-at-startup
+    # scan. Routing SIGINT through window.close() instead makes Ctrl+C
+    # behave exactly like closing the window normally.
+    signal.signal(signal.SIGINT, lambda *_args: window.close())
+    # PyQt/Python only notices a pending signal when Python bytecode gets
+    # a chance to run, which app.exec_()'s C++ event loop otherwise never
+    # yields for on its own - a periodic no-op timer is the standard way
+    # to give it that chance regularly, rather than SIGINT appearing to do
+    # nothing until some unrelated callback happens to fire.
+    _sigint_pump = QtCore.QTimer()
+    _sigint_pump.timeout.connect(lambda: None)
+    _sigint_pump.start(200)
 
     return app.exec_()
 
