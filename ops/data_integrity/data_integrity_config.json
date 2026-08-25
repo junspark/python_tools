@@ -20,10 +20,18 @@
     },
     "experiments_per_beamline": 3,
     "checksum_hosts": {
-      "s1":  {"host": "zion", "user": "s1iduser", "remote_base": "/home/beams/S1IDUSER/dm_record"},
-      "s20": {"host": "zion", "user": "s20iduser", "remote_base": "/home/beams/S20IDUSER/dm_record"}
+      "s1": {
+        "host": "zion",
+        "user": "s1iduser",
+        "remote_base": "/home/beams/S1IDUSER/dm_record"
+      },
+      "s20": {
+        "host": "zion",
+        "user": "s20iduser",
+        "remote_base": "/home/beams/S20IDUSER/dm_record"
+      }
     },
-    "checksum_cpu_budget": 0.20,
+    "checksum_cpu_budget": 0.2,
     "checksum_poll_interval_sec": 4
   },
   "experiments": [
@@ -32,6 +40,18 @@
       "local_root": "/home/beams/PARKJS/mnt/s1c/exp_name_1",
       "dataset": null,
       "running": false
+    },
+    {
+      "name": "nfdev_jul26",
+      "beamline": "s20",
+      "local_root": "/home/s20a/nfdev_jul26",
+      "dataset": null
+    },
+    {
+      "name": "kamath_jun26",
+      "beamline": "s20",
+      "local_root": "/home/s20a/kamath_jun26",
+      "dataset": null
     }
   ]
 }

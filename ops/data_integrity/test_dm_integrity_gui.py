@@ -112,6 +112,204 @@ def test_log_updates_label_and_appends_to_console():
     print("✓")
 
 
+def test_add_experiment_persists_and_appends_row():
+    """"Add experiment..." should append one row without a full rediscovery,
+    persist a beamline-tagged entry to the config file (distinct from the
+    in-memory-only entries _register_local_root creates for auto-discovered
+    rows), and refuse a duplicate name rather than adding a second row."""
+    print("Testing add_experiment() persists to config and appends a row...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = _write_config_with_fake_experiments(tmpdir)
+        new_root = os.path.join(tmpdir, "manual_exp_root")
+        os.makedirs(new_root)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+        assert panel.table_widget.rowCount() == 2
+
+        class _FakeDialog:
+            def __init__(self, parent, beamlines, templates, local_bases=None, known_names=None):
+                pass
+
+            def exec_(self):
+                return QtWidgets.QDialog.Accepted
+
+            def values(self):
+                return "manual_exp", "s1", new_root
+
+        with mock.patch.object(dig, "AddExperimentDialog", _FakeDialog):
+            panel.add_experiment()
+
+        assert panel.table_widget.rowCount() == 3, "should have appended exactly one row"
+        assert panel._row_for_exp("manual_exp") is not None
+
+        with open(config_path) as f:
+            saved = json.load(f)
+        manual_entries = [e for e in saved.get("experiments", []) if e.get("name") == "manual_exp"]
+        assert len(manual_entries) == 1, "manual experiment should be persisted to the config file"
+        assert manual_entries[0]["beamline"] == "s1"
+        assert manual_entries[0]["local_root"] == os.path.realpath(new_root)
+
+        # Re-adding the same name must be rejected, not appended again.
+        with mock.patch.object(dig, "AddExperimentDialog", _FakeDialog), \
+             mock.patch.object(dig, "_message_box") as warn:
+            panel.add_experiment()
+        assert panel.table_widget.rowCount() == 3, "duplicate add must not append a second row"
+        warn.assert_called_once()
+
+        app.quit()
+
+    print("✓")
+
+
+def test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates():
+    """AddExperimentDialog: picking a folder via Browse should populate the
+    experiment name from the folder's basename and infer the beamline from
+    which local_base it lives under, and typing a name that's already
+    tracked should disable OK rather than waiting until submission."""
+    print("Testing AddExperimentDialog browse-autofill and duplicate blocking...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        s20_base = os.path.join(tmpdir, "s20a")
+        exp_dir = os.path.join(s20_base, "browsed_exp")
+        os.makedirs(exp_dir)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+
+        dialog = dig.AddExperimentDialog(
+            None, ["s1", "s20"], {},
+            local_bases={"s1": s1_base, "s20": s20_base},
+            known_names={"existing_exp"},
+        )
+
+        with mock.patch.object(dig, "_choose_directory", return_value=exp_dir):
+            dialog._browse()
+
+        assert dialog.name_edit.text() == "browsed_exp", \
+            f"expected name auto-filled from folder basename, got {dialog.name_edit.text()!r}"
+        assert dialog.beamline_combo.currentText() == "s20", \
+            f"expected beamline inferred from local_bases, got {dialog.beamline_combo.currentText()!r}"
+        assert dialog._ok_button.isEnabled(), "OK should be enabled for a non-duplicate name"
+
+        dialog.name_edit.setText("existing_exp")
+        assert not dialog._ok_button.isEnabled(), "OK must be disabled once the name matches a known experiment"
+        assert dialog.warning_label.text(), "a warning should explain why OK is disabled"
+
+        app.quit()
+
+    print("✓")
+
+
+def test_remove_experiment_only_offered_for_manual_rows():
+    """Only manually-added rows get a Remove button; removing one deletes
+    its row and its beamline-tagged config entry, without touching
+    auto-discovered rows or their in-memory-only local_root entries."""
+    print("Testing Remove is manual-only and persists the deletion...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        os.makedirs(os.path.join(s1_base, "auto_jan24"))
+        manual_root = os.path.join(tmpdir, "manual_root")
+        os.makedirs(manual_root)
+
+        config_path = os.path.join(tmpdir, "config.json")
+        config = {
+            "settings": {
+                "station_name": "SOJOURNER",
+                "records_dir": os.path.join(tmpdir, "records"),
+                "local_bases": {"s1": s1_base},
+                "experiments_per_beamline": 3,
+            },
+            "experiments": [
+                {"name": "manual_exp", "beamline": "s1", "local_root": manual_root, "dataset": None}
+            ],
+        }
+        with open(config_path, "w") as f:
+            json.dump(config, f)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+
+        assert panel._row_for_exp("auto_jan24") is not None
+        assert panel._row_for_exp("manual_exp") is not None
+
+        auto_row = panel._row_for_exp("auto_jan24")
+        manual_row = panel._row_for_exp("manual_exp")
+        # +1 in each count is the trailing addStretch() layout item (a
+        # QSpacerItem, not a button) that keeps button sizes consistent
+        # across rows regardless of label width - see _populate_experiment_row.
+        # Scan + the combined Verify MD5/Stop button + the history-summary
+        # label = 3 widgets normally.
+        assert panel.table_widget.cellWidget(auto_row, 4).layout().count() == 3 + 1, \
+            "auto-discovered row should have Scan + Verify MD5/Stop + history label only, no Remove"
+        assert panel.table_widget.cellWidget(manual_row, 4).layout().count() == 4 + 1, \
+            "manually-added row should have an extra Remove button"
+
+        with mock.patch.object(dig, "_message_box", return_value=QtWidgets.QMessageBox.Yes):
+            panel._on_remove_experiment("manual_exp")
+
+        assert panel._row_for_exp("manual_exp") is None, "removed row should be gone from the table"
+        assert panel._row_for_exp("auto_jan24") is not None, "unrelated row must be untouched"
+
+        with open(config_path) as f:
+            saved = json.load(f)
+        assert not any(e.get("name") == "manual_exp" for e in saved.get("experiments", [])), \
+            "removed experiment must no longer be persisted to disk"
+
+        app.quit()
+
+    print("✓")
+
+
+def test_history_summary_indicator_populates_and_refreshes():
+    """The compact "N recs" label next to Scan/Verify MD5 should be empty
+    with no saved records, then show a count + tooltip once a record
+    exists - populated at row-creation time and refreshed the moment a
+    fresh report is painted (_paint_experiment_row), not just on restart."""
+    print("Testing history summary indicator populates and refreshes...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        os.makedirs(os.path.join(s1_base, "test_jan24"))
+        records_dir = os.path.join(tmpdir, "records")
+
+        config_path = os.path.join(tmpdir, "config.json")
+        config = {
+            "settings": {
+                "station_name": "SOJOURNER",
+                "records_dir": records_dir,
+                "local_bases": {"s1": s1_base},
+                "experiments_per_beamline": 3,
+            },
+        }
+        with open(config_path, "w") as f:
+            json.dump(config, f)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+        exp_name = "test_jan24"
+
+        label = panel._row_history_labels[exp_name]
+        assert label.text() == "", "no saved records yet - indicator should be empty"
+
+        comparison = {"a.h5": "MATCH", "b.h5": "LOCAL_ONLY"}
+        report = dig.di.build_report(exp_name, {"upload_complete": False}, comparison)
+        dig.di.save_record(records_dir, exp_name, report)
+
+        row = panel._row_for_exp(exp_name)
+        panel._paint_experiment_row(row, report)
+
+        assert label.text() == "1 rec", f"expected '1 rec' after one saved record, got {label.text()!r}"
+        assert "1 saved record" in label.toolTip()
+        assert "good" in label.toolTip() and "bad" in label.toolTip()
+
+        app.quit()
+
+    print("✓")
+
+
 def test_history_detail_dialog_lists_problem_files():
     """HistoryDetailDialog should surface which specific files are missing/
     mismatched, not just a good/bad count - the detail the old plain
@@ -178,6 +376,11 @@ def test_data_integrity_window():
 if __name__ == "__main__":
     try:
         test_data_integrity_panel()
+        test_log_updates_label_and_appends_to_console()
+        test_add_experiment_persists_and_appends_row()
+        test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates()
+        test_remove_experiment_only_offered_for_manual_rows()
+        test_history_summary_indicator_populates_and_refreshes()
         test_history_detail_dialog_lists_problem_files()
         test_data_integrity_window()
         print("\nGUI smoke tests passed! ✓")

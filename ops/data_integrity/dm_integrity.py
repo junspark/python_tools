@@ -66,6 +66,16 @@ def load_config(path):
     return config
 
 
+def save_config(config, path):
+    """Write config back to path - used for explicit user edits (e.g. the
+    GUI's "Add experiment..." dialog persisting a manually-tracked
+    experiment) rather than anything auto-discovered, which stays
+    in-memory only (see DataIntegrityPanel._register_local_root)."""
+    with open(path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+
 # ---------------------------------------------------------------------------
 # Checksum job routing & shared records/status (per beamline, not per user)
 # ---------------------------------------------------------------------------
@@ -110,19 +120,56 @@ def remote_info_for_beamline(config, beamline):
     return remote_host, default_user, setup_script
 
 
-def beamline_for_local_root(config, local_root):
+def beamline_for_path(local_bases, local_root):
     """Best-effort beamline ("s1"/"s20"/...) for local_root: whichever
-    settings.local_bases entry is a prefix of its canonical path - the same
-    convention discover_local_experiments's callers rely on. None if
-    local_root doesn't fall under any configured base (e.g. a manually
-    added experiment outside s1c/s20a, or a bare/missing local_bases)."""
-    local_bases = config.get("settings", {}).get("local_bases", {})
+    local_bases entry it falls under. None if local_root doesn't fall
+    under any configured base (e.g. a manually added experiment outside
+    s1c/s20a, or a bare/missing local_bases).
+
+    Checks device+inode identity (os.path.samefile) against each ancestor
+    of local_root, not just string-prefix equality after canonical_local_
+    root's realpath() - confirmed directly against a real case: the exact
+    same underlying storage was reachable through two different real
+    mount paths (/home/s20a and /net/s20iddata/export/s20a - same st_dev/
+    st_ino, neither a symlink to the other), which realpath() cannot
+    unify since there's no symlink chain connecting them, only a shared
+    filesystem mounted twice. A user who happened to browse to an
+    experiment folder via the path realpath() doesn't happen to produce
+    would otherwise silently get no beamline match at all.
+
+    The string comparison still runs first as a fast path (covers the
+    overwhelmingly common case - no local_bases entry double-mounted -
+    without extra stat() calls); os.path.samefile only kicks in once that
+    fails, walking up local_root's ancestors one directory at a time.
+    """
     canonical = canonical_local_root(local_root)
-    for beamline, base_dir in local_bases.items():
-        base_canonical = canonical_local_root(base_dir)
+    base_canonicals = {beamline: canonical_local_root(base_dir)
+                        for beamline, base_dir in local_bases.items() if base_dir}
+
+    for beamline, base_canonical in base_canonicals.items():
         if canonical == base_canonical or canonical.startswith(base_canonical + os.sep):
             return beamline
-    return None
+
+    ancestor = canonical
+    while True:
+        for beamline, base_canonical in base_canonicals.items():
+            try:
+                if os.path.samefile(ancestor, base_canonical):
+                    return beamline
+            except OSError:
+                continue
+        parent = os.path.dirname(ancestor)
+        if parent == ancestor:
+            return None
+        ancestor = parent
+
+
+def beamline_for_local_root(config, local_root):
+    """Best-effort beamline ("s1"/"s20"/...) for local_root - see
+    beamline_for_path (this is a thin wrapper for callers that already
+    have the full config in hand, pulling settings.local_bases out of it -
+    the same convention discover_local_experiments's callers rely on)."""
+    return beamline_for_path(config.get("settings", {}).get("local_bases", {}), local_root)
 
 
 def remote_identity_for_beamline(config, beamline):

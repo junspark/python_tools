@@ -596,6 +596,133 @@ class HistoryDetailDialog(QtWidgets.QDialog):
             self.table.setColumnWidth(0, 500)
 
 
+class AddExperimentDialog(QtWidgets.QDialog):
+    """Manually add an experiment to the dashboard that auto-discovery
+    didn't pick up - either because it's not among the most-recent
+    experiments_per_beamline per beamline, or its name doesn't follow the
+    <piname>_<mon><yy> convention discover_local_experiments requires."""
+
+    def __init__(self, parent, beamlines, local_root_templates, local_bases=None, known_names=None):
+        super().__init__(parent)
+        self.setWindowTitle("Add experiment")
+        self._local_root_templates = local_root_templates
+        self._local_bases = local_bases or {}
+        self._known_names = known_names or set()
+        self._path_is_autofilled = True
+        self._name_is_autofilled = True
+
+        self.name_edit = QtWidgets.QLineEdit()
+        self.beamline_combo = QtWidgets.QComboBox()
+        self.beamline_combo.addItems(beamlines)
+
+        self.path_edit = QtWidgets.QLineEdit()
+        browse_btn = QtWidgets.QPushButton("Browse...")
+        browse_btn.clicked.connect(self._browse)
+        path_row = QtWidgets.QHBoxLayout()
+        path_row.addWidget(self.path_edit)
+        path_row.addWidget(browse_btn)
+
+        form = QtWidgets.QFormLayout()
+        form.addRow("Experiment name:", self.name_edit)
+        form.addRow("Beamline:", self.beamline_combo)
+        form.addRow("Local folder:", path_row)
+
+        self.warning_label = QtWidgets.QLabel("")
+        self.warning_label.setStyleSheet("color: red;")
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        self._ok_button = buttons.button(QtWidgets.QDialogButtonBox.Ok)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addLayout(form)
+        layout.addWidget(self.warning_label)
+        layout.addWidget(buttons)
+
+        # Pre-fill the local folder from the beamline's convention template
+        # as the name/beamline are entered, so the common case (a real
+        # convention-named experiment that's just older than the
+        # most-recent few) needs no manual path entry at all - but never
+        # clobber something the user actually typed or Browsed to.
+        self.name_edit.textChanged.connect(self._maybe_autofill_path)
+        self.name_edit.textEdited.connect(self._on_name_edited_by_user)
+        self.beamline_combo.currentTextChanged.connect(self._maybe_autofill_path)
+        self.path_edit.textEdited.connect(self._on_path_edited_by_user)
+        self.name_edit.textChanged.connect(self._validate)
+        self._validate()
+
+    def _on_path_edited_by_user(self):
+        self._path_is_autofilled = False
+
+    def _on_name_edited_by_user(self):
+        self._name_is_autofilled = False
+
+    def _maybe_autofill_path(self):
+        if not self._path_is_autofilled:
+            return
+        name = self.name_edit.text().strip()
+        template = self._local_root_templates.get(self.beamline_combo.currentText())
+        if name and template:
+            self.path_edit.setText(di.canonical_local_root(template.format(expid=name)))
+            self._path_is_autofilled = True  # setText() doesn't emit textEdited, but stay explicit
+
+    def _validate(self):
+        name = self.name_edit.text().strip()
+        if name and name in self._known_names:
+            self.warning_label.setText(f"'{name}' is already tracked - pick a different name.")
+            self._ok_button.setEnabled(False)
+        else:
+            self.warning_label.setText("")
+            self._ok_button.setEnabled(True)
+
+    def _browse(self):
+        # Start from the currently selected beamline's own base directory
+        # (e.g. ~/mnt/s1c) rather than the home directory, so browsing to a
+        # real experiment folder is a couple of clicks, not a manual cd
+        # through unrelated home-directory clutter.
+        start_dir = self.path_edit.text().strip()
+        if not start_dir:
+            base = self._local_bases.get(self.beamline_combo.currentText())
+            start_dir = di.canonical_local_root(base) if base else os.path.expanduser("~")
+        path = _choose_directory(self, "Select experiment folder", start_dir)
+        if not path:
+            return
+        self.path_edit.setText(path)
+        self._path_is_autofilled = False
+
+        # Picking a folder is the common "I already know where it is"
+        # path - populate the experiment name from its directory name so
+        # the user isn't forced to retype what they just navigated to.
+        # Never clobber a name the user typed themselves first.
+        if self._name_is_autofilled:
+            self.name_edit.setText(os.path.basename(path.rstrip("/")))
+            self._name_is_autofilled = True  # setText() doesn't emit textEdited, but stay explicit
+
+        # Infer the beamline too, if the chosen folder falls under one of
+        # the known local_bases (e.g. picking something under ~/mnt/s20a
+        # while "s1" is still selected from a prior add) - reuses
+        # di.beamline_for_path rather than a second, separately-maintained
+        # copy of this inference. Confirmed directly that a naive string-
+        # prefix version of this check (what used to be here inline) can
+        # silently fail to infer anything: the same underlying storage was
+        # reachable through two different real mount paths (different
+        # strings even after realpath, same device+inode) - see
+        # beamline_for_path's own docstring for the full story.
+        inferred = di.beamline_for_path(self._local_bases, path)
+        if inferred is not None:
+            index = self.beamline_combo.findText(inferred)
+            if index >= 0:
+                self.beamline_combo.setCurrentIndex(index)
+
+    def values(self):
+        """(name, beamline, path) - path is whatever's in the field, not
+        yet canonicalized (the caller does that, same as everywhere else
+        a local_root gets written into config or a job spec)."""
+        return self.name_edit.text().strip(), self.beamline_combo.currentText(), self.path_edit.text().strip()
+
+
 class DataIntegrityPanel(QtWidgets.QWidget):
     def __init__(self, config_path, show_font_control=True):
         super().__init__()
@@ -605,6 +732,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self.font_size = 10
         self.last_reports = {}
         self._row_buttons = {}
+        self._row_history_labels = {}
         self._active_workers = {}
         # Detached checksum jobs (Verify MD5): _tracked_checksum_jobs holds
         # the last-known status dict per experiment, refreshed by the poll
@@ -667,64 +795,22 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                     recent_exps.append((exp_name, beamline, local_root))
                     self._register_local_root(exp_name, local_root)
 
-            if not recent_exps:
+            manual_exps = self._load_manual_experiments({name for name, _, _ in recent_exps})
+            manual_names = {name for name, _, _ in manual_exps}
+            all_exps = recent_exps + manual_exps
+
+            if not all_exps:
                 self._log("No experiment directories found under " + ", ".join(local_bases.values()))
                 return
 
-            # Switch to the 6-column layout (adds Beamline + History) - the
-            # base table from _init_ui only has 5 columns, and
-            # setHorizontalHeaderLabels does NOT grow columnCount on its own,
-            # so without this the last two labels/widgets below (Actions
-            # sliding to column 4, History needing column 5) would silently
-            # never appear.
-            self.table_widget.setColumnCount(6)
-            self.table_widget.setHorizontalHeaderLabels([
-                "Expid", "Beamline", "Upload Status", "Files", "Actions", "History"
-            ])
-            self.table_widget.setRowCount(len(recent_exps))
+            self._ensure_six_column_layout()
+            self.table_widget.setRowCount(len(all_exps))
+            self._row_buttons = {}
+            self._row_upload_buttons = {}
+            self._row_history_labels = {}
 
-            for row, (exp_name, beamline, local_root) in enumerate(recent_exps):
-                # Expid
-                exp_id_item = QtWidgets.QTableWidgetItem(exp_name)
-                self.table_widget.setItem(row, 0, exp_id_item)
-
-                # Beamline (s1 or s20)
-                beamline_item = QtWidgets.QTableWidgetItem(beamline)
-                self.table_widget.setItem(row, 1, beamline_item)
-
-                # Upload status
-                upload_status_item = QtWidgets.QTableWidgetItem("---")
-                self.table_widget.setItem(row, 2, upload_status_item)
-
-                # Files
-                files_item = QtWidgets.QTableWidgetItem("---")
-                self.table_widget.setItem(row, 3, files_item)
-
-                # Actions
-                buttons_layout = QtWidgets.QHBoxLayout()
-                scan_btn = QtWidgets.QPushButton("Scan")
-                scan_btn.clicked.connect(lambda checked, e=exp_name: self._on_scan(e))
-                verify_md5_btn = QtWidgets.QPushButton("Verify MD5")
-                verify_md5_btn.clicked.connect(lambda checked, e=exp_name: self._on_verify_md5(e))
-                buttons_layout.addWidget(scan_btn)
-                buttons_layout.addWidget(verify_md5_btn)
-                self._row_buttons[exp_name] = (scan_btn, verify_md5_btn)
-                buttons_layout.setContentsMargins(0, 0, 0, 0)
-
-                buttons_widget = QtWidgets.QWidget()
-                buttons_widget.setLayout(buttons_layout)
-                self.table_widget.setCellWidget(row, 4, buttons_widget)
-
-                # History
-                history_btn = QtWidgets.QPushButton("History")
-                history_btn.clicked.connect(lambda checked, e=exp_name: self._on_history(e))
-                self.table_widget.setCellWidget(row, 5, history_btn)
-
-                # Deliberately NOT previewing DM status here: local_root is
-                # now always known (that's the point of local discovery), so
-                # an automatic preview would mean a real DM/SSH check for
-                # every row on every startup. Checking against DM is Scan/
-                # Verify MD5's job - explicit, on-demand, backgrounded.
+            for row, (exp_name, beamline, local_root) in enumerate(all_exps):
+                self._populate_experiment_row(row, exp_name, beamline, is_manual=exp_name in manual_names)
 
             # Size columns to their actual content (header text + cell
             # widgets, e.g. the Scan/Verify MD5 buttons) at the current
@@ -734,17 +820,331 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             self.table_widget.resizeColumnsToContents()
             self.table_widget.resizeRowsToContents()
 
-            self._reattach_checksum_jobs(recent_exps)
+            self._reattach_checksum_jobs(all_exps)
             self._recompute_aggregate_summary()
 
             counts = {}
-            for _, beamline, _ in recent_exps:
+            for _, beamline, _ in all_exps:
                 counts[beamline] = counts.get(beamline, 0) + 1
             summary = ", ".join(f"{n} from {b}" for b, n in counts.items())
-            self._log(f"Loaded {summary} (from local s1c/s20a directories)")
+            extra = f" + {len(manual_exps)} manually added" if manual_exps else ""
+            self._log(f"Loaded {summary}{extra} (from local s1c/s20a directories)")
 
         except Exception as e:
             self._log(f"Error discovering experiments: {str(e)[:100]}")
+
+    def _ensure_six_column_layout(self):
+        """Switch to the 6-column layout (adds Beamline and History) - the
+        base table from _init_ui only has 5 columns, and
+        setHorizontalHeaderLabels does NOT grow columnCount on its own, so
+        without this the extra columns (Actions sliding to column 4,
+        History needing column 5) would silently never appear. A no-op once already at 6 columns - needed
+        both by bulk discovery and by add_experiment(), since a manual add
+        can be the very first row (e.g. local_bases found nothing, so bulk
+        discovery never got past the 5-column table _init_ui starts
+        with)."""
+        if self.table_widget.columnCount() >= 6:
+            return
+        self.table_widget.setColumnCount(6)
+        self.table_widget.setHorizontalHeaderLabels([
+            "Expid", "Beamline", "Upload Status", "Files", "Actions", "History"
+        ])
+
+    def _load_manual_experiments(self, existing_names):
+        """Experiments explicitly added via "Add experiment..." - persisted
+        to the config's "experiments" list with an explicit "beamline" key,
+        which is what distinguishes a manually-tracked entry from the
+        in-memory-only local_root cache _register_local_root maintains for
+        auto-discovered ones (never has "beamline" set, never written to
+        disk). Skips anything already covered by auto-discovery, and
+        anything whose local_root no longer resolves to a real directory
+        (data may have moved or been cleaned up since it was added).
+        """
+        manual = []
+        for exp in self.config.get("experiments", []):
+            name = exp.get("name")
+            beamline = exp.get("beamline")
+            local_root = exp.get("local_root")
+            if not name or not beamline or not local_root or name in existing_names:
+                continue
+            if not os.path.isdir(local_root):
+                continue
+            manual.append((name, beamline, local_root))
+        return manual
+
+    def _populate_experiment_row(self, row, exp_name, beamline, is_manual=False):
+        """Fill in an already-row-counted table row's cells/widgets for
+        exp_name - shared by the bulk startup population above and
+        _append_experiment_row (a single new row added via "Add
+        experiment..." without rebuilding the whole table). is_manual
+        controls whether a "Remove" button is shown - only meaningful for
+        manually-added rows, since removing an auto-discovered one would
+        have no lasting effect (it just reappears next discovery)."""
+        # Expid
+        exp_id_item = QtWidgets.QTableWidgetItem(exp_name)
+        self.table_widget.setItem(row, 0, exp_id_item)
+
+        # Beamline (s1 or s20)
+        beamline_item = QtWidgets.QTableWidgetItem(beamline)
+        self.table_widget.setItem(row, 1, beamline_item)
+
+        # Upload status
+        upload_status_item = QtWidgets.QTableWidgetItem("---")
+        self.table_widget.setItem(row, 2, upload_status_item)
+
+        # Files
+        files_item = QtWidgets.QTableWidgetItem("---")
+        self.table_widget.setItem(row, 3, files_item)
+
+        # Actions
+        buttons_layout = QtWidgets.QHBoxLayout()
+        scan_btn = QtWidgets.QPushButton("Scan")
+        scan_btn.clicked.connect(lambda checked, e=exp_name: self._on_scan(e))
+        verify_md5_btn = QtWidgets.QPushButton("Verify MD5")
+        verify_md5_btn.clicked.connect(lambda checked, e=exp_name: self._on_verify_md5(e))
+        buttons_layout.addWidget(scan_btn)
+        buttons_layout.addWidget(verify_md5_btn)
+        if is_manual:
+            remove_btn = QtWidgets.QPushButton("Remove")
+            remove_btn.clicked.connect(lambda checked, e=exp_name: self._on_remove_experiment(e))
+            buttons_layout.addWidget(remove_btn)
+        # Compact "N recs" indicator for exp_name's saved Scan/Verify MD5
+        # history, filling what would otherwise be dead space between the
+        # buttons and the trailing stretch (see below) whenever a row's
+        # buttons are narrower than the widest row in the column. Purely
+        # informational (not clickable) - History still opens the detail
+        # dialog; this just makes "does history even exist for this row"
+        # visible without a click. Refreshed at population time and again
+        # whenever a fresh report is painted (_paint_experiment_row).
+        history_summary_label = QtWidgets.QLabel("")
+        buttons_layout.addWidget(history_summary_label)
+        self._row_history_labels[exp_name] = history_summary_label
+        self._row_buttons[exp_name] = (scan_btn, verify_md5_btn)
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        # Without a trailing stretch, a QHBoxLayout with only Minimum-size-
+        # policy widgets (QPushButton's default) grows them to fill
+        # whatever width the cell ends up with - which is sized to the
+        # widest row in the whole column (e.g. one with "Verify MD5" +
+        # "Remove"), so a row with the shorter "Scan"/"Stop" pair stretched
+        # its own buttons wider to match instead of just leaving the gap
+        # unused. Confirmed directly: this is what made Scan/Verify-MD5/
+        # Stop buttons visibly misaligned row-to-row. The stretch absorbs
+        # the leftover space instead, so every row's buttons keep their
+        # natural size and line up from the left consistently.
+        buttons_layout.addStretch()
+
+        buttons_widget = QtWidgets.QWidget()
+        buttons_widget.setLayout(buttons_layout)
+        self.table_widget.setCellWidget(row, 4, buttons_widget)
+
+        # History
+        history_btn = QtWidgets.QPushButton("History")
+        history_btn.clicked.connect(lambda checked, e=exp_name: self._on_history(e))
+        self.table_widget.setCellWidget(row, 5, history_btn)
+
+        # Deliberately NOT previewing DM status here: local_root is
+        # already known (that's the point of local discovery / the
+        # explicit path from "Add experiment..."), so an automatic
+        # preview would mean a real DM/SSH check for every row on every
+        # startup. Checking against DM is Scan/Verify MD5's job -
+        # explicit, on-demand, backgrounded. The history summary label
+        # IS populated now, though - it's plain local file reads (see
+        # _history_summary), no network/SSH cost at all.
+        self._refresh_history_summary(exp_name, beamline)
+
+    def _history_summary(self, exp_name, beamline):
+        """(indicator_text, tooltip_text) for exp_name's saved Scan/Verify
+        MD5 records - same records _on_history's dialog reads (checks both
+        the beamline's shared checksum records dir and the legacy flat
+        settings.records_dir), just reduced to a glance-able count/last-
+        result instead of the full drill-down. Local file reads only
+        (di.list_records), same cost class as _reattach_checksum_jobs'
+        status-file reads - cheap enough to call for every row.
+        """
+        if di is None:
+            return "", ""
+
+        records_dirs = []
+        if beamline:
+            _, _, remote_base = di.remote_identity_for_beamline(self.config, beamline)
+            if remote_base:
+                records_dirs.append(di.checksum_records_dir(remote_base))
+        legacy_records_dir = self.config.get("settings", {}).get("records_dir", di.DEFAULT_RECORDS_DIR)
+        if legacy_records_dir not in records_dirs:
+            records_dirs.append(legacy_records_dir)
+
+        records = []
+        for records_dir in records_dirs:
+            records.extend(di.list_records(records_dir, exp_name))
+        if not records:
+            return "", "No saved Scan/Verify MD5 records yet."
+
+        records.sort(key=lambda r: r[0])
+        timestamp, filepath = records[-1]
+        try:
+            with open(filepath) as f:
+                report = json.load(f)
+            stats = report.get("file_stats", {})
+            last_result = "{} good / {} bad".format(stats.get("good", 0), stats.get("bad", 0))
+        except (OSError, json.JSONDecodeError):
+            last_result = "last record unreadable"
+
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(timestamp))
+        n = len(records)
+        text = "{} rec{}".format(n, "" if n == 1 else "s")
+        tooltip = "{} saved record{} - last checked {}: {}".format(n, "" if n == 1 else "s", when, last_result)
+        return text, tooltip
+
+    def _refresh_history_summary(self, exp_name, beamline):
+        label = self._row_history_labels.get(exp_name)
+        if not label:
+            return
+        text, tooltip = self._history_summary(exp_name, beamline)
+        label.setText(text)
+        label.setToolTip(tooltip)
+
+    def _append_experiment_row(self, exp_name, beamline, is_manual=False):
+        """Add exp_name as one new row at the end of the table, without
+        rebuilding/rescanning everything else - used by add_experiment()
+        so adding one manually-tracked experiment doesn't re-trigger a
+        full directory rediscovery."""
+        self._ensure_six_column_layout()
+        row = self.table_widget.rowCount()
+        self.table_widget.setRowCount(row + 1)
+        self._populate_experiment_row(row, exp_name, beamline, is_manual=is_manual)
+        self.table_widget.resizeColumnsToContents()
+        self.table_widget.resizeRowsToContents()
+        return row
+
+    def add_experiment(self):
+        """Manually add an experiment via AddExperimentDialog - for one
+        that auto-discovery didn't surface (older than the most-recent few
+        per beamline, or named outside the <piname>_<mon><yy> convention).
+        Persisted to config's "experiments" list with an explicit
+        "beamline" key (see _load_manual_experiments), so it reappears on
+        every future startup, not just this session.
+        """
+        if di is None:
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Unavailable", "dm_integrity module not available.")
+            return
+
+        settings = self.config.get("settings", {})
+        local_bases = settings.get("local_bases", {"s1": None, "s20": None})
+        beamlines = list(local_bases.keys())
+        templates = settings.get("local_root_templates", {})
+        known_names = {
+            self.table_widget.item(row, 0).text()
+            for row in range(self.table_widget.rowCount())
+            if self.table_widget.item(row, 0)
+        }
+
+        # Logged unconditionally before attempting to open, and the whole
+        # attempt wrapped in try/except reporting through self._log - see
+        # _on_history's identical treatment for why: this makes "click not
+        # received" / "exception while opening" / "dialog created but
+        # never mapped by the X server" distinguishable from the user's
+        # side, where before they all looked identical (nothing visible,
+        # nothing in the terminal).
+        self._log("Opening Add EXPID...")
+        try:
+            dialog = AddExperimentDialog(self, beamlines, templates, local_bases=local_bases, known_names=known_names)
+            _center_on_parent(dialog, self)
+            accepted = dialog.exec_() == QtWidgets.QDialog.Accepted
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            self._log(f"Failed to open Add EXPID: {e}")
+            return
+        if not accepted:
+            return
+
+        name, beamline, path = dialog.values()
+        if not name or not path:
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Missing info", "Experiment name and local folder are both required.")
+            return
+        if self._row_for_exp(name) is not None:
+            # Belt-and-suspenders: the dialog itself already disables OK
+            # for a name in known_names, but re-check here too in case the
+            # table changed while the (modal) dialog was open, or a caller
+            # ever invokes this without going through the dialog's guard.
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Already added", f"'{name}' is already in the table.")
+            return
+
+        canonical_path = di.canonical_local_root(path)
+        if not os.path.isdir(canonical_path):
+            _message_box(QtWidgets.QMessageBox.Warning, self, "Not found", f"'{canonical_path}' is not a directory.")
+            return
+
+        # Read-modify-write the config file directly, rather than dumping
+        # self.config as a whole: _register_local_root appends in-memory-
+        # only entries (no "beamline" key) to self.config["experiments"]
+        # for auto-discovered rows, which must never be written to disk -
+        # see _load_manual_experiments/_register_local_root.
+        on_disk = {}
+        if os.path.exists(self.config_path):
+            with open(self.config_path) as f:
+                on_disk = json.load(f)
+        experiments = [e for e in on_disk.get("experiments", []) if e.get("name") != name]
+        experiments.append({"name": name, "beamline": beamline, "local_root": canonical_path, "dataset": None})
+        on_disk["experiments"] = experiments
+        di.save_config(on_disk, self.config_path)
+
+        # Mirror the same entry into the in-memory config so
+        # _resolve_local_root/_load_manual_experiments see it immediately
+        # without needing a restart.
+        self.config["experiments"] = [
+            e for e in self.config.get("experiments", []) if e.get("name") != name
+        ] + [{"name": name, "beamline": beamline, "local_root": canonical_path, "dataset": None}]
+
+        self._append_experiment_row(name, beamline, is_manual=True)
+        self._reattach_checksum_jobs([(name, beamline, canonical_path)])
+        self._recompute_aggregate_summary()
+        self._log(f"Added experiment '{name}' ({beamline})")
+
+    def _on_remove_experiment(self, exp_name):
+        """Remove a manually-added row (see add_experiment) from both the
+        table and the config file. Only ever wired up for is_manual rows -
+        removing an auto-discovered row wouldn't stick anyway, since the
+        next _discover_and_populate_experiments would just find it again.
+        """
+        if (exp_name in self._tracked_checksum_jobs or exp_name in self._checksum_launch_workers
+                or exp_name in self._active_workers):
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Busy",
+                f"'{exp_name}' has a Scan or Verify MD5 in progress - stop it first.")
+            return
+
+        reply = _message_box(
+            QtWidgets.QMessageBox.Question, self, "Remove experiment",
+            f"Remove '{exp_name}' from the dashboard?\n\nThis only forgets it here - no local files or "
+            "Sojourner data are touched.",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        if di is not None and os.path.exists(self.config_path):
+            with open(self.config_path) as f:
+                on_disk = json.load(f)
+            on_disk["experiments"] = [
+                e for e in on_disk.get("experiments", [])
+                if not (e.get("name") == exp_name and e.get("beamline"))
+            ]
+            di.save_config(on_disk, self.config_path)
+
+        self.config["experiments"] = [
+            e for e in self.config.get("experiments", [])
+            if not (e.get("name") == exp_name and e.get("beamline"))
+        ]
+
+        row = self._row_for_exp(exp_name)
+        if row is not None:
+            self.table_widget.removeRow(row)
+        self._row_buttons.pop(exp_name, None)
+        self._row_history_labels.pop(exp_name, None)
+        self.last_reports.pop(exp_name, None)
+
+        self._recompute_aggregate_summary()
+        self._log(f"Removed experiment '{exp_name}'")
 
     def _row_for_exp(self, exp_name):
         for row in range(self.table_widget.rowCount()):
@@ -888,6 +1288,10 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         header_layout = QtWidgets.QHBoxLayout()
         header_layout.addWidget(QtWidgets.QLabel("Most recent experiments per beamline:"))
         header_layout.addStretch()
+
+        add_experiment_btn = QtWidgets.QPushButton("Add EXPID...")
+        add_experiment_btn.clicked.connect(self.add_experiment)
+        header_layout.addWidget(add_experiment_btn)
 
         if self.show_font_control:
             header_layout.addWidget(QtWidgets.QLabel("Font size:"))
@@ -1051,6 +1455,13 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         files_text = f"{good_count} good / {bad_count} bad"
         files_item = QtWidgets.QTableWidgetItem(files_text)
 
+        # file_stats["remote_only"]/["size_mismatch"] are already the
+        # post-relocation counts build_report() computes (see its own
+        # docstring) - a relocated pair no longer trips has_problem here,
+        # which is the direct fix for the miscalibration this feature was
+        # built for: a fully-cleaned-up-after-upload experiment used to
+        # paint every REMOTE_ONLY file red indistinguishably from actually
+        # missing/lost data.
         has_problem = file_stats["size_mismatch"] > 0 or file_stats["remote_only"] > 0 or file_stats["checksum_mismatch"] > 0
         if sojourner_status == "FULLY_LANDED" and upload_status.get("upload_complete", False) and not has_problem:
             bg_color = STATUS_COLORS["good"]
@@ -1078,6 +1489,15 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                 cell.setBackground(bg_color)
 
         self._recompute_aggregate_summary()
+
+        # A fresh report here means save_record just wrote a new one for
+        # this row - refresh its "N recs" indicator (see _history_summary)
+        # so it reflects the new count/last-result immediately, not just
+        # after the next full table rebuild.
+        exp_item = self.table_widget.item(row, 0)
+        if exp_item:
+            exp_name = exp_item.text()
+            self._refresh_history_summary(exp_name, self._beamline_for_exp(exp_name))
 
     def _recompute_aggregate_summary(self):
         """Per-beamline rollup line ('s1: 2/3 scanned - 1 on Sojourner, 0
