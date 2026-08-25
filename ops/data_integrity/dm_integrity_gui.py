@@ -766,6 +766,35 @@ class _DmUploadInfoWorker(QtCore.QObject):
             self.error.emit(self.exp_name, str(e))
 
 
+class _ExistingUploadLookupWorker(QtCore.QObject):
+    """When dm-upload refuses a click because an upload is already active
+    or pending for this experiment (see _on_upload_error), that refusal
+    carries no id of its own to track - this looks up the id of whatever
+    upload DM already has running via get_upload_status's "latest record
+    for this experiment name" query, off the GUI thread (same SSH-round-
+    trip reasoning as every other worker here), so _on_upload_error can
+    still start live tracking for it instead of leaving the row at '---'
+    until someone happens to re-run Scan/Verify MD5."""
+
+    done = QtCore.pyqtSignal(str, dict)
+    error = QtCore.pyqtSignal(str, str)
+
+    def __init__(self, exp_name, host, user, setup_script):
+        super().__init__()
+        self.exp_name = exp_name
+        self.host = host
+        self.user = user
+        self.setup_script = setup_script
+
+    def run(self):
+        try:
+            result = di.get_upload_status(
+                self.exp_name, remote_host=self.host, remote_user=self.user, setup_script=self.setup_script)
+            self.done.emit(self.exp_name, result)
+        except Exception as e:
+            self.error.emit(self.exp_name, str(e))
+
+
 class AddExperimentDialog(QtWidgets.QDialog):
     """Manually add an experiment to the dashboard that auto-discovery
     didn't pick up - either because it's not among the most-recent
@@ -1398,7 +1427,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.done.connect(lambda output: self._on_upload_done(exp_name, output, host, user, setup_script))
-        worker.error.connect(lambda msg: self._on_upload_error(exp_name, msg))
+        worker.error.connect(lambda msg: self._on_upload_error(exp_name, msg, host, user, setup_script))
         worker.done.connect(thread.quit)
         worker.error.connect(thread.quit)
         thread.finished.connect(thread.deleteLater)
@@ -1446,7 +1475,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             "which queries DM's own upload status independently and refreshes the Upload "
             "Status/Files columns from it.")
 
-    def _on_upload_error(self, exp_name, msg):
+    def _on_upload_error(self, exp_name, msg, host=None, user=None, setup_script=None):
         self._upload_workers.pop(exp_name, None)
         upload_btn = self._row_upload_buttons.get(exp_name)
         if upload_btn:
@@ -1456,15 +1485,28 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         # directly against DM Station's own Uploads tab: this isn't a
         # failure at all, it's DM correctly refusing a second concurrent
         # reprocess while an earlier one (often from a prior click here) is
-        # still genuinely running. Logged distinctly so it doesn't read
-        # like something to retry or debug - Scan/Verify MD5 (not another
-        # Upload to DM click) or DM Station's Uploads tab is what actually
-        # shows its progress.
+        # still genuinely running. This refusal carries no id of its own
+        # (dm-upload never got as far as creating a new upload record), so
+        # look up whichever upload DM already has running/pending for this
+        # experiment and start tracking that one instead - otherwise the
+        # row would just sit at '---' until someone happens to re-run
+        # Scan/Verify MD5.
         if "already active or pending" in msg:
             self._log(
                 f"'{exp_name}' already has an upload in progress on DM (not a failure) - "
-                "check DM Station's Uploads tab for progress, or re-run Scan/Verify MD5 here "
-                "once it finishes.")
+                "looking up its id to track progress automatically.")
+            if host and exp_name not in self._active_uploads:
+                thread = QtCore.QThread(self)
+                worker = _ExistingUploadLookupWorker(exp_name, host, user, setup_script)
+                worker.moveToThread(thread)
+                thread.started.connect(worker.run)
+                worker.done.connect(lambda name, result: self._on_existing_upload_found(name, result, host, user, setup_script))
+                worker.error.connect(lambda name, m: self._log(f"Couldn't look up '{name}''s existing DM upload: {m}"))
+                worker.done.connect(thread.quit)
+                worker.error.connect(thread.quit)
+                thread.finished.connect(thread.deleteLater)
+                self._upload_workers[exp_name] = (thread, worker)
+                thread.start()
             return
         # dm-upload's own exit-16 message ("Experiment ... is already
         # archived") - confirmed directly for a real experiment: DM refuses
@@ -1480,6 +1522,24 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                 "that needs DM's own un-archive process, not another Upload to DM attempt.")
             return
         self._log(f"Upload failed for '{exp_name}': {msg}")
+
+    def _on_existing_upload_found(self, exp_name, result, host, user, setup_script):
+        """Result of _ExistingUploadLookupWorker's lookup, triggered from
+        _on_upload_error's "already active or pending" branch."""
+        self._upload_workers.pop(exp_name, None)
+        upload_id = result.get("id")
+        status = result.get("status", "unknown")
+        if upload_id and status not in di._DM_UPLOAD_TERMINAL_STATUSES:
+            self._active_uploads[exp_name] = {
+                "id": upload_id, "host": host, "user": user, "setup_script": setup_script,
+            }
+            self._log(
+                f"Found '{exp_name}''s existing DM upload (id {upload_id}, status: {status}) - "
+                "Upload Status/Files will now update automatically.")
+            return
+        self._log(
+            f"Couldn't find a trackable id for '{exp_name}''s existing DM upload "
+            f"(status: {status}) - re-run Scan/Verify MD5 in a bit to see it reflected instead.")
 
     def _row_for_exp(self, exp_name):
         for row in range(self.table_widget.rowCount()):

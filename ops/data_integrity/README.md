@@ -203,6 +203,21 @@ Each row has these actions:
   see it reflected. Either way, a later Scan/Verify MD5 still overwrites
   the row with its own authoritative view.
 
+  If DM refuses the click because an upload is already active/pending
+  for that experiment (its own exit-15 case - not a failure, just a
+  second concurrent reprocess request), this tool looks up the id of
+  whichever upload is already running and starts tracking that one
+  instead, rather than leaving the row at `---` until someone happens to
+  re-run Scan/Verify MD5.
+
+  `get_upload_status`'s notion of "latest upload record" (used here and
+  by the Upload Status/Files columns generally) is by actual `startTime`,
+  not list order - confirmed directly that DM's `listUploadRecords`
+  returns records newest-first, which an earlier `records[-1]` picked
+  the *oldest* record for any experiment with more than one upload
+  attempt (common - retries, reprocesses). Fixed to `max(records, key=...startTime)`,
+  order-independent regardless of what the API happens to return.
+
 Row coloring (`Files` column and beyond):
 - **Green**: fully landed, upload complete, no problems - safe to delete
 - **Red**: a real problem - `SIZE_MISMATCH`, `REMOTE_ONLY`, or

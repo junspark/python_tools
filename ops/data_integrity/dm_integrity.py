@@ -374,7 +374,9 @@ def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=Non
     """
     Query DM upload status. Returns dict with keys:
     status (str), n_files (int), n_completed (int), n_errors (int),
-    upload_complete (bool).
+    upload_complete (bool), id (str or None - the latest upload record's
+    own id, for handing off to get_dm_upload_info's more precise by-id
+    tracking; None if no record exists or the query itself failed).
 
     If remote_host is provided, executes this query on the remote host via
     SSH, sourcing setup_script first - this MUST match the target beamline
@@ -387,6 +389,16 @@ def get_upload_status(experiment_name, station_name="SOJOURNER", remote_host=Non
     past 30s while every other experiment's identical query returns in
     under a second - 30s was cutting off borderline-slow-but-real
     responses, not just genuinely stuck ones.
+
+    "Latest" is picked by max(startTime), not records[-1]/records[0] -
+    confirmed directly against a real experiment with 7 upload records
+    spanning almost a year that listUploadRecords returns them newest-
+    first, not oldest-first or query-order-unspecified as the old
+    records[-1] code (silently wrong since whenever this function was
+    first written) assumed. That bug meant any experiment with more than
+    one upload attempt could show a stale, unrelated record's status
+    here - e.g. a year-old aborted attempt instead of today's actually-
+    running one.
     """
     if remote_host:
         # Execute remotely
@@ -397,18 +409,18 @@ try:
     api = experimentDaqApi.ExperimentDaqApi()
     records = api.listUploadRecords(queryDict={{"experimentName": "{experiment_name}"}})
     if not records:
-        result = {{"status": "unknown", "n_files": 0, "n_completed": 0, "n_errors": 0, "upload_complete": False}}
+        result = {{"status": "unknown", "n_files": 0, "n_completed": 0, "n_errors": 0, "upload_complete": False, "id": None}}
     else:
-        latest = records[-1]
+        latest = max(records, key=lambda r: r.get("startTime", 0))
         status = latest.get("status", "unknown")
         n_files = latest.get("nFiles", 0)
         n_completed = latest.get("nCompletedFiles", 0)
         n_errors = latest.get("nProcessingErrors", 0)
         upload_complete = status == "done" and n_errors == 0
-        result = {{"status": status, "n_files": n_files, "n_completed": n_completed, "n_errors": n_errors, "upload_complete": upload_complete}}
+        result = {{"status": status, "n_files": n_files, "n_completed": n_completed, "n_errors": n_errors, "upload_complete": upload_complete, "id": latest.get("id")}}
     print(json.dumps(result))
 except Exception as e:
-    print(json.dumps({{"status": "error", "n_files": 0, "n_completed": 0, "n_errors": -1, "upload_complete": False, "error_msg": str(e)}}))
+    print(json.dumps({{"status": "error", "n_files": 0, "n_completed": 0, "n_errors": -1, "upload_complete": False, "id": None, "error_msg": str(e)}}))
 """
         setup_cmd = f"source {setup_script} && conda activate dm-user"
         return rj.run_remote_command(remote_host, remote_user, setup_cmd, python_code, timeout=timeout)
@@ -421,6 +433,7 @@ except Exception as e:
             "n_completed": 0,
             "n_errors": -1,
             "upload_complete": False,
+            "id": None,
             "error_msg": "DM API not available locally. Configure remote_host in settings.",
         }
 
@@ -434,6 +447,7 @@ except Exception as e:
             "n_completed": 0,
             "n_errors": -1,
             "upload_complete": False,
+            "id": None,
             "error_msg": str(e),
         }
 
@@ -444,9 +458,10 @@ except Exception as e:
             "n_completed": 0,
             "n_errors": 0,
             "upload_complete": False,
+            "id": None,
         }
 
-    latest = records[-1]
+    latest = max(records, key=lambda r: r.get("startTime", 0))
     status = latest.get("status", "unknown")
     n_files = latest.get("nFiles", 0)
     n_completed = latest.get("nCompletedFiles", 0)
@@ -460,6 +475,7 @@ except Exception as e:
         "n_completed": n_completed,
         "n_errors": n_errors,
         "upload_complete": upload_complete,
+        "id": latest.get("id"),
     }
 
 
