@@ -283,72 +283,72 @@
     {
       "name": "samXE",
       "pv": "1ide1:m34.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "samYE",
       "pv": "1ide1:m35.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "samZE",
       "pv": "1ide1:m36.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "th",
       "pv": "1ide1:m86.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "chi",
       "pv": "1ide1:m87.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "aero",
       "pv": "1ide:m9.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "tension",
       "pv": "1ide1:m33.RBV",
-      "group": "Aero setup"
+      "group": "Compact loadframe"
     },
     {
       "name": "aeroXE",
       "pv": "1ide1:m101.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "aeroZE",
       "pv": "1ide1:m102.RBV",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "msamXC",
       "pv": "1idc:m12.RBV",
-      "group": "MAMC setup"
+      "group": "C HR-SMS"
     },
     {
       "name": "msamYC",
       "pv": "1idc:m14.RBV",
-      "group": "MAMC setup"
+      "group": "C HR-SMS"
     },
     {
       "name": "msamZC",
       "pv": "1idc:m13.RBV",
-      "group": "MAMC setup"
+      "group": "C HR-SMS"
     },
     {
       "name": "momeC",
       "pv": "1idc:m9.RBV",
-      "group": "MAMC setup"
+      "group": "C HR-SMS"
     },
     {
       "name": "mrotXC",
       "pv": "1idc:m15.RBV",
-      "group": "MAMC setup"
+      "group": "C HR-SMS"
     },
     {
       "name": "coilPhi",
@@ -603,7 +603,7 @@
     {
       "name": "Fedrl1 (mm) (1ide)",
       "pv": "1ide:Fed:s1:probe_1",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "Fedrl1 (mm) (1id)",
@@ -613,7 +613,7 @@
     {
       "name": "Fedrl2 (mm) (1ide)",
       "pv": "1ide:Fed:s1:probe_2",
-      "group": "Aero setup"
+      "group": "E HR-SMS"
     },
     {
       "name": "Fedrl2 (mm) (1id)",
@@ -628,47 +628,47 @@
     {
       "name": "HEM E (keV)",
       "pv": "1id:userTran3.A",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "Th1 offset",
       "pv": "1id:userTran3.B",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "SCU1 Current (A)",
       "pv": "ID01ds:MainCurrentRdbk.VAL",
-      "group": "Monochromator"
+      "group": "Insertion Devices"
     },
     {
       "name": "UndA Gap (mm)",
       "pv": "S01ID:DSID:GapM.VAL",
-      "group": "Monochromator"
+      "group": "Insertion Devices"
     },
     {
       "name": "Undulator gap (mm)",
       "pv": "S01ID:DSID:GapM.VAL",
-      "group": "Monochromator"
+      "group": "Insertion Devices"
     },
     {
       "name": "HEM Th1 (deg)",
       "pv": "1ida:m30.RBV",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "HEM Th2 (deg)",
       "pv": "1ida:m32.RBV",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "HEM Z2 (mm)",
       "pv": "1idsft1:m1.RBV",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "HEM Chi2 (deg)",
       "pv": "1ida:m17.RBV",
-      "group": "Monochromator"
+      "group": "HEM"
     },
     {
       "name": "B Kohzu H size (mm)",
@@ -773,52 +773,52 @@
     {
       "name": "SR BPM H pos (mm)",
       "pv": "S1:ID:SrcPt:xPositionM",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "SR BPM H angle (urad)",
       "pv": "S1:ID:SrcPt:xAngleM",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "SR BPM V pos (mm)",
       "pv": "S1:ID:SrcPt:yPositionM",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "SR BPM V angle (urad)",
       "pv": "S1:ID:SrcPt:yAngleM",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "XBPM H pos (mm)",
       "pv": "FE:01:ID:HPOSITION:CC",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "XBPM H angle (urad)",
       "pv": "FE:01:ID:HANGLE:CC",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "XBPM V pos (mm)",
       "pv": "FE:01:ID:VPOSITION:CC",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "XBPM V angle (urad)",
       "pv": "FE:01:ID:VANGLE:CC",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "BPM_C (mm)",
       "pv": "1ide2:S1:scaler1_calc3.VAL",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "BPM_E (mm)",
       "pv": "1ide2:S1:scaler1_calc5.VAL",
-      "group": "Beam positions"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "IC-B1 (cts)",
@@ -998,52 +998,52 @@
     {
       "name": "bpm_c (mm)",
       "pv": "1ide2:S1:scaler1_calc3.VAL",
-      "group": "HRM"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "bpm_e (mm)",
       "pv": "1ide2:S1:scaler1_calc5.VAL",
-      "group": "HRM"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "Aero tiltX",
       "pv": "1ide:USdig_X3:1:A1.VAL",
-      "group": "TILT SENSORS"
+      "group": "E HR-SMS"
     },
     {
       "name": "Aero tiltX offset",
       "pv": "1ide:USdig_X3:1:A1.B.VAL",
-      "group": "TILT SENSORS"
+      "group": "E HR-SMS"
     },
     {
       "name": "Aero tiltZ",
       "pv": "1ide:USdig_X3:1:A2.VAL",
-      "group": "TILT SENSORS"
+      "group": "E HR-SMS"
     },
     {
       "name": "Aero tiltZ offset",
       "pv": "1ide:USdig_X3:1:A2.B.VAL",
-      "group": "TILT SENSORS"
+      "group": "E HR-SMS"
     },
     {
       "name": "MTS tiltZ",
       "pv": "1ide:USdig_X3:2:A1",
-      "group": "TILT SENSORS"
+      "group": "E HL-SMS"
     },
     {
       "name": "MTS tiltZ offset",
       "pv": "1ide:USdig_X3:2:A1.B",
-      "group": "TILT SENSORS"
+      "group": "E HL-SMS"
     },
     {
       "name": "MTS tiltX",
       "pv": "1ide:USdig_X3:2:A2",
-      "group": "TILT SENSORS"
+      "group": "E HL-SMS"
     },
     {
       "name": "MTS tiltX offset",
       "pv": "1ide:USdig_X3:2:A2.B",
-      "group": "TILT SENSORS"
+      "group": "E HL-SMS"
     },
     {
       "name": "keyence1",
@@ -1148,7 +1148,7 @@
     {
       "name": "Load (V) (1ide)",
       "pv": "1ide:D1Ch17_raw.VAL",
-      "group": "meimei psylotech load frame"
+      "group": "AML Psylotech muTS"
     },
     {
       "name": "Load (V) (1ide)",
@@ -1163,7 +1163,7 @@
     {
       "name": "Load (N) (1ide)",
       "pv": "1ide:D1Ch17_calc.VAL",
-      "group": "meimei psylotech load frame"
+      "group": "AML Psylotech muTS"
     },
     {
       "name": "Load (N) (1ide)",
@@ -1264,51 +1264,6 @@
       "name": "MTS Out3",
       "pv": "1id:9440:1:bo_12.VAL",
       "group": "handshake signals"
-    },
-    {
-      "name": "ramsrot (deg)",
-      "pv": "1idrams1:m1.RBV",
-      "group": "RAMS1"
-    },
-    {
-      "name": "ch31 (V)",
-      "pv": "1ide:D1Ch31_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch32 (V)",
-      "pv": "1ide:D1Ch32_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch33 (V)",
-      "pv": "1ide:D1Ch33_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch34 (V)",
-      "pv": "1ide:D1Ch34_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch35 (V)",
-      "pv": "1ide:D1Ch35_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch36 (V)",
-      "pv": "1ide:D1Ch36_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch37 (V)",
-      "pv": "1ide:D1Ch37_raw.VAL",
-      "group": "MTS - BIAXIAL"
-    },
-    {
-      "name": "ch38 (V)",
-      "pv": "1ide:D1Ch38_raw.VAL",
-      "group": "MTS - BIAXIAL"
     },
     {
       "name": "Furnace T1 (C) (1id)",
@@ -1761,121 +1716,6 @@
       "group": "FZHANG COLD SINTER FURNACE"
     },
     {
-      "name": "rams3 Slow Out1 (V)",
-      "pv": "1ide:D1Ch21_raw.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Slow Out1 (-)",
-      "pv": "1ide:D1Ch21_calc.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Fast LoadA (V)",
-      "pv": "1ide:D1Ch22_raw.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Fast LoadA (N)",
-      "pv": "1ide:D1Ch22_calc.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Slow Out2 (V)",
-      "pv": "1ide:D1Ch23_raw.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Slow Out2 (-)",
-      "pv": "1ide:D1Ch23_calc.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Fast LoadB (V)",
-      "pv": "1ide:D1Ch24_raw.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Fast LoadB (N)",
-      "pv": "1ide:D1Ch24_calc.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Torsion (V)",
-      "pv": "1ide:D1Ch25_raw.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Torsion (N-m)",
-      "pv": "1ide:D1Ch25_calc.VAL",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Load cellA-dig (N)",
-      "pv": "1ide:RAMS3_LC:Force1",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 Load cellB-dig (N)",
-      "pv": "1ide:RAMS3_LC:Force2",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 TopRot (deg)",
-      "pv": "1idrams3:m1.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 BotRot (deg)",
-      "pv": "1idrams3:m2.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 tension (mm)",
-      "pv": "1idrams3:m3.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 rot (deg)",
-      "pv": "1idrams3:m4.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 offset (deg)",
-      "pv": "1idrams3:m5.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 rotX (mm)",
-      "pv": "1idc:m2.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 tiltX (deg)",
-      "pv": "1idc:m4.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 tiltZ (deg)",
-      "pv": "1idc:m3.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 samY (mm)",
-      "pv": "1idc:m6.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 tableY (mm)",
-      "pv": "1idc:m5.RBV",
-      "group": "RAMS3"
-    },
-    {
-      "name": "rams3 sam top rotation encoder (deg)",
-      "pv": "1ide:userStringCalc10.VAL",
-      "group": "RAMS3"
-    },
-    {
       "name": "TC1 (C)",
       "pv": "1ide:DP41:s1:temp.VAL",
       "group": "THERMOCOUPLE"
@@ -2024,11 +1864,6 @@
       "name": "offset_rbk (V)",
       "pv": "1ide:33220A:1:offset",
       "group": "AGILENT FUNC GEN"
-    },
-    {
-      "name": "Sample (V)",
-      "pv": "1ide:D1Ch21_calc.VAL",
-      "group": "VOLTAGE SIGNAL POKHAREL_MAR18"
     },
     {
       "name": "PG1 (Spinnaker, E-hutch)",
@@ -2243,257 +2078,257 @@
     {
       "name": "FileName_RBV (1idEig16M)",
       "pv": "1idEig16M:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (1idPG1)",
       "pv": "1idPG1:TIFF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (1idPil)",
       "pv": "1idPil:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (1idPil)",
       "pv": "1idPil:Raw1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (1idPil)",
       "pv": "1idPil:TIFF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (1idVarex1)",
       "pv": "1idVarex1:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE1)",
       "pv": "GE1:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE2)",
       "pv": "GE2:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE3)",
       "pv": "GE3:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE4)",
       "pv": "GE4:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE5)",
       "pv": "GE5:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (QIMAGE1)",
       "pv": "QIMAGE1:TIFF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (dp_lambda_xrd30)",
       "pv": "dp_lambda_xrd30:TIFF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileName_RBV (s1_pixirad2)",
       "pv": "s1_pixirad2:HDF1:FileName_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (1idEig16M)",
       "pv": "1idEig16M:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (1idPil)",
       "pv": "1idPil:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (1idPil)",
       "pv": "1idPil:Raw1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (1idVarex1)",
       "pv": "1idVarex1:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE1)",
       "pv": "GE1:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE2)",
       "pv": "GE2:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE3)",
       "pv": "GE3:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE4)",
       "pv": "GE4:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE5)",
       "pv": "GE5:HDF1:FileNumber_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idEig16M)",
       "pv": "1idEig16M:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idPG1)",
       "pv": "1idPG1:TIFF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idPil)",
       "pv": "1idPil:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idPil)",
       "pv": "1idPil:Raw1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idPil)",
       "pv": "1idPil:TIFF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (1idVarex1)",
       "pv": "1idVarex1:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE1)",
       "pv": "GE1:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE2)",
       "pv": "GE2:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE3)",
       "pv": "GE3:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE4)",
       "pv": "GE4:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE5)",
       "pv": "GE5:HDF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (QIMAGE1)",
       "pv": "QIMAGE1:TIFF1:NumCapture_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (1idEig16M)",
       "pv": "1idEig16M:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (1idPG1)",
       "pv": "1idPG1:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (1idVarex1)",
       "pv": "1idVarex1:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE1)",
       "pv": "GE1:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE2)",
       "pv": "GE2:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE3)",
       "pv": "GE3:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE4)",
       "pv": "GE4:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE5)",
       "pv": "GE5:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (QIMAGE1)",
       "pv": "QIMAGE1:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (s1_pixirad2)",
       "pv": "s1_pixirad2:cam1:AcquireTime_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "Ti1",
       "pv": "1idSoft:TC32:Ti1",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "Ti24",
       "pv": "1idSoft:TC32:Ti24",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "Ti3",
       "pv": "1idSoft:TC32:Ti3",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "Ti7",
       "pv": "1idSoft:TC32:Ti7",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "Ti8",
       "pv": "1idSoft:TC32:Ti8",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "T0",
       "pv": "1idadam:adam_6018:1:T0",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Hutch monitoring thermocouples"
     },
     {
       "name": "m41 (1idb)",
@@ -2731,26 +2566,6 @@
       "group": "write_parfile_general.mac (misc, review before use)"
     },
     {
-      "name": "A1",
-      "pv": "1ide:USdig_X3:1:A1",
-      "group": "write_parfile_general.mac (misc, review before use)"
-    },
-    {
-      "name": "A1.B",
-      "pv": "1ide:USdig_X3:1:A1.B",
-      "group": "write_parfile_general.mac (misc, review before use)"
-    },
-    {
-      "name": "A2",
-      "pv": "1ide:USdig_X3:1:A2",
-      "group": "write_parfile_general.mac (misc, review before use)"
-    },
-    {
-      "name": "A2.B",
-      "pv": "1ide:USdig_X3:1:A2.B",
-      "group": "write_parfile_general.mac (misc, review before use)"
-    },
-    {
       "name": "m1 (1idmotx)",
       "pv": "1idmotx:m1.RBV",
       "group": "write_parfile_general.mac (misc, review before use)"
@@ -2758,11 +2573,6 @@
     {
       "name": "m1 (1mini2)",
       "pv": "1mini2:hxp:c0:m1.RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
-    },
-    {
-      "name": "m3 (1idrams3)",
-      "pv": "1idrams3:m3.VAL",
       "group": "write_parfile_general.mac (misc, review before use)"
     },
     {
@@ -2793,22 +2603,22 @@
     {
       "name": "Gap",
       "pv": "ID01us:Gap.VAL",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Insertion Devices"
     },
     {
       "name": "AcquirePeriod_RBV",
       "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumImages_RBV (dp_lambda_xrd30)",
       "pv": "dp_lambda_xrd30:cam1:NumImages_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "NumImages_RBV (s1_pixirad2)",
       "pv": "s1_pixirad2:cam1:NumImages_RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "Detector Acquisition Settings"
     },
     {
       "name": "A White Beam H size (mm)",
@@ -2843,17 +2653,17 @@
     {
       "name": "bpm_c2 (mm)",
       "pv": "1ide2:S2:scaler2_calc3.VAL",
-      "group": "HRM"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "bpm_e2 (mm)",
       "pv": "1ide2:S2:scaler2_calc5.VAL",
-      "group": "HRM"
+      "group": "Beam Position Monitor"
     },
     {
       "name": "ID Energy (keV)",
       "pv": "S01ID:DSID:EnergyM.VAL",
-      "group": "Beam positions"
+      "group": "Insertion Devices"
     },
     {
       "name": "HEM Th1",
@@ -2878,42 +2688,42 @@
     {
       "name": "C 4C th",
       "pv": "1idc:m74.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C phi",
       "pv": "1idc:m75.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotX",
       "pv": "1idc:m76.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotY1",
       "pv": "1idcAMCI:m6.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotY2",
       "pv": "1idcAMCI:m2.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotY3",
       "pv": "1idcAMCI:m3.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotZ1",
       "pv": "1idcAMCI:m4.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C 4C RotZ2",
       "pv": "1idcAMCI:m5.RBV",
-      "group": "C 4-Circle Stage"
+      "group": "C 4-Circle Diffractometer"
     },
     {
       "name": "C Lens1 X",

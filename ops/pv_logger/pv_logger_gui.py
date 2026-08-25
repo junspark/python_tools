@@ -206,9 +206,9 @@ def _choose_open_file(parent, title, start_dir="", filter_str=""):
 DEVICE_CATEGORIES = [
     ("Detectors", [
         "GE/Pilatus DETECTOR", "Pilatus", "PIXIRAD2", "NF DET", "Tomo det",
-        "Detectors (armed state)", "DETECTORS frame number", "BSE1 Detector", "BSE2 Detector",
-        "D3 Detector", "D4-1 Detector", "D4-2 Detector", "GH2 Detector", "PG6 Detector",
-        "PITEC1 Detector", "Varex Detector",
+        "Detectors (armed state)", "DETECTORS frame number", "Detector Acquisition Settings",
+        "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
+        "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
     ]),
     ("Optics / Lenses", [
         "LENSES", "LENSES IN B CRL, upstream", "LENSES IN B VERTICAL FOCUS",
@@ -237,24 +237,26 @@ DEVICE_CATEGORIES = [
         "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",
         "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
         "SUTER-BASIL FURNACE", "E PulseRay Furnace", "Linkam Furnace (old)",
+        "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
     ]),
     ("Load Frames / Mechanical Testing", [
-        "Compact loadframe", "Compact loadframe UL / DESY", "meimei psylotech load frame",
-        "MTS", "MTS - BIAXIAL", "MTS+RAMS1+OXYGON setup", "RAMS1", "RAMS3", "OWIS compression type",
+        "Compact loadframe", "Compact loadframe UL / DESY", "AML Psylotech muTS",
+        "MTS", "MTS+RAMS1+OXYGON setup", "OWIS compression type",
     ]),
     ("Sample Stages / Motors", [
-        "Aero setup", "AM chamber setup", "C 4-Circle Stage",
-        "MAMC setup", "NIST BOULDER CONNOLLY H2 CHAMBER", "Motors",
+        "Motors",
     ]),
-    ("Sample Manipulation Systems", ["D-HRSMS", "E-HRSMS", "E-HLSMS", "E HL-SMS"]),
+    ("Sample Manipulation Systems", [
+        "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
+    ]),
     ("Sensors / Environmental", [
-        "KEYENCE", "TILT SENSORS", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE",
+        "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE",
     ]),
     ("Beam / Storage Ring", [
-        "Beam positions", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",
+        "Beam Position Monitor", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",
     ]),
-    ("Storage Ring / Undulator", ["Storage Ring", "Undulator"]),
-    ("Lab Equipment", ["LANL CHILLER", "LANL WELDER", "AGILENT FUNC GEN"]),
+    ("Storage Ring / Undulator", ["Storage Ring", "Undulator", "Insertion Devices"]),
+    ("Lab Equipment", ["AGILENT FUNC GEN"]),
     ("Shutters / Shields / Foils", ["Shields", "Shutters", "Foils. attens", "Attenuator"]),
     ("Software / Misc", [
         "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
