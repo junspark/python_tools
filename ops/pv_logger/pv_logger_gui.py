@@ -210,10 +210,10 @@ DEVICE_CATEGORIES = [
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
-        "D2 Detector", "d3E", "d4_2E", "ffD", "nfD", "nfE", "tomoB", "tomoC", "tomoD", "tomoE",
+        "D2 Detector", "tomoB", "tomoC", "tomoD", "tomoE",
     ]),
     ("A Lens Stacks", [
-        "lens1A", "lens2A", "lens3A",
+        "A Lens Stack 1", "A Lens Stack 2", "A Lens Stack 3",
     ]),
     ("B Lens Stacks", [
         "L1", "L2", "RL", "CRL1", "CRL2", "lens4B", "lens5B",
@@ -241,9 +241,6 @@ DEVICE_CATEGORIES = [
         "C Scaler (raw channels)", "E Scaler (raw channels)", "Ion Chamber",
         "A Hutch Ion Chambers", "B Hutch Ion Chambers", "C Hutch Ion Chambers",
         "D Hutch Ion Chambers", "E Hutch Ion Chambers",
-        # bluesky-sourced ion-chamber positioning stages (2026-08-26 scan)
-        "ic1A", "ic2A", "ic3A", "ic4A", "ic5A", "ic6A", "ic1E", "ic2E",
-        "ic2D", "ic3D", "sic1D", "sic1DA", "sic1E", "sic2DA", "sic2E", "sic4D",
     ]),
     ("Sample Environment", [
         "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",

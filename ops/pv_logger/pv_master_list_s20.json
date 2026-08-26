@@ -2325,34 +2325,34 @@
       "group": "Scan Parameters"
     },
     {
-      "name": "sic1E x",
+      "name": "SIC1E X",
       "pv": "20ide2:m27",
-      "group": "sic1E"
+      "group": "E Hutch Ion Chambers"
     },
     {
-      "name": "sic1E y",
+      "name": "SIC1E Y",
       "pv": "20ide2:m28",
-      "group": "sic1E"
+      "group": "E Hutch Ion Chambers"
     },
     {
-      "name": "sic2E x",
+      "name": "SIC2E X",
       "pv": "20ide2:m41",
-      "group": "sic2E"
+      "group": "E Hutch Ion Chambers"
     },
     {
-      "name": "sic2E y",
+      "name": "SIC2E Y",
       "pv": "20ide2:m42",
-      "group": "sic2E"
+      "group": "E Hutch Ion Chambers"
     },
     {
-      "name": "ic1E x",
+      "name": "IC1E X",
       "pv": "20ide2:m13",
-      "group": "ic1E"
+      "group": "E Hutch Ion Chambers"
     },
     {
-      "name": "ic2E x",
+      "name": "IC2E X",
       "pv": "20ide2:m14",
-      "group": "ic2E"
+      "group": "E Hutch Ion Chambers"
     },
     {
       "name": "txmE z",
@@ -2420,89 +2420,89 @@
       "group": "tomoE"
     },
     {
-      "name": "nfE x",
+      "name": "NF X (E hutch)",
       "pv": "20ide2:m53",
-      "group": "nfE"
+      "group": "NF DET"
     },
     {
-      "name": "d3E x",
+      "name": "D3 Detector X",
       "pv": "20ideD3D4:m1",
-      "group": "d3E"
+      "group": "D3 Detector"
     },
     {
-      "name": "d3E y",
+      "name": "D3 Detector Y",
       "pv": "20ideD3D4:m2",
-      "group": "d3E"
+      "group": "D3 Detector"
     },
     {
-      "name": "d3E z",
+      "name": "D3 Detector Z",
       "pv": "20ideD3D4:m3",
-      "group": "d3E"
+      "group": "D3 Detector"
     },
     {
-      "name": "d4_2E x",
+      "name": "D4-2 Detector X",
       "pv": "20ideD3D4:m7",
-      "group": "d4_2E"
+      "group": "D4-2 Detector"
     },
     {
-      "name": "d4_2E y",
+      "name": "D4-2 Detector Y",
       "pv": "20ideD3D4:m8",
-      "group": "d4_2E"
+      "group": "D4-2 Detector"
     },
     {
-      "name": "ic1A x",
+      "name": "IC1A X",
       "pv": "20ida1:m1",
-      "group": "ic1A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic2A x",
+      "name": "IC2A X",
       "pv": "20ida1:m16",
-      "group": "ic2A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic3A x",
+      "name": "IC3A X",
       "pv": "20ida1:m38",
-      "group": "ic3A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic3A y",
+      "name": "IC3A Y",
       "pv": "20ida1:m21",
-      "group": "ic3A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic4A x",
+      "name": "IC4A X",
       "pv": "20ida1:m25",
-      "group": "ic4A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic5A x",
+      "name": "IC5A X",
       "pv": "20ida1:m28",
-      "group": "ic5A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "ic6A x",
+      "name": "IC6A X",
       "pv": "20ida1:m37",
-      "group": "ic6A"
+      "group": "A Hutch Ion Chambers"
     },
     {
-      "name": "sic2DA x",
+      "name": "SIC2DA X",
       "pv": "20ida1:m2",
-      "group": "sic2DA"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic2DA y",
+      "name": "SIC2DA Y",
       "pv": "20ida1:m3",
-      "group": "sic2DA"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic1DA x",
+      "name": "SIC1DA X",
       "pv": "20ida1:m50",
-      "group": "sic1DA"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic1DA y",
+      "name": "SIC1DA Y",
       "pv": "20ida1:m51",
-      "group": "sic1DA"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "attenA rz",
@@ -2515,119 +2515,119 @@
       "group": "foilA"
     },
     {
-      "name": "lens1A x",
+      "name": "A_Lens1X",
       "pv": "20ida1:m4",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens1A y",
+      "name": "A_Lens1Y",
       "pv": "20ida1:m5",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens1A z",
+      "name": "A_Lens1Z",
       "pv": "20ida1:m6",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens1A th",
+      "name": "A_Lens1TH",
       "pv": "20ida1:m7",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens1A phi",
+      "name": "A_Lens1PHI",
       "pv": "20ida1:m8",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens1A chi",
+      "name": "A_Lens1CHI",
       "pv": "20ida1:m9",
-      "group": "lens1A"
+      "group": "A Lens Stack 1"
     },
     {
-      "name": "lens2A x",
+      "name": "A_Lens2X",
       "pv": "20ida1:m10",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A y",
+      "name": "A_Lens2Y",
       "pv": "20ida1:m11",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A z",
+      "name": "A_Lens2Z",
       "pv": "20ida1:m12",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A th",
+      "name": "A_Lens2TH",
       "pv": "20ida1:m13",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A phi",
+      "name": "A_Lens2PHI",
       "pv": "20ida1:m14",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A chi",
+      "name": "A_Lens2CHI",
       "pv": "20ida1:m15",
-      "group": "lens2A"
+      "group": "A Lens Stack 2"
     },
     {
-      "name": "lens2A y",
+      "name": "A_Lens3Y",
       "pv": "20ida1:m39",
-      "group": "lens3A"
+      "group": "A Lens Stack 3"
     },
     {
-      "name": "lens2A z",
+      "name": "A_Lens3Z",
       "pv": "20ida1:m40",
-      "group": "lens3A"
+      "group": "A Lens Stack 3"
     },
     {
-      "name": "lens2A th",
+      "name": "A_Lens3TH",
       "pv": "20ida1:m41",
-      "group": "lens3A"
+      "group": "A Lens Stack 3"
     },
     {
-      "name": "lens2A phi",
+      "name": "A_Lens3PHI",
       "pv": "20ida1:m42",
-      "group": "lens3A"
+      "group": "A Lens Stack 3"
     },
     {
-      "name": "lens2A chi",
+      "name": "A_Lens3CHI",
       "pv": "20ida1:m43",
-      "group": "lens3A"
+      "group": "A Lens Stack 3"
     },
     {
-      "name": "ic2D x",
+      "name": "IC2D X",
       "pv": "20idhedm:m3",
-      "group": "ic2D"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "ic3D x",
+      "name": "IC3D X",
       "pv": "20idhedm:m7",
-      "group": "ic3D"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic1D x",
+      "name": "SIC1D X",
       "pv": "20idhedm:m2",
-      "group": "sic1D"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic1D y",
+      "name": "SIC1D Y",
       "pv": "20idhedm:m1",
-      "group": "sic1D"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic4D x",
+      "name": "SIC4D X",
       "pv": "20idhedm:m50",
-      "group": "sic4D"
+      "group": "D Hutch Ion Chambers"
     },
     {
-      "name": "sic4D y",
+      "name": "SIC4D Y",
       "pv": "20idhedm:m49",
-      "group": "sic4D"
+      "group": "D Hutch Ion Chambers"
     },
     {
       "name": "aeroD rx",
@@ -2660,34 +2660,34 @@
       "group": "tomoD"
     },
     {
-      "name": "ffD x",
+      "name": "D2 Detector X",
       "pv": "20idhedm:m73",
-      "group": "ffD"
+      "group": "D2 Detector"
     },
     {
-      "name": "ffD z",
+      "name": "D2 Detector Z",
       "pv": "20idhedm:m74",
-      "group": "ffD"
+      "group": "D2 Detector"
     },
     {
-      "name": "nfD x",
+      "name": "NF X",
       "pv": "20idhedm:m57",
-      "group": "nfD"
+      "group": "NF DET"
     },
     {
-      "name": "nfD y",
+      "name": "NF Y",
       "pv": "20idhedm:m59",
-      "group": "nfD"
+      "group": "NF DET"
     },
     {
-      "name": "nfD z",
+      "name": "NF Z",
       "pv": "20idhedm:m58",
-      "group": "nfD"
+      "group": "NF DET"
     },
     {
-      "name": "nfD focus",
+      "name": "NF Focus",
       "pv": "20idhedm:m62",
-      "group": "nfD"
+      "group": "NF DET"
     },
     {
       "name": "amD samX",
