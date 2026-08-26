@@ -374,17 +374,17 @@
     {
       "name": "cmufx",
       "pv": "1ide1:m17.RBV",
-      "group": "CMU Suter / Basil furnace motors"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "cmufz",
       "pv": "1ide1:m18.RBV",
-      "group": "CMU Suter / Basil furnace motors"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "cmufy",
       "pv": "1ide1:m94.RBV",
-      "group": "CMU Suter / Basil furnace motors"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "shieldX",
@@ -955,16 +955,6 @@
       "name": "pzt2 (V)",
       "pv": "1idPI518:PIE518:1:p2_volts",
       "group": "HRM"
-    },
-    {
-      "name": "bpm_c (mm)",
-      "pv": "1ide2:S1:scaler1_calc3.VAL",
-      "group": "Beam Position Monitor"
-    },
-    {
-      "name": "bpm_e (mm)",
-      "pv": "1ide2:S1:scaler1_calc5.VAL",
-      "group": "Beam Position Monitor"
     },
     {
       "name": "Aero tiltX",
@@ -1539,42 +1529,42 @@
     {
       "name": "CMU Furnace T (deg C)",
       "pv": "1ide:ET2k:1:Temperature.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Ramp rate (degC per min)",
       "pv": "1ide:ET2k:1:WriteRampRate.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Ramp rate readback (degC per min)",
       "pv": "1ide:ET2k:1:ReadRampRate.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Furnce output (pct)",
       "pv": "1ide:ET2k:1:RBV_Output",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Read set pt (deg C)",
       "pv": "1ide:ET2k:1:ReadSetPoint.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Read wset pt (deg C)",
       "pv": "1ide:ET2k:1:ReadWSetPoint.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Write set pt (deg C)",
       "pv": "1ide:ET2k:1:WriteSetPoint.VAL",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "CMU Gas flow meter (V)",
       "pv": "1idadam:adam_6017:1:AI0",
-      "group": "SUTER-BASIL FURNACE"
+      "group": "PulseRay-CMU furnace"
     },
     {
       "name": "Tsam (deg C)",

@@ -243,9 +243,9 @@ DEVICE_CATEGORIES = [
         "D Hutch Ion Chambers", "E Hutch Ion Chambers",
     ]),
     ("Sample Environment", [
-        "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",
+        "PulseRay-CMU furnace", "FZHANG COLD SINTER FURNACE",
         "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
-        "SUTER-BASIL FURNACE", "E PulseRay Furnace", "Linkam Furnace (old)",
+        "E PulseRay Furnace", "Linkam Furnace (old)",
         "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
         # bluesky-sourced (2026-08-26 scan)
         "amD", "rf_sam", "rf_tube",
@@ -261,7 +261,7 @@ DEVICE_CATEGORIES = [
     ("Sample Manipulation Systems", [
         "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
         # bluesky-sourced sample positioning stages (2026-08-26 scan)
-        "aeroD", "hlsms", "wheelE",
+        "aeroD", "hlsms",
     ]),
     ("Sensors / Environmental", [
         "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
@@ -279,6 +279,7 @@ DEVICE_CATEGORIES = [
     ("Software / Misc", [
         "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
         "write_parfile_general.mac (misc, review before use)", "Calculation/Software", "Miscellaneous",
+        "wheelE",  # per direct confirmation (2026-08-26)
     ]),
 ]
 
@@ -304,6 +305,19 @@ _CURRENT_NUMBER_RE = re.compile(r"Current(\d+)", re.IGNORECASE)
 _AXIS_SUFFIX_RE = re.compile(r"(?<![A-Za-z])(R?[XYZ])$")
 _AXIS_ORDER = {"X": 0, "Y": 1, "Z": 2, "RX": 3, "RY": 4, "RZ": 5}
 
+# A trailing "(label)" on a name, e.g. "AcquireTime_RBV (GE1)".
+_DEVICE_LABEL_RE = re.compile(r"\(([^()]+)\)\s*$")
+
+# Groups where the same handful of attribute names repeat once per
+# physical detector (AcquireTime_RBV/FileName_RBV/... for GE1, GE2, GE3, ...)
+# - the only place a trailing "(label)" genuinely means "which device",
+# rather than a unit/disambiguator that happens to also be in parens (e.g.
+# "Fedrl1 (mm)", "Furnace T1 (C) (1id)") - confirmed directly that treating
+# every exact PV-prefix-matching parenthetical as a device label perturbed
+# furnace/chiller/ion-chamber groups that don't have this pattern at all,
+# so this is deliberately an explicit allowlist, not a general rule.
+_DEVICE_LABEL_GROUPS = {"Detector Acquisition Settings", "DETECTORS frame number"}
+
 
 def _pv_sort_key(entry):
     """Order a device's per-PV checkboxes by hardware address (T-unit,
@@ -318,11 +332,30 @@ def _pv_sort_key(entry):
     than plain alphabetical - confirmed directly that alphabetical order
     puts every "RX"/"RY"/"RZ" before "X"/"Y"/"Z" (since 'R' sorts before
     'X'), scrambling e.g. "C Lens1 RX/RY/RZ/X/Y/Z" into rotation-first
-    order instead of the natural translation-then-rotation one. Falls
-    back to plain alphabetical-by-name for anything matching neither
-    convention (most devices don't use either) - those entries carry
-    nothing to sort by beyond their name, exactly as before either of
-    these existed.
+    order instead of the natural translation-then-rotation one.
+
+    Also, within the explicit _DEVICE_LABEL_GROUPS allowlist only, groups
+    entries by the detector named in a trailing "(label)" (e.g.
+    "AcquireTime_RBV (GE1)"), falling back to the PV's own leading IOC
+    prefix when there's no such label (e.g. bare "AcquirePeriod_RBV") -
+    confirmed directly that "Detector Acquisition Settings"/"DETECTORS
+    frame number" (the same handful of attribute names repeating once per
+    physical detector) sorted purely alphabetically-by-name grouped by
+    *attribute* ("AcquireTime_RBV" for every detector back to back)
+    instead of by *detector*, the opposite of useful when the whole point
+    is picking one detector's settings. Deliberately an explicit allowlist
+    rather than a general rule keyed off "name has a trailing
+    parenthetical" - confirmed directly that a general rule also catches
+    parenthetical units/disambiguators used throughout the rest of this
+    master list ("Fedrl1 (mm)", "Furnace T1 (C) (1id)") that happen to
+    match a PV prefix by coincidence, scrambling groups (furnaces,
+    chillers, ion chambers) that don't have the "many devices, one
+    attribute name" problem this exists to solve.
+
+    Falls back to plain alphabetical-by-name for anything matching none of
+    these conventions (most devices don't use any of them) - those
+    entries carry nothing to sort by beyond their name, exactly as before
+    any of this existed.
     """
     pv = entry.get("pv", "")
     name = entry.get("name", "") or ""
@@ -330,6 +363,13 @@ def _pv_sort_key(entry):
     current_match = _CURRENT_NUMBER_RE.search(pv)
     t_num = int(t_match.group(1)) if t_match else float("inf")
     current_num = int(current_match.group(1)) if current_match else float("inf")
+
+    pv_device = ""
+    if entry.get("group") in _DEVICE_LABEL_GROUPS:
+        pv_prefix = pv.split(":", 1)[0].lower() if ":" in pv else ""
+        label_match = _DEVICE_LABEL_RE.search(name)
+        device_label = label_match.group(1).lower() if label_match else pv_prefix
+        pv_device = device_label
 
     axis_match = _AXIS_SUFFIX_RE.search(name)
     if axis_match:
@@ -339,7 +379,7 @@ def _pv_sort_key(entry):
         axis_order = -1
         base_name = name.lower()
 
-    return (t_num, current_num, base_name, axis_order, name.lower())
+    return (t_num, current_num, pv_device, base_name, axis_order, name.lower())
 
 
 class _GroupCheckBox(QtWidgets.QCheckBox):
