@@ -219,7 +219,7 @@ DEVICE_CATEGORIES = [
         "L1", "L2", "RL", "CRL1", "CRL2", "lens4B", "lens5B",
     ]),
     ("C Lens Stacks", [
-        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7", "lens3C", "lens4C",
+        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 3", "C Lens Stack 4", "C Lens Stack 7",
     ]),
     ("D Lens Stacks", [
         "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",

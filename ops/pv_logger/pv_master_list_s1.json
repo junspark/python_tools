@@ -3117,64 +3117,64 @@
       "group": "tomoB"
     },
     {
-      "name": "lens3C x",
+      "name": "C Lens3 X",
       "pv": "1idfoc:m1",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens3C y",
+      "name": "C Lens3 Y",
       "pv": "1idfoc:m2",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens3C z",
+      "name": "C Lens3 Z",
       "pv": "1idfoc:m3",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens3C th",
+      "name": "C Lens3 TH",
       "pv": "1idfoc:m4",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens3C phi",
+      "name": "C Lens3 PHI",
       "pv": "1idfoc:m5",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens3C chi",
+      "name": "C Lens3 CHI",
       "pv": "1idfoc:m6",
-      "group": "lens3C"
+      "group": "C Lens Stack 3"
     },
     {
-      "name": "lens4C x",
+      "name": "C Lens4 X",
       "pv": "1idfoc:m7",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
-      "name": "lens4C y",
+      "name": "C Lens4 Y",
       "pv": "1idfoc:m8",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
-      "name": "lens4C z",
+      "name": "C Lens4 Z",
       "pv": "1idfoc:m9",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
-      "name": "lens4C th",
+      "name": "C Lens4 TH",
       "pv": "1idfoc:m10",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
-      "name": "lens4C phi",
+      "name": "C Lens4 PHI",
       "pv": "1idfoc:m11",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
-      "name": "lens4C chi",
+      "name": "C Lens4 CHI",
       "pv": "1idfoc:m12",
-      "group": "lens4C"
+      "group": "C Lens Stack 4"
     },
     {
       "name": "samC ry",
