@@ -210,7 +210,7 @@ DEVICE_CATEGORIES = [
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
-        "D2 Detector", "d3E", "d4_2E", "ffD", "nfD", "nfE",
+        "D2 Detector", "d3E", "d4_2E", "ffD", "nfD", "nfE", "tomoB", "tomoC", "tomoD", "tomoE",
     ]),
     ("A Lens Stacks", [
         "lens1A", "lens2A", "lens3A",
@@ -229,7 +229,7 @@ DEVICE_CATEGORIES = [
         "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
     ]),
     ("TXM", [
-        "txmE", "txm_cam", "txm_lensE",
+        "txmE", "txm_cam", "txm_lensE", "tomoEds",
     ]),
     ("Monochromators", ["HEM", "HRM"]),
     ("B Slits", ["B Slits"]),
@@ -263,8 +263,8 @@ DEVICE_CATEGORIES = [
     ]),
     ("Sample Manipulation Systems", [
         "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
-        # bluesky-sourced sample/tomography positioning stages (2026-08-26 scan)
-        "aeroD", "hlsms", "samC", "tomoB", "tomoC", "tomoD", "tomoE", "tomoEds", "wheelE",
+        # bluesky-sourced sample positioning stages (2026-08-26 scan)
+        "aeroD", "hlsms", "wheelE",
     ]),
     ("Sensors / Environmental", [
         "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
