@@ -9,4 +9,5 @@ ops/disk_monitor/disk_alert_state.json
 ops/disk_monitor/disk_monitor_cron.log
 ops/pv_logger/pv_alert_state.json
 ops/pv_logger/pv_logger_selection_prefs.json
+ops/pv_logger/bluesky_device_scan_*.txt
 ops/ops_gui_prefs.json
