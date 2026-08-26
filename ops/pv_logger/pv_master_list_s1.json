@@ -3192,34 +3192,34 @@
       "group": "tomoC"
     },
     {
-      "name": "d2C x",
+      "name": "D2 Detector X",
       "pv": "1idc:m78",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
-      "name": "d2C y",
+      "name": "D2 Detector Y",
       "pv": "1idcAMCI:m8",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
-      "name": "d2C z",
+      "name": "D2 Detector Z",
       "pv": "1idcAMCI:m7",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
-      "name": "d2C shield",
+      "name": "D2 Detector Shield",
       "pv": "1idcAMCI:m11",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
-      "name": "d2C bstop_x",
+      "name": "D2 Detector BStop X",
       "pv": "1idcAMCI:m10",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
-      "name": "d2C bstop_y",
+      "name": "D2 Detector BStop Y",
       "pv": "1idcAMCI:m9",
-      "group": "d2C"
+      "group": "D2 Detector"
     },
     {
       "name": "owis x",

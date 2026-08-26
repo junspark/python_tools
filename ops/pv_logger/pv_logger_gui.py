@@ -210,7 +210,7 @@ DEVICE_CATEGORIES = [
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
-        "d2C", "d3E", "d4_2E", "ffD", "nfD", "nfE",
+        "D2 Detector", "d3E", "d4_2E", "ffD", "nfD", "nfE",
     ]),
     ("A Lens Stacks", [
         "lens1A", "lens2A", "lens3A",
