@@ -3055,6 +3055,206 @@
       "name": "E HLSMS samY2",
       "pv": "1idcAMCI:m16.RBV",
       "group": "E HL-SMS"
+    },
+    {
+      "name": "psylotech_out",
+      "pv": "1ide:D1Ch33_raw.VAL",
+      "group": "psylotech_out"
+    },
+    {
+      "name": "beeper",
+      "pv": "1id:DAC1_8.VAL",
+      "group": "beeper"
+    },
+    {
+      "name": "lens4B x",
+      "pv": "1idb:m20",
+      "group": "lens4B"
+    },
+    {
+      "name": "lens4B z",
+      "pv": "1idb:m21",
+      "group": "lens4B"
+    },
+    {
+      "name": "lens4B phi",
+      "pv": "1idb:m23",
+      "group": "lens4B"
+    },
+    {
+      "name": "lens4B chi",
+      "pv": "1idb:m19",
+      "group": "lens4B"
+    },
+    {
+      "name": "lens5B x",
+      "pv": "1idb:m45",
+      "group": "lens5B"
+    },
+    {
+      "name": "lens5B z",
+      "pv": "1idb:m46",
+      "group": "lens5B"
+    },
+    {
+      "name": "lens5B phi",
+      "pv": "1idb:m48",
+      "group": "lens5B"
+    },
+    {
+      "name": "lens5B chi",
+      "pv": "1idb:m26",
+      "group": "lens5B"
+    },
+    {
+      "name": "tomoB x",
+      "pv": "1idb:m52",
+      "group": "tomoB"
+    },
+    {
+      "name": "tomoB y",
+      "pv": "1idb:m40",
+      "group": "tomoB"
+    },
+    {
+      "name": "lens3C x",
+      "pv": "1idfoc:m1",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens3C y",
+      "pv": "1idfoc:m2",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens3C z",
+      "pv": "1idfoc:m3",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens3C th",
+      "pv": "1idfoc:m4",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens3C phi",
+      "pv": "1idfoc:m5",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens3C chi",
+      "pv": "1idfoc:m6",
+      "group": "lens3C"
+    },
+    {
+      "name": "lens4C x",
+      "pv": "1idfoc:m7",
+      "group": "lens4C"
+    },
+    {
+      "name": "lens4C y",
+      "pv": "1idfoc:m8",
+      "group": "lens4C"
+    },
+    {
+      "name": "lens4C z",
+      "pv": "1idfoc:m9",
+      "group": "lens4C"
+    },
+    {
+      "name": "lens4C th",
+      "pv": "1idfoc:m10",
+      "group": "lens4C"
+    },
+    {
+      "name": "lens4C phi",
+      "pv": "1idfoc:m11",
+      "group": "lens4C"
+    },
+    {
+      "name": "lens4C chi",
+      "pv": "1idfoc:m12",
+      "group": "lens4C"
+    },
+    {
+      "name": "samC ry",
+      "pv": "1idELMO:m1",
+      "group": "samC"
+    },
+    {
+      "name": "tomoC y",
+      "pv": "1idc:m84",
+      "group": "tomoC"
+    },
+    {
+      "name": "tomoC z",
+      "pv": "1idc:m77",
+      "group": "tomoC"
+    },
+    {
+      "name": "d2C x",
+      "pv": "1idc:m78",
+      "group": "d2C"
+    },
+    {
+      "name": "d2C y",
+      "pv": "1idcAMCI:m8",
+      "group": "d2C"
+    },
+    {
+      "name": "d2C z",
+      "pv": "1idcAMCI:m7",
+      "group": "d2C"
+    },
+    {
+      "name": "d2C shield",
+      "pv": "1idcAMCI:m11",
+      "group": "d2C"
+    },
+    {
+      "name": "d2C bstop_x",
+      "pv": "1idcAMCI:m10",
+      "group": "d2C"
+    },
+    {
+      "name": "d2C bstop_y",
+      "pv": "1idcAMCI:m9",
+      "group": "d2C"
+    },
+    {
+      "name": "owis x",
+      "pv": "1ide1:m58",
+      "group": "wheelE"
+    },
+    {
+      "name": "rf_tube y",
+      "pv": "1ide1:m67",
+      "group": "rf_tube"
+    },
+    {
+      "name": "rf_sam x",
+      "pv": "1ide1:m48",
+      "group": "rf_sam"
+    },
+    {
+      "name": "saxs shield",
+      "pv": "1ide1:m49",
+      "group": "saxs"
+    },
+    {
+      "name": "saxs_pin x",
+      "pv": "1ide1:m51",
+      "group": "saxs_pin"
+    },
+    {
+      "name": "saxs_pin y",
+      "pv": "1ide1:m54",
+      "group": "saxs_pin"
+    },
+    {
+      "name": "tomoEds y",
+      "pv": "1ide1:m112",
+      "group": "tomoEds"
     }
   ]
 }

@@ -209,12 +209,17 @@ DEVICE_CATEGORIES = [
         "Detectors (armed state)", "DETECTORS frame number", "Detector Acquisition Settings",
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
+        # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
+        "d2C", "d3E", "d4_2E", "ffD", "nfD", "nfE",
+    ]),
+    ("A Lens Stacks", [
+        "lens1A", "lens2A", "lens3A",
     ]),
     ("B Lens Stacks", [
-        "L1", "L2", "RL", "CRL1", "CRL2",
+        "L1", "L2", "RL", "CRL1", "CRL2", "lens4B", "lens5B",
     ]),
     ("C Lens Stacks", [
-        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7",
+        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 7", "lens3C", "lens4C",
     ]),
     ("D Lens Stacks", [
         "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",
@@ -222,6 +227,9 @@ DEVICE_CATEGORIES = [
     ]),
     ("E Lens Stacks", [
         "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
+    ]),
+    ("TXM", [
+        "txmE", "txm_cam", "txm_lensE",
     ]),
     ("Monochromators", ["HEM", "HRM"]),
     ("B Slits", ["B Slits"]),
@@ -233,22 +241,30 @@ DEVICE_CATEGORIES = [
         "C Scaler (raw channels)", "E Scaler (raw channels)", "Ion Chamber",
         "A Hutch Ion Chambers", "B Hutch Ion Chambers", "C Hutch Ion Chambers",
         "D Hutch Ion Chambers", "E Hutch Ion Chambers",
+        # bluesky-sourced ion-chamber positioning stages (2026-08-26 scan)
+        "ic1A", "ic2A", "ic3A", "ic4A", "ic5A", "ic6A", "ic1E", "ic2E",
+        "ic2D", "ic3D", "sic1D", "sic1DA", "sic1E", "sic2DA", "sic2E", "sic4D",
     ]),
     ("Sample Environment", [
         "CMU Suter / Basil furnace motors", "FZHANG COLD SINTER FURNACE",
         "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
         "SUTER-BASIL FURNACE", "E PulseRay Furnace", "Linkam Furnace (old)",
         "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
+        # bluesky-sourced (2026-08-26 scan)
+        "amD", "rf_sam", "rf_tube",
     ]),
     ("Load Frames / Mechanical Testing", [
         "Compact loadframe", "Compact loadframe UL / DESY", "AML Psylotech muTS",
         "MTS", "MTS+RAMS1+OXYGON setup", "OWIS compression type",
+        "psylotech_out",  # bluesky-sourced (2026-08-26 scan)
     ]),
     ("Sample Stages / Motors", [
         "Motors",
     ]),
     ("Sample Manipulation Systems", [
         "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
+        # bluesky-sourced sample/tomography positioning stages (2026-08-26 scan)
+        "aeroD", "hlsms", "samC", "tomoB", "tomoC", "tomoD", "tomoE", "tomoEds", "wheelE",
     ]),
     ("Sensors / Environmental", [
         "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
@@ -257,8 +273,12 @@ DEVICE_CATEGORIES = [
         "Beam Position Monitor", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",
     ]),
     ("Storage Ring / Undulator", ["Storage Ring", "Undulator", "Insertion Devices"]),
-    ("Lab Equipment", ["AGILENT FUNC GEN"]),
-    ("Shutters / Shields / Foils", ["Shields", "Shutters", "Foils. attens", "Attenuator"]),
+    ("Lab Equipment", ["AGILENT FUNC GEN", "beeper"]),
+    ("Shutters / Shields / Foils", [
+        "Shields", "Shutters", "Foils. attens", "Attenuator",
+        # bluesky-sourced (2026-08-26 scan)
+        "attenA", "attenE", "foilA", "saxs", "saxs_pin",
+    ]),
     ("Software / Misc", [
         "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
         "write_parfile_general.mac (misc, review before use)", "Calculation/Software", "Miscellaneous",

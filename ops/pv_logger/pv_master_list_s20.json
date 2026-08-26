@@ -2,6 +2,7 @@
   "settings": {
     "log_interval_sec": 5,
     "connect_timeout_sec": 2.0,
+    "caget_path": "/APSshare/epics/base-7.0.10/bin/rhel9-x86_64/caget",
     "recipients": [
       "parkjs@anl.gov",
       "jun.sang.park@outlook.com"
@@ -2322,6 +2323,396 @@
       "name": "Fly motor name",
       "pv": "20idhedmA:PSOFly1:motorName",
       "group": "Scan Parameters"
+    },
+    {
+      "name": "sic1E x",
+      "pv": "20ide2:m27",
+      "group": "sic1E"
+    },
+    {
+      "name": "sic1E y",
+      "pv": "20ide2:m28",
+      "group": "sic1E"
+    },
+    {
+      "name": "sic2E x",
+      "pv": "20ide2:m41",
+      "group": "sic2E"
+    },
+    {
+      "name": "sic2E y",
+      "pv": "20ide2:m42",
+      "group": "sic2E"
+    },
+    {
+      "name": "ic1E x",
+      "pv": "20ide2:m13",
+      "group": "ic1E"
+    },
+    {
+      "name": "ic2E x",
+      "pv": "20ide2:m14",
+      "group": "ic2E"
+    },
+    {
+      "name": "txmE z",
+      "pv": "20ide2:m72",
+      "group": "txmE"
+    },
+    {
+      "name": "txmE arc",
+      "pv": "20ide2:m57",
+      "group": "txmE"
+    },
+    {
+      "name": "txm_lensE x",
+      "pv": "20ide2:m67",
+      "group": "txm_lensE"
+    },
+    {
+      "name": "txm_lensE y",
+      "pv": "20ide2:m68",
+      "group": "txm_lensE"
+    },
+    {
+      "name": "txm_lensE th",
+      "pv": "20ide2:m70",
+      "group": "txm_lensE"
+    },
+    {
+      "name": "txm_lensE phi",
+      "pv": "20ide2:m69",
+      "group": "txm_lensE"
+    },
+    {
+      "name": "txm_lensE chi",
+      "pv": "20ide2:m71",
+      "group": "txm_lensE"
+    },
+    {
+      "name": "txm_cam x",
+      "pv": "20idmxa1:m1",
+      "group": "txm_cam"
+    },
+    {
+      "name": "txm_cam y",
+      "pv": "20idmxa1:m2",
+      "group": "txm_cam"
+    },
+    {
+      "name": "txm_cam rz",
+      "pv": "20idmxa1:m3",
+      "group": "txm_cam"
+    },
+    {
+      "name": "hlsms rotz",
+      "pv": "20ide2:m89",
+      "group": "hlsms"
+    },
+    {
+      "name": "attenE rz",
+      "pv": "20ide2:m43",
+      "group": "attenE"
+    },
+    {
+      "name": "tomoE rz",
+      "pv": "20ide2:m52",
+      "group": "tomoE"
+    },
+    {
+      "name": "nfE x",
+      "pv": "20ide2:m53",
+      "group": "nfE"
+    },
+    {
+      "name": "d3E x",
+      "pv": "20ideD3D4:m1",
+      "group": "d3E"
+    },
+    {
+      "name": "d3E y",
+      "pv": "20ideD3D4:m2",
+      "group": "d3E"
+    },
+    {
+      "name": "d3E z",
+      "pv": "20ideD3D4:m3",
+      "group": "d3E"
+    },
+    {
+      "name": "d4_2E x",
+      "pv": "20ideD3D4:m7",
+      "group": "d4_2E"
+    },
+    {
+      "name": "d4_2E y",
+      "pv": "20ideD3D4:m8",
+      "group": "d4_2E"
+    },
+    {
+      "name": "ic1A x",
+      "pv": "20ida1:m1",
+      "group": "ic1A"
+    },
+    {
+      "name": "ic2A x",
+      "pv": "20ida1:m16",
+      "group": "ic2A"
+    },
+    {
+      "name": "ic3A x",
+      "pv": "20ida1:m38",
+      "group": "ic3A"
+    },
+    {
+      "name": "ic3A y",
+      "pv": "20ida1:m21",
+      "group": "ic3A"
+    },
+    {
+      "name": "ic4A x",
+      "pv": "20ida1:m25",
+      "group": "ic4A"
+    },
+    {
+      "name": "ic5A x",
+      "pv": "20ida1:m28",
+      "group": "ic5A"
+    },
+    {
+      "name": "ic6A x",
+      "pv": "20ida1:m37",
+      "group": "ic6A"
+    },
+    {
+      "name": "sic2DA x",
+      "pv": "20ida1:m2",
+      "group": "sic2DA"
+    },
+    {
+      "name": "sic2DA y",
+      "pv": "20ida1:m3",
+      "group": "sic2DA"
+    },
+    {
+      "name": "sic1DA x",
+      "pv": "20ida1:m50",
+      "group": "sic1DA"
+    },
+    {
+      "name": "sic1DA y",
+      "pv": "20ida1:m51",
+      "group": "sic1DA"
+    },
+    {
+      "name": "attenA rz",
+      "pv": "20ida1:m26",
+      "group": "attenA"
+    },
+    {
+      "name": "foilA rz",
+      "pv": "20ida1:m27",
+      "group": "foilA"
+    },
+    {
+      "name": "lens1A x",
+      "pv": "20ida1:m4",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens1A y",
+      "pv": "20ida1:m5",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens1A z",
+      "pv": "20ida1:m6",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens1A th",
+      "pv": "20ida1:m7",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens1A phi",
+      "pv": "20ida1:m8",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens1A chi",
+      "pv": "20ida1:m9",
+      "group": "lens1A"
+    },
+    {
+      "name": "lens2A x",
+      "pv": "20ida1:m10",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A y",
+      "pv": "20ida1:m11",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A z",
+      "pv": "20ida1:m12",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A th",
+      "pv": "20ida1:m13",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A phi",
+      "pv": "20ida1:m14",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A chi",
+      "pv": "20ida1:m15",
+      "group": "lens2A"
+    },
+    {
+      "name": "lens2A y",
+      "pv": "20ida1:m39",
+      "group": "lens3A"
+    },
+    {
+      "name": "lens2A z",
+      "pv": "20ida1:m40",
+      "group": "lens3A"
+    },
+    {
+      "name": "lens2A th",
+      "pv": "20ida1:m41",
+      "group": "lens3A"
+    },
+    {
+      "name": "lens2A phi",
+      "pv": "20ida1:m42",
+      "group": "lens3A"
+    },
+    {
+      "name": "lens2A chi",
+      "pv": "20ida1:m43",
+      "group": "lens3A"
+    },
+    {
+      "name": "ic2D x",
+      "pv": "20idhedm:m3",
+      "group": "ic2D"
+    },
+    {
+      "name": "ic3D x",
+      "pv": "20idhedm:m7",
+      "group": "ic3D"
+    },
+    {
+      "name": "sic1D x",
+      "pv": "20idhedm:m2",
+      "group": "sic1D"
+    },
+    {
+      "name": "sic1D y",
+      "pv": "20idhedm:m1",
+      "group": "sic1D"
+    },
+    {
+      "name": "sic4D x",
+      "pv": "20idhedm:m50",
+      "group": "sic4D"
+    },
+    {
+      "name": "sic4D y",
+      "pv": "20idhedm:m49",
+      "group": "sic4D"
+    },
+    {
+      "name": "aeroD rx",
+      "pv": "20idhedm:m47",
+      "group": "aeroD"
+    },
+    {
+      "name": "aeroD rz",
+      "pv": "20idhedm:m48",
+      "group": "aeroD"
+    },
+    {
+      "name": "tomoD x",
+      "pv": "20idhedm:m53",
+      "group": "tomoD"
+    },
+    {
+      "name": "tomoD y",
+      "pv": "20idhedm:m55",
+      "group": "tomoD"
+    },
+    {
+      "name": "tomoD z",
+      "pv": "20idhedm:m54",
+      "group": "tomoD"
+    },
+    {
+      "name": "tomoD rx",
+      "pv": "20idhedm:m56",
+      "group": "tomoD"
+    },
+    {
+      "name": "ffD x",
+      "pv": "20idhedm:m73",
+      "group": "ffD"
+    },
+    {
+      "name": "ffD z",
+      "pv": "20idhedm:m74",
+      "group": "ffD"
+    },
+    {
+      "name": "nfD x",
+      "pv": "20idhedm:m57",
+      "group": "nfD"
+    },
+    {
+      "name": "nfD y",
+      "pv": "20idhedm:m59",
+      "group": "nfD"
+    },
+    {
+      "name": "nfD z",
+      "pv": "20idhedm:m58",
+      "group": "nfD"
+    },
+    {
+      "name": "nfD focus",
+      "pv": "20idhedm:m62",
+      "group": "nfD"
+    },
+    {
+      "name": "amD samX",
+      "pv": "20idd1:m28",
+      "group": "amD"
+    },
+    {
+      "name": "amD samZ",
+      "pv": "20idd1:m29",
+      "group": "amD"
+    },
+    {
+      "name": "amD samY",
+      "pv": "20iddAMCI:m1",
+      "group": "amD"
+    },
+    {
+      "name": "amD chamY",
+      "pv": "20iddAMCI:m2",
+      "group": "amD"
+    },
+    {
+      "name": "amD chamX",
+      "pv": "20iddAMCI:m3",
+      "group": "amD"
     }
   ]
 }
