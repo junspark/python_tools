@@ -923,6 +923,12 @@ class AddExperimentDialog(QtWidgets.QDialog):
 
 
 class DataIntegrityPanel(QtWidgets.QWidget):
+    #: Table columns clickable to sort (see _on_header_clicked) -> the
+    #: (exp_name, beamline) tuple index _resort_table sorts by. The rest
+    #: of the columns (Upload Status/Files/Actions/History/DM Upload)
+    #: aren't meaningful sort keys.
+    _SORTABLE_COLUMNS = {0: 0, 1: 1}
+
     def __init__(self, config_path, show_font_control=True):
         super().__init__()
         self.config_path = config_path
@@ -933,6 +939,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self._row_buttons = {}
         self._row_upload_buttons = {}
         self._row_history_labels = {}
+        self._row_is_manual = {}
         self._upload_workers = {}
         self._active_workers = {}
         # Detached checksum jobs (Verify MD5): _tracked_checksum_jobs holds
@@ -994,6 +1001,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             "s20": "~/mnt/s20a",
         })
         per_beamline = settings.get("experiments_per_beamline", 3)
+        excluded = set(self.config.get("excluded_experiments", []))
 
         try:
             # Dict order (s1 before s20, per the config file) gives us
@@ -1008,7 +1016,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             recent_exps = []
             for beamline, base_dir in local_bases.items():
                 canonical_base = di.canonical_local_root(base_dir)
-                for exp_name, local_root in di.discover_local_experiments(canonical_base, limit=per_beamline):
+                for exp_name, local_root in di.discover_local_experiments(canonical_base, limit=per_beamline, exclude=excluded):
                     recent_exps.append((exp_name, beamline, local_root))
                     self._register_local_root(exp_name, local_root)
 
@@ -1025,6 +1033,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             self._row_buttons = {}
             self._row_upload_buttons = {}
             self._row_history_labels = {}
+            self._row_is_manual = {}
 
             for row, (exp_name, beamline, local_root) in enumerate(all_exps):
                 self._populate_experiment_row(row, exp_name, beamline, is_manual=exp_name in manual_names)
@@ -1068,6 +1077,76 @@ class DataIntegrityPanel(QtWidgets.QWidget):
             "Expid", "Beamline", "Upload Status", "Files", "Actions", "History", "DM Upload"
         ])
 
+    def _on_header_clicked(self, column):
+        """Click-to-sort on the Expid/Beamline header cells only - see
+        _SORTABLE_COLUMNS. Clicking the already-active column reverses
+        direction, same as any spreadsheet; clicking the other one starts
+        fresh ascending."""
+        if column not in self._SORTABLE_COLUMNS:
+            return
+        ascending = True
+        if self._sort_key is not None and self._sort_key[0] == column:
+            ascending = not self._sort_key[1]
+        self._sort_key = (column, ascending)
+        self._resort_table()
+
+    def _resort_table(self):
+        """Reorder the table's current rows per self._sort_key, without
+        re-scanning s1c/s20a. Reads exp_name/beamline straight back out of
+        the table's own Expid/Beamline items (the same source _row_for_exp
+        itself relies on) rather than tracking a separate row-order cache,
+        then rebuilds via the same full-repopulate sequence
+        _discover_and_populate_experiments uses - QTableWidget's cell
+        widgets (Scan/Verify/Remove/History/Upload to DM buttons) don't
+        move with a plain item-based sort, so reordering rows in place
+        would scramble which row's buttons act on which experiment (see
+        the sectionClicked.connect comment in _init_ui).
+
+        Restores each row's Upload Status/Files display from
+        self.last_reports (a fresh _populate_experiment_row always starts
+        those at "---") and reattaches any still-running checksum job, so
+        a sort click mid-session doesn't visually blank out state a user
+        already produced by Scan/Verify MD5 - it only reorders rows.
+        """
+        if self._sort_key is None:
+            return
+        column, ascending = self._sort_key
+        key_index = self._SORTABLE_COLUMNS[column]
+
+        rows = []
+        for row in range(self.table_widget.rowCount()):
+            exp_item = self.table_widget.item(row, 0)
+            if not exp_item:
+                continue
+            exp_name = exp_item.text()
+            beamline_item = self.table_widget.item(row, 1) if self.table_widget.columnCount() > 1 else None
+            beamline = beamline_item.text() if beamline_item else ""
+            rows.append((exp_name, beamline, self._row_is_manual.get(exp_name, False)))
+
+        rows.sort(key=lambda r: (r[key_index] or "").lower(), reverse=not ascending)
+
+        header = self.table_widget.horizontalHeader()
+        header.setSortIndicatorShown(True)
+        header.setSortIndicator(column, QtCore.Qt.AscendingOrder if ascending else QtCore.Qt.DescendingOrder)
+
+        self._ensure_six_column_layout()
+        self.table_widget.setRowCount(len(rows))
+        self._row_buttons = {}
+        self._row_upload_buttons = {}
+        self._row_history_labels = {}
+        self._row_is_manual = {}
+
+        for row, (exp_name, beamline, is_manual) in enumerate(rows):
+            self._populate_experiment_row(row, exp_name, beamline, is_manual=is_manual)
+            report = self.last_reports.get(exp_name)
+            if report is not None:
+                self._paint_experiment_row(row, report)
+
+        self.table_widget.resizeColumnsToContents()
+        self.table_widget.resizeRowsToContents()
+
+        self._reattach_checksum_jobs([(name, beamline, None) for name, beamline, _ in rows])
+
     def _load_manual_experiments(self, existing_names):
         """Experiments explicitly added via "Add experiment..." - persisted
         to the config's "experiments" list with an explicit "beamline" key,
@@ -1094,10 +1173,13 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         """Fill in an already-row-counted table row's cells/widgets for
         exp_name - shared by the bulk startup population above and
         _append_experiment_row (a single new row added via "Add
-        experiment..." without rebuilding the whole table). is_manual
-        controls whether a "Remove" button is shown - only meaningful for
-        manually-added rows, since removing an auto-discovered one would
-        have no lasting effect (it just reappears next discovery)."""
+        experiment..." without rebuilding the whole table). Every row gets
+        a "Remove" button; is_manual is recorded (self._row_is_manual) so
+        _on_remove_experiment knows whether removing exp_name means
+        deleting a manual config entry or persisting it to
+        excluded_experiments so an auto-discovered row stays gone."""
+        self._row_is_manual[exp_name] = is_manual
+
         # Expid
         exp_id_item = QtWidgets.QTableWidgetItem(exp_name)
         self.table_widget.setItem(row, 0, exp_id_item)
@@ -1129,10 +1211,9 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         verify_btn.clicked.connect(lambda checked, e=exp_name: self._on_verify_or_stop(e))
         buttons_layout.addWidget(scan_btn)
         buttons_layout.addWidget(verify_btn)
-        if is_manual:
-            remove_btn = QtWidgets.QPushButton("Remove")
-            remove_btn.clicked.connect(lambda checked, e=exp_name: self._on_remove_experiment(e))
-            buttons_layout.addWidget(remove_btn)
+        remove_btn = QtWidgets.QPushButton("Remove")
+        remove_btn.clicked.connect(lambda checked, e=exp_name: self._on_remove_experiment(e))
+        buttons_layout.addWidget(remove_btn)
         # Compact "N recs" indicator for exp_name's saved Scan/Verify MD5
         # history, filling what would otherwise be dead space between the
         # buttons and the trailing stretch (see below) whenever a row's
@@ -1336,12 +1417,23 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self._reattach_checksum_jobs([(name, beamline, canonical_path)])
         self._recompute_aggregate_summary()
         self._log(f"Added experiment '{name}' ({beamline})")
+        # A new row always lands at the end regardless of sort - re-apply
+        # the active sort (if any) so it doesn't sit out of order until
+        # the next header click.
+        if self._sort_key is not None:
+            self._resort_table()
 
     def _on_remove_experiment(self, exp_name):
-        """Remove a manually-added row (see add_experiment) from both the
-        table and the config file. Only ever wired up for is_manual rows -
-        removing an auto-discovered row wouldn't stick anyway, since the
-        next _discover_and_populate_experiments would just find it again.
+        """Remove any row - manual (see add_experiment) or auto-discovered -
+        from the table. A manual row is deleted from the config's
+        "experiments" list, same as before. An auto-discovered row has no
+        config entry of its own to delete, so it's instead recorded in
+        "excluded_experiments": _discover_and_populate_experiments passes
+        that set to discover_local_experiments so the directory is skipped
+        on every future scan/restart, not just this session. Either way, a
+        previously-removed name can be brought back later via "Add
+        EXPID..." - _load_manual_experiments only skips names already in
+        the current discovery result, which an excluded name no longer is.
         """
         if (exp_name in self._tracked_checksum_jobs or exp_name in self._checksum_launch_workers
                 or exp_name in self._active_workers):
@@ -1350,10 +1442,13 @@ class DataIntegrityPanel(QtWidgets.QWidget):
                 f"'{exp_name}' has a Scan or Verify MD5 in progress - stop it first.")
             return
 
+        is_manual = self._row_is_manual.get(exp_name, False)
         reply = _message_box(
             QtWidgets.QMessageBox.Question, self, "Remove experiment",
             f"Remove '{exp_name}' from the dashboard?\n\nThis only forgets it here - no local files or "
-            "Sojourner data are touched.",
+            "Sojourner data are touched." + ("" if is_manual else
+            "\n\nThis is an auto-discovered experiment - removing it will keep it off the dashboard "
+            "on future scans/restarts too, until it's added back via \"Add EXPID...\"."),
             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
         if reply != QtWidgets.QMessageBox.Yes:
             return
@@ -1361,16 +1456,26 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         if di is not None and os.path.exists(self.config_path):
             with open(self.config_path) as f:
                 on_disk = json.load(f)
-            on_disk["experiments"] = [
-                e for e in on_disk.get("experiments", [])
-                if not (e.get("name") == exp_name and e.get("beamline"))
-            ]
+            if is_manual:
+                on_disk["experiments"] = [
+                    e for e in on_disk.get("experiments", [])
+                    if not (e.get("name") == exp_name and e.get("beamline"))
+                ]
+            else:
+                excluded = on_disk.get("excluded_experiments", [])
+                if exp_name not in excluded:
+                    on_disk["excluded_experiments"] = excluded + [exp_name]
             di.save_config(on_disk, self.config_path)
 
-        self.config["experiments"] = [
-            e for e in self.config.get("experiments", [])
-            if not (e.get("name") == exp_name and e.get("beamline"))
-        ]
+        if is_manual:
+            self.config["experiments"] = [
+                e for e in self.config.get("experiments", [])
+                if not (e.get("name") == exp_name and e.get("beamline"))
+            ]
+        else:
+            excluded = self.config.get("excluded_experiments", [])
+            if exp_name not in excluded:
+                self.config["excluded_experiments"] = excluded + [exp_name]
 
         row = self._row_for_exp(exp_name)
         if row is not None:
@@ -1378,6 +1483,7 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self._row_buttons.pop(exp_name, None)
         self._row_upload_buttons.pop(exp_name, None)
         self._row_history_labels.pop(exp_name, None)
+        self._row_is_manual.pop(exp_name, None)
         self.last_reports.pop(exp_name, None)
 
         self._recompute_aggregate_summary()
@@ -1920,6 +2026,15 @@ class DataIntegrityPanel(QtWidgets.QWidget):
         self.table_widget.setFocusPolicy(QtCore.Qt.NoFocus)
         self.table_widget.horizontalHeader().setHighlightSections(False)
         self.table_widget.verticalHeader().setHighlightSections(False)
+        # Sort by clicking the Expid/Beamline header, not QTableWidget's
+        # built-in setSortingEnabled - that sorts the model's items but
+        # leaves setCellWidget widgets (the Scan/Verify/Remove buttons,
+        # History, Upload to DM) behind at their original row, scrambling
+        # which row's buttons act on which experiment. _on_header_clicked
+        # instead reorders our own row list and does a full repopulate,
+        # the same rebuild _discover_and_populate_experiments already uses.
+        self.table_widget.horizontalHeader().sectionClicked.connect(self._on_header_clicked)
+        self._sort_key = None  # (column, ascending) - None means "discovery order"
         # Column widths are sized to content once rows are populated (see
         # the resizeColumnsToContents() call in _discover_and_populate_
         # experiments) rather than hardcoded here, so they scale with font

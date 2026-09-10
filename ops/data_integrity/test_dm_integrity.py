@@ -354,6 +354,32 @@ def test_scan_local_files():
     print("✓")
 
 
+def test_discover_local_experiments_exclude():
+    """exclude= must drop matching names before limit is applied, so an
+    excluded directory's slot is backfilled by the next-most-recent one
+    instead of just shrinking the result below limit."""
+    print("Testing discover_local_experiments(exclude=...)...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for name in ("park_may26", "brown_apr26", "gallington_mar26", "kamath_feb26"):
+            Path(tmpdir, name).mkdir()
+
+        # No exclusion: top 3 by encoded month/year, most-recent first.
+        result = di.discover_local_experiments(tmpdir, limit=3)
+        assert [name for name, _ in result] == ["park_may26", "brown_apr26", "gallington_mar26"]
+
+        # Excluding the most recent backfills from the 4th entry rather
+        # than just returning 2 results.
+        result = di.discover_local_experiments(tmpdir, limit=3, exclude={"park_may26"})
+        assert [name for name, _ in result] == ["brown_apr26", "gallington_mar26", "kamath_feb26"]
+
+        # limit is still respected after filtering.
+        result = di.discover_local_experiments(tmpdir, limit=1, exclude={"park_may26"})
+        assert [name for name, _ in result] == ["brown_apr26"]
+
+    print("✓")
+
+
 def test_upload_info_for_experiment():
     """upload_info_for_experiment must route s1 and s20 to their real
     dm-upload hosts (egressy/redwood, per dm_end_user_1id.sh/
@@ -420,6 +446,7 @@ if __name__ == "__main__":
         test_verify_checksums()
         test_save_and_list_records()
         test_scan_local_files()
+        test_discover_local_experiments_exclude()
         test_get_upload_status_mock()
         test_upload_info_for_experiment()
         test_dm_upload_command_quoting()

@@ -411,11 +411,13 @@ def test_upload_to_dm_button_confirms_and_calls_run_dm_upload():
     print("✓")
 
 
-def test_remove_experiment_only_offered_for_manual_rows():
-    """Only manually-added rows get a Remove button; removing one deletes
-    its row and its beamline-tagged config entry, without touching
-    auto-discovered rows or their in-memory-only local_root entries."""
-    print("Testing Remove is manual-only and persists the deletion...", end=" ")
+def test_remove_experiment_persists_manual_delete_and_auto_exclude():
+    """Every row - manual and auto-discovered - gets a Remove button.
+    Removing a manual row deletes its beamline-tagged config entry (as
+    before). Removing an auto-discovered row has no config entry to
+    delete, so it's recorded in excluded_experiments instead, so
+    discover_local_experiments skips it on future scans/restarts."""
+    print("Testing Remove works for both manual and auto-discovered rows...", end=" ")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         s1_base = os.path.join(tmpdir, "s1c")
@@ -449,23 +451,103 @@ def test_remove_experiment_only_offered_for_manual_rows():
         # +1 in each count is the trailing addStretch() layout item (a
         # QSpacerItem, not a button) that keeps button sizes consistent
         # across rows regardless of label width - see _populate_experiment_row.
-        # Scan + the combined Verify MD5/Stop button + the history-summary
-        # label = 3 widgets normally.
-        assert panel.table_widget.cellWidget(auto_row, 4).layout().count() == 3 + 1, \
-            "auto-discovered row should have Scan + Verify MD5/Stop + history label only, no Remove"
-        assert panel.table_widget.cellWidget(manual_row, 4).layout().count() == 4 + 1, \
-            "manually-added row should have an extra Remove button"
+        # Both rows now get Scan + the combined Verify MD5/Stop button +
+        # Remove + the history-summary label = 4 widgets.
+        assert panel.table_widget.cellWidget(auto_row, 4).layout().count() == 4 + 1, \
+            "auto-discovered row should also have a Remove button"
+        assert panel.table_widget.cellWidget(manual_row, 4).layout().count() == 4 + 1
 
         with mock.patch.object(dig, "_message_box", return_value=QtWidgets.QMessageBox.Yes):
             panel._on_remove_experiment("manual_exp")
+            panel._on_remove_experiment("auto_jan24")
 
-        assert panel._row_for_exp("manual_exp") is None, "removed row should be gone from the table"
-        assert panel._row_for_exp("auto_jan24") is not None, "unrelated row must be untouched"
+        assert panel._row_for_exp("manual_exp") is None, "removed manual row should be gone from the table"
+        assert panel._row_for_exp("auto_jan24") is None, "removed auto-discovered row should be gone from the table"
 
         with open(config_path) as f:
             saved = json.load(f)
         assert not any(e.get("name") == "manual_exp" for e in saved.get("experiments", [])), \
-            "removed experiment must no longer be persisted to disk"
+            "removed manual experiment must no longer be persisted to disk"
+        assert saved.get("excluded_experiments") == ["auto_jan24"], \
+            "removed auto-discovered experiment must be persisted to excluded_experiments"
+        assert panel.config.get("excluded_experiments") == ["auto_jan24"], \
+            "in-memory config must reflect the exclusion immediately, without a restart"
+
+        app.quit()
+
+    print("✓")
+
+
+def test_sort_by_expid_and_beamline_preserves_state():
+    """Clicking the Expid/Beamline header reorders rows; clicking the same
+    one again reverses direction. A sort must not scramble which row's
+    Scan/Verify/Remove buttons act on which experiment (the risk with
+    QTableWidget cell widgets + a plain item sort - see
+    _on_header_clicked's docstring), and must not blank out Upload
+    Status/Files for a row that already has a cached report."""
+    print("Testing sort by Expid/Beamline preserves button targets and painted status...", end=" ")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        s1_base = os.path.join(tmpdir, "s1c")
+        s20_base = os.path.join(tmpdir, "s20a")
+        for name in ["zeta_sep26", "alpha_jan26"]:
+            os.makedirs(os.path.join(s1_base, name))
+        os.makedirs(os.path.join(s20_base, "mid_aug26"))
+
+        config_path = os.path.join(tmpdir, "config.json")
+        config = {
+            "settings": {
+                "station_name": "SOJOURNER",
+                "records_dir": os.path.join(tmpdir, "records"),
+                "local_bases": {"s1": s1_base, "s20": s20_base},
+                "experiments_per_beamline": 5,
+            },
+        }
+        with open(config_path, "w") as f:
+            json.dump(config, f)
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        panel = dig.DataIntegrityPanel(config_path, show_font_control=False)
+
+        def names():
+            return [panel.table_widget.item(r, 0).text() for r in range(panel.table_widget.rowCount())]
+
+        def beamlines():
+            return [panel.table_widget.item(r, 1).text() for r in range(panel.table_widget.rowCount())]
+
+        # Give one row a painted report before sorting, to confirm sorting
+        # doesn't reset it back to the "---" a fresh row starts at.
+        comparison = {"good.h5": "MATCH"}
+        report = dig.di.build_report("alpha_jan26", {"upload_complete": True}, comparison)
+        panel.last_reports["alpha_jan26"] = report
+        panel._paint_experiment_row(panel._row_for_exp("alpha_jan26"), report)
+
+        panel._on_header_clicked(0)  # Expid ascending
+        assert names() == sorted(names(), key=str.lower), f"expected ascending Expid order, got {names()}"
+
+        alpha_row = panel._row_for_exp("alpha_jan26")
+        files_item = panel.table_widget.item(alpha_row, 3)
+        assert files_item.text() != "---", "a row's already-painted Files status must survive a sort"
+
+        # Remove button still targets the correct experiment after reorder.
+        with mock.patch.object(dig, "_message_box", return_value=QtWidgets.QMessageBox.Yes):
+            panel._on_remove_experiment("alpha_jan26")
+        assert panel._row_for_exp("alpha_jan26") is None
+        assert panel._row_for_exp("zeta_sep26") is not None, \
+            "removing one row after a sort must not remove/mistarget another"
+
+        panel._on_header_clicked(0)  # same column again -> descending
+        assert names() == sorted(names(), key=str.lower, reverse=True), \
+            f"expected descending Expid order, got {names()}"
+
+        panel._on_header_clicked(1)  # Beamline ascending
+        assert beamlines() == sorted(beamlines(), key=str.lower), \
+            f"expected ascending Beamline order, got {beamlines()}"
+
+        # A non-sortable column (Actions) is a no-op.
+        before = names()
+        panel._on_header_clicked(4)
+        assert names() == before, "clicking a non-sortable column must not reorder rows"
 
         app.quit()
 
@@ -626,7 +708,8 @@ if __name__ == "__main__":
         test_add_experiment_dialog_browse_autofills_name_and_blocks_duplicates()
         test_stop_checksum_button_swaps_and_calls_systemctl_stop()
         test_upload_to_dm_button_confirms_and_calls_run_dm_upload()
-        test_remove_experiment_only_offered_for_manual_rows()
+        test_remove_experiment_persists_manual_delete_and_auto_exclude()
+        test_sort_by_expid_and_beamline_preserves_state()
         test_history_summary_indicator_populates_and_refreshes()
         test_history_detail_dialog_lists_problem_files()
         test_history_detail_dialog_shows_relocated_pair_not_double_listed()

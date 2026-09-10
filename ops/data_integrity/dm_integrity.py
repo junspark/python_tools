@@ -599,7 +599,7 @@ _MONTH_NUMBERS = {
 }
 
 
-def discover_local_experiments(base_dir, limit=3):
+def discover_local_experiments(base_dir, limit=3, exclude=None):
     """List the `limit` most recent experiment subdirectories of base_dir
     (e.g. s1c/s20a staging areas), by the date encoded in each name.
 
@@ -617,6 +617,12 @@ def discover_local_experiments(base_dir, limit=3):
     name's own date doesn't have that problem. mtime is only used to break
     ties between experiments naming the same month.
 
+    `exclude`, if given, is an iterable of names to drop before applying
+    `limit` - so an excluded directory's slot is backfilled by the next-most-
+    recent one instead of just shrinking the result. Used by the GUI to make
+    a manually-removed auto-discovered row (see _on_remove_experiment) stay
+    gone across future scans/restarts.
+
     Returns [(name, local_root), ...] sorted most-recent first. Only
     considers directories matching _EXPERIMENT_NAME_RE (skips
     administrative folders, dotfiles, and other non-experiment directories
@@ -627,9 +633,12 @@ def discover_local_experiments(base_dir, limit=3):
     if not os.path.isdir(base_dir):
         return []
 
+    excluded_names = set(exclude) if exclude else set()
     entries = []
     for name in os.listdir(base_dir):
         if name.startswith(_NON_EXPERIMENT_DIR_PREFIXES):
+            continue
+        if name in excluded_names:
             continue
         match = _EXPERIMENT_NAME_RE.match(name)
         if not match:

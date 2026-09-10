@@ -145,10 +145,22 @@ or a Verify MD5 job for it is already running/queued (see below).
 An experiment auto-discovery doesn't surface - older than the most-recent
 `experiments_per_beamline`, or named outside the `<piname>_<mon><yy>`
 convention - can be added manually via **Add EXPID...** above the table.
-It gets its own **Remove** button (auto-discovered rows don't - removing
-one wouldn't stick, since the next startup just rediscovers it). Removing
-an experiment only forgets it in this tool - no local files or Sojourner
-data are touched.
+
+Every row has a **Remove** button, manually-added and auto-discovered
+alike. Removing a manually-added row just deletes its `experiments` config
+entry. Removing an auto-discovered row is also permanent - its name is
+recorded in the config's `excluded_experiments` list, so
+`discover_local_experiments` skips that directory on every future
+scan/restart (backfilling its slot from the next-most-recent experiment)
+instead of just re-adding it a moment later. Either kind can be brought
+back later via **Add EXPID...**. Removing an experiment only forgets it in
+this tool - no local files or Sojourner data are touched.
+
+Click the **Expid** or **Beamline** column header to sort the table by that
+column; click the same header again to reverse the direction. Sorting only
+reorders rows - it doesn't re-scan or lose any already-scanned Upload
+Status/Files/History state, and a newly-added experiment re-applies the
+active sort automatically instead of just appearing at the bottom.
 
 ## GUI Usage
 
