@@ -1143,6 +1143,18 @@ class PVLoggerPanel(QtWidgets.QWidget):
         edit_recipients_btn = QtWidgets.QPushButton("Edit recipients...")
         edit_recipients_btn.clicked.connect(self.edit_recipients)
         toolbar.addWidget(edit_recipients_btn)
+        # Inline editable cell rather than a button+dialog - value lives
+        # directly in the toolbar, always showing the current beamline's
+        # log_interval_sec (kept in sync in _on_beamline_changed), and
+        # commits on edit via _on_interval_changed.
+        toolbar.addWidget(QtWidgets.QLabel(" Update rate (s): "))
+        self.interval_spin = QtWidgets.QDoubleSpinBox()
+        self.interval_spin.setRange(0.1, 3600)
+        self.interval_spin.setDecimals(1)
+        self.interval_spin.setSingleStep(1)
+        self.interval_spin.setValue(self.cfg["settings"].get("log_interval_sec", 5))
+        self.interval_spin.valueChanged.connect(self._on_interval_changed)
+        toolbar.addWidget(self.interval_spin)
 
         if show_font_control:
             toolbar.addSeparator()
@@ -1204,6 +1216,13 @@ class PVLoggerPanel(QtWidgets.QWidget):
             self.status_bar.showMessage(f"Using default PV list for {beamline_name}")
 
         self.stop_button.setEnabled(self._beamline_running.get(beamline_name, False))
+
+        # Reflect this beamline's own rate without re-triggering a save -
+        # blockSignals so _on_interval_changed doesn't fire (and write the
+        # just-loaded value right back) as a side effect of just displaying it.
+        self.interval_spin.blockSignals(True)
+        self.interval_spin.setValue(self.cfg["settings"].get("log_interval_sec", 5))
+        self.interval_spin.blockSignals(False)
 
     def _paint_job_row(self, beamline, running, failed=False):
         item = self._beamline_tree_items[beamline]
@@ -1555,6 +1574,22 @@ class PVLoggerPanel(QtWidgets.QWidget):
             return
         self.cfg["settings"]["recipients"] = [addr.strip() for addr in text.split(",") if addr.strip()]
         pl.save_config(self.cfg, self.config_path)
+
+    def _on_interval_changed(self, value):
+        """Fired on every edit of the inline "Update rate (s)" spin box -
+        persisted immediately to the currently-selected beamline's own
+        master list (self.config_path), same read-then-save pattern as
+        edit_recipients. Only takes effect on the *next* launch
+        (job_settings is captured once at start_experiment time and the
+        job runs detached from then on) - doesn't touch a job already
+        running. Guarded against firing as a side effect of
+        _on_beamline_changed just displaying a different beamline's value
+        (see blockSignals there).
+        """
+        self.cfg["settings"]["log_interval_sec"] = value
+        pl.save_config(self.cfg, self.config_path)
+        self.status_bar.showMessage(
+            f"Update rate for {self.current_beamline} set to {value}s - takes effect on next start.")
 
 
 class PVLoggerWindow(QtWidgets.QMainWindow):
