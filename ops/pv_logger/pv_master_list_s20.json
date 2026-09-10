@@ -2405,9 +2405,9 @@
       "group": "txm_cam"
     },
     {
-      "name": "hlsms rotz",
+      "name": "E_HLSMS_RotZ",
       "pv": "20ide2:m89",
-      "group": "hlsms"
+      "group": "E-HLSMS"
     },
     {
       "name": "attenE rz",

@@ -264,7 +264,11 @@ DEVICE_CATEGORIES = [
     ("Sample Manipulation Systems", [
         "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
         # bluesky-sourced sample positioning stages (2026-08-26 scan)
-        "aeroD", "hlsms",
+        "aeroD",
+        # "hlsms" (single stray PV, 20ide2:m89) merged into E-HLSMS as
+        # E_HLSMS_RotZ (2026-09-10, per direct confirmation) - it shared
+        # the same 20ide2 IOC prefix and axis-naming convention as every
+        # other E-HLSMS entry (RotX/RotY1-3), just hadn't been grouped in.
     ]),
     ("Sensors / Environmental", [
         "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
