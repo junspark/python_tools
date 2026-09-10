@@ -2027,229 +2027,229 @@
       "group": "write_parfile_general.mac (misc, review before use)"
     },
     {
-      "name": "FileName_RBV (1idEig16M)",
+      "name": "FileName_RBV",
       "pv": "1idEig16M:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Eiger Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (1idPG1)",
+      "name": "FileName_RBV",
       "pv": "1idPG1:TIFF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "PG1 Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (1idPil)",
+      "name": "FileName_RBV (HDF1)",
       "pv": "1idPil:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (1idPil)",
+      "name": "FileName_RBV (Raw1)",
       "pv": "1idPil:Raw1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (1idPil)",
+      "name": "FileName_RBV (TIFF1)",
       "pv": "1idPil:TIFF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (1idVarex1)",
+      "name": "FileName_RBV",
       "pv": "1idVarex1:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "VarexC Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE1)",
       "pv": "GE1:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE2)",
       "pv": "GE2:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE3)",
       "pv": "GE3:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE4)",
       "pv": "GE4:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileName_RBV (GE5)",
       "pv": "GE5:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (QIMAGE1)",
+      "name": "FileName_RBV",
       "pv": "QIMAGE1:TIFF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "QIMAGE1 Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (dp_lambda_xrd30)",
+      "name": "FileName_RBV",
       "pv": "dp_lambda_xrd30:TIFF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Lambda Acquisition Settings"
     },
     {
-      "name": "FileName_RBV (s1_pixirad2)",
+      "name": "FileName_RBV",
       "pv": "s1_pixirad2:HDF1:FileName_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pixirad2 Acquisition Settings"
     },
     {
-      "name": "FileNumber_RBV (1idEig16M)",
+      "name": "FileNumber_RBV",
       "pv": "1idEig16M:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Eiger Acquisition Settings"
     },
     {
-      "name": "FileNumber_RBV (1idPil)",
+      "name": "FileNumber_RBV (HDF1)",
       "pv": "1idPil:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "FileNumber_RBV (1idPil)",
+      "name": "FileNumber_RBV (Raw1)",
       "pv": "1idPil:Raw1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "FileNumber_RBV (1idVarex1)",
+      "name": "FileNumber_RBV",
       "pv": "1idVarex1:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "VarexC Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE1)",
       "pv": "GE1:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE2)",
       "pv": "GE2:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE3)",
       "pv": "GE3:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE4)",
       "pv": "GE4:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "FileNumber_RBV (GE5)",
       "pv": "GE5:HDF1:FileNumber_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idEig16M)",
+      "name": "NumCapture_RBV",
       "pv": "1idEig16M:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Eiger Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idPG1)",
+      "name": "NumCapture_RBV",
       "pv": "1idPG1:TIFF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "PG1 Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idPil)",
+      "name": "NumCapture_RBV (HDF1)",
       "pv": "1idPil:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idPil)",
+      "name": "NumCapture_RBV (Raw1)",
       "pv": "1idPil:Raw1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idPil)",
+      "name": "NumCapture_RBV (TIFF1)",
       "pv": "1idPil:TIFF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pilatus Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (1idVarex1)",
+      "name": "NumCapture_RBV",
       "pv": "1idVarex1:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "VarexC Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE1)",
       "pv": "GE1:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE2)",
       "pv": "GE2:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE3)",
       "pv": "GE3:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE4)",
       "pv": "GE4:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "NumCapture_RBV (GE5)",
       "pv": "GE5:HDF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
-      "name": "NumCapture_RBV (QIMAGE1)",
+      "name": "NumCapture_RBV",
       "pv": "QIMAGE1:TIFF1:NumCapture_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "QIMAGE1 Acquisition Settings"
     },
     {
-      "name": "AcquireTime_RBV (1idEig16M)",
+      "name": "AcquireTime_RBV",
       "pv": "1idEig16M:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Eiger Acquisition Settings"
     },
     {
-      "name": "AcquireTime_RBV (1idPG1)",
+      "name": "AcquireTime_RBV",
       "pv": "1idPG1:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "PG1 Acquisition Settings"
     },
     {
-      "name": "AcquireTime_RBV (1idVarex1)",
+      "name": "AcquireTime_RBV",
       "pv": "1idVarex1:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "VarexC Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE1)",
       "pv": "GE1:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE2)",
       "pv": "GE2:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE3)",
       "pv": "GE3:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE4)",
       "pv": "GE4:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
       "name": "AcquireTime_RBV (GE5)",
       "pv": "GE5:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "GE Acquisition Settings"
     },
     {
-      "name": "AcquireTime_RBV (QIMAGE1)",
+      "name": "AcquireTime_RBV",
       "pv": "QIMAGE1:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "QIMAGE1 Acquisition Settings"
     },
     {
-      "name": "AcquireTime_RBV (s1_pixirad2)",
+      "name": "AcquireTime_RBV",
       "pv": "s1_pixirad2:cam1:AcquireTime_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pixirad2 Acquisition Settings"
     },
     {
       "name": "Ti1",
@@ -2559,17 +2559,17 @@
     {
       "name": "AcquirePeriod_RBV",
       "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Lambda Acquisition Settings"
     },
     {
-      "name": "NumImages_RBV (dp_lambda_xrd30)",
+      "name": "NumImages_RBV",
       "pv": "dp_lambda_xrd30:cam1:NumImages_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Lambda Acquisition Settings"
     },
     {
-      "name": "NumImages_RBV (s1_pixirad2)",
+      "name": "NumImages_RBV",
       "pv": "s1_pixirad2:cam1:NumImages_RBV",
-      "group": "Detector Acquisition Settings"
+      "group": "Pixirad2 Acquisition Settings"
     },
     {
       "name": "A White Beam H size (mm)",

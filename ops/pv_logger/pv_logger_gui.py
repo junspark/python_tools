@@ -206,7 +206,10 @@ def _choose_open_file(parent, title, start_dir="", filter_str=""):
 DEVICE_CATEGORIES = [
     ("Detectors", [
         "GE/Pilatus DETECTOR", "Pilatus", "PIXIRAD2", "NF DET", "Tomo det",
-        "Detectors (armed state)", "DETECTORS frame number", "Detector Acquisition Settings",
+        "Detectors (armed state)", "DETECTORS frame number",
+        "Eiger Acquisition Settings", "Pilatus Acquisition Settings", "VarexC Acquisition Settings",
+        "PG1 Acquisition Settings", "GE Acquisition Settings", "QIMAGE1 Acquisition Settings",
+        "Lambda Acquisition Settings", "Pixirad2 Acquisition Settings",
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
@@ -316,7 +319,17 @@ _DEVICE_LABEL_RE = re.compile(r"\(([^()]+)\)\s*$")
 # every exact PV-prefix-matching parenthetical as a device label perturbed
 # furnace/chiller/ion-chamber groups that don't have this pattern at all,
 # so this is deliberately an explicit allowlist, not a general rule.
-_DEVICE_LABEL_GROUPS = {"Detector Acquisition Settings", "DETECTORS frame number"}
+_DEVICE_LABEL_GROUPS = {
+    "DETECTORS frame number",
+    # "Detector Acquisition Settings" was split into one group per physical
+    # detector (2026-09-10, per direct confirmation) - only the two that
+    # still bundle multiple devices/plugins under the same attribute names
+    # need label-based sorting: GE Acquisition Settings (5 physical GE
+    # units) and Pilatus Acquisition Settings (same field exposed via
+    # HDF1/Raw1/TIFF1 plugins). The other 6 split-out groups are single-
+    # device, so their entries have nothing to sort by label.
+    "GE Acquisition Settings", "Pilatus Acquisition Settings",
+}
 
 
 def _pv_sort_key(entry):
