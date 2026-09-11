@@ -194,6 +194,59 @@ df.plot(x="Date", y=["hydraZE", "Furnace T1 (C)"])
 with time on the X axis and any PVs on Y — useful for correlating a failed
 scan against motor drift, beam drift, or a temperature excursion.
 
+### Correlating with area-detector files
+
+`correlate_ad_pvs.py` reads a logged CSV back and, for a set of
+area-detector HDF5 files, interpolates the requested PVs to each
+detector frame's acquisition time — area-detector acquisitions happen
+asynchronously to the PV logger's own sampling cadence
+(`log_interval_sec`), so a frame's timestamp essentially never lines up
+exactly with a logged row.
+
+```bash
+# Find the per-frame timestamp attribute available in a real file first
+python correlate_ad_pvs.py inspect --file scan_0001.h5
+
+# One metadata CSV per input file, one row per frame
+python correlate_ad_pvs.py per-frame --csv run1.csv --files 'scan_*.h5' \
+    --pvs hydraZE geXE --groups "Eiger Acquisition Settings" \
+    --pv-master-list pv_master_list_s1.json
+
+# One combined CSV for the whole series, one row per file (frame-averaged)
+python correlate_ad_pvs.py averaged --csv run1.csv --files 'scan_*.h5' \
+    --pvs hydraZE geXE --out combined_pvs.csv \
+    --pv-master-list pv_master_list_s1.json
+```
+
+- `--pvs` selects PVs by the same `name` used as the CSV column header;
+  `--groups` selects every PV in a `pv_master_list_*.json` group (the
+  same grouping the GUI's device-selection dialog filters on) — pass
+  `--pv-master-list` when using `--groups`. Both can be combined.
+- Numeric PVs are linearly interpolated between the two bracketing
+  logged samples (constant-extrapolated past the first/last sample);
+  non-numeric PVs (including ones that are `OFFLINE` at some samples)
+  use the nearest logged sample instead.
+- If a numeric PV's nearest real (online) sample is more than
+  `--max-gap-sec` away from a frame's timestamp — whether the frame falls
+  inside a mid-run offline gap, or the PV dropped permanently and never
+  came back — that frame gets the literal string `OFFLINE` instead of an
+  interpolated/extrapolated number, so a gap in logging never silently
+  turns into a plausible-looking but made-up value. Default (when
+  `--max-gap-sec` isn't given) is 3x the CSV's own median logging
+  interval, so a single missed sample doesn't false-positive but an
+  actual outage does.
+- Per-frame timestamps are read from the HDF5 file itself where
+  possible — the tool tries `misc/NDArrayTimeStamp` and a couple of
+  other plausible attribute paths, and falls back to the file's mtime
+  (with a warning) if none are found. **The right attribute path
+  depends on how this beamline's areaDetector `layout.xml` is
+  configured, which isn't recorded anywhere in this repo** — run
+  `inspect` against one real file to confirm it, and override with
+  `--timestamp-attr` if the default guess is wrong. If the embedded
+  timestamp and the file's mtime disagree, the embedded per-frame value
+  is used and a warning is printed — mtime only reflects when the file
+  was closed, not when each frame in it was actually collected.
+
 ## GUI usage
 
 ```bash

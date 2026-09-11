@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Combined ops GUI: disk-space monitor, PV logger, and data integrity as tabs in one window.
+Combined ops GUI: disk-space monitor, PV logger, PV/AD matcher, and data
+integrity as tabs in one window.
 
 Each tab is the same panel used by that tool's standalone GUI
 (disk_monitor/disk_monitor_gui.py, pv_logger/pv_logger_gui.py,
-data_integrity/dm_integrity_gui.py) - no logic is duplicated here, this file
-only assembles them into one QTabWidget.
+pv_logger/correlate_ad_pvs_gui.py, data_integrity/dm_integrity_gui.py) - no
+logic is duplicated here, this file only assembles them into one
+QTabWidget.
 
 Usage
 -----
@@ -28,6 +30,7 @@ sys.path.insert(0, os.path.join(SCRIPT_DIR, "data_integrity"))
 
 import disk_monitor_gui as dmg
 import pv_logger_gui as plg
+import correlate_ad_pvs_gui as capg
 import dm_integrity_gui as dig
 
 try:
@@ -123,11 +126,15 @@ class OpsGuiWindow(QtWidgets.QMainWindow):
         # single font size for the whole window rather than one per tab.
         self.disk_panel = dmg.DiskMonitorPanel(disk_config, show_font_control=False)
         self.pv_panel = plg.PVLoggerPanel(pv_config, show_font_control=False)
+        # Shares the same pv_master_list_*.json as pv_panel - it only reads
+        # PV groups/names from it (to resolve --groups), never writes to it.
+        self.matcher_panel = capg.CorrelateAdPvsPanel(pv_config, show_font_control=False)
         self.di_panel = dig.DataIntegrityPanel(di_config, show_font_control=False)
 
         tabs = QtWidgets.QTabWidget()
         tabs.addTab(self.disk_panel, "Disk Space")
         tabs.addTab(self.pv_panel, "PV Logger")
+        tabs.addTab(self.matcher_panel, "PV/AD Matcher")
         tabs.addTab(self.di_panel, "Data Integrity")
         self.setCentralWidget(tabs)
 
@@ -144,6 +151,7 @@ class OpsGuiWindow(QtWidgets.QMainWindow):
     def set_font_size(self, size):
         self.disk_panel.set_font_size(size)
         self.pv_panel.set_font_size(size)
+        self.matcher_panel.set_font_size(size)
         self.di_panel.set_font_size(size)
         self._prefs["font_size"] = size
         _save_prefs(self._prefs)
