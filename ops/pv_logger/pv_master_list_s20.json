@@ -2516,87 +2516,87 @@
     },
     {
       "name": "A_Lens1X",
-      "pv": "20ida1:m4",
+      "pv": "20ida1:m4.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens1Y",
-      "pv": "20ida1:m5",
+      "pv": "20ida1:m5.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens1Z",
-      "pv": "20ida1:m6",
+      "pv": "20ida1:m6.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens1TH",
-      "pv": "20ida1:m7",
+      "pv": "20ida1:m7.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens1PHI",
-      "pv": "20ida1:m8",
+      "pv": "20ida1:m8.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens1CHI",
-      "pv": "20ida1:m9",
+      "pv": "20ida1:m9.RBV",
       "group": "A Lens Stack 1"
     },
     {
       "name": "A_Lens2X",
-      "pv": "20ida1:m10",
+      "pv": "20ida1:m10.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens2Y",
-      "pv": "20ida1:m11",
+      "pv": "20ida1:m11.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens2Z",
-      "pv": "20ida1:m12",
+      "pv": "20ida1:m12.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens2TH",
-      "pv": "20ida1:m13",
+      "pv": "20ida1:m13.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens2PHI",
-      "pv": "20ida1:m14",
+      "pv": "20ida1:m14.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens2CHI",
-      "pv": "20ida1:m15",
+      "pv": "20ida1:m15.RBV",
       "group": "A Lens Stack 2"
     },
     {
       "name": "A_Lens3Y",
-      "pv": "20ida1:m39",
+      "pv": "20ida1:m39.RBV",
       "group": "A Lens Stack 3"
     },
     {
       "name": "A_Lens3Z",
-      "pv": "20ida1:m40",
+      "pv": "20ida1:m40.RBV",
       "group": "A Lens Stack 3"
     },
     {
       "name": "A_Lens3TH",
-      "pv": "20ida1:m41",
+      "pv": "20ida1:m41.RBV",
       "group": "A Lens Stack 3"
     },
     {
       "name": "A_Lens3PHI",
-      "pv": "20ida1:m42",
+      "pv": "20ida1:m42.RBV",
       "group": "A Lens Stack 3"
     },
     {
       "name": "A_Lens3CHI",
-      "pv": "20ida1:m43",
+      "pv": "20ida1:m43.RBV",
       "group": "A Lens Stack 3"
     },
     {
