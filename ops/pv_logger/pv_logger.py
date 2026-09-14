@@ -417,7 +417,18 @@ def process_drop_alerts(cfg, currently_offline, csv_path, dry_run=False):
 def cmd_list_pvs(args):
     cfg = load_config(args.config)
     online, offline = discover_pvs(cfg["pvs"], cfg["settings"]["connect_timeout_sec"], cfg["settings"]["caget_path"])
-    print(format_discovery_report(online, offline))
+    if args.json:
+        # Machine-readable alternative to the plain-text report below - for
+        # pv_logger_gui.py's "Check PVs" button, which runs this same
+        # subcommand over SSH on the beamline's remote_job host and needs
+        # to parse the result back into its own tree widget rather than
+        # display raw text.
+        print(json.dumps({
+            "online": sorted(online.keys()),
+            "offline": sorted(entry["name"] for entry in offline),
+        }))
+    else:
+        print(format_discovery_report(online, offline))
     return 0
 
 
@@ -565,6 +576,7 @@ def _parse_args(argv=None):
     common.add_argument("--config", default=DEFAULT_CONFIG_PATH, help="Path to master PV list JSON")
 
     list_p = subparsers.add_parser("list-pvs", parents=[common], help="Probe PVs, print ONLINE/OFFLINE report")
+    list_p.add_argument("--json", action="store_true", help="Print {online: [...], offline: [...]} instead of the text report")
     list_p.set_defaults(func=cmd_list_pvs)
 
     start_p = subparsers.add_parser("start", parents=[common], help="Discover, then log until Ctrl-C")

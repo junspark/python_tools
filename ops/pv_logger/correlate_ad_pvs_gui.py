@@ -18,6 +18,7 @@ Usage
 import argparse
 import contextlib
 import os
+import re
 import sys
 
 import numpy as np
@@ -38,6 +39,25 @@ except ImportError:
     )
 
 DEFAULT_FONT_SIZE = plg.DEFAULT_FONT_SIZE
+
+
+def _guess_beamline_from_path(path):
+    """Best-effort beamline guess from a path segment like "s20a" or "s1b"
+    - the mount-point naming convention under PARKJS/mnt/ (s1a, s1b, s1c,
+    s20a). Returns "s1"/"s20", or None if no such segment is found.
+    Used only to suggest a starting point for the "Beamline (for PV
+    groups)" selector - a PV logger CSV and area-detector files living
+    under an s20 mount almost certainly want s20's PV groups, and
+    leaving the selector on whatever beamline it last happened to be
+    (see the ActiveDMS mismatch this was added to fix) silently resolves
+    groups against the wrong master list instead of erroring loudly."""
+    if not path:
+        return None
+    for segment in re.split(r"[\\/]", path):
+        m = re.fullmatch(r"s(1|20)[a-z]?", segment, re.IGNORECASE)
+        if m:
+            return "s" + m.group(1)
+    return None
 
 
 def _choose_open_files(parent, title, start_dir=""):
@@ -118,10 +138,10 @@ class _CorrelateWorker(QtCore.QObject):
     finished = QtCore.pyqtSignal(str)
     error = QtCore.pyqtSignal(str)
 
-    def __init__(self, mode, pv_master_list_path, pv_names, groups, files, csv_path,
+    def __init__(self, modes, pv_master_list_path, pv_names, groups, files, csv_path,
                  timestamp_attr, dataset_path, out_dir, out_path, max_gap_sec):
         super().__init__()
-        self.mode = mode
+        self.modes = modes  # subset of ["per-frame", "averaged"], both allowed at once
         self.pv_master_list_path = pv_master_list_path
         self.pv_names = pv_names
         self.groups = groups
@@ -138,23 +158,37 @@ class _CorrelateWorker(QtCore.QObject):
         try:
             with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
                 pv_names = cap.resolve_pv_names(self.pv_master_list_path, self.pv_names, self.groups)
-                if self.mode == "per-frame":
-                    for h5_path in self.files:
-                        timestamps, source = cap.get_frame_timestamps(h5_path, self.timestamp_attr, self.dataset_path)
-                        pv_values = cap.interpolate_pvs(self.csv_path, pv_names, timestamps, self.max_gap_sec)
+                pv_names, missing = cap.filter_available_pvs(self.csv_path, pv_names)
+                if missing:
+                    self.progress.emit(f"WARNING: {self.csv_path}: PV(s) not logged in this CSV, skipping: {', '.join(missing)}")
+                if not pv_names:
+                    raise ValueError(f"{self.csv_path}: none of the requested PVs are present in logged columns")
+
+                # Each file's timestamps/interpolated PV values are read
+                # once and reused for whichever output mode(s) were
+                # checked, rather than re-reading the HDF5/CSV per mode.
+                per_frame_count = 0
+                averaged_rows = []
+                for h5_path in self.files:
+                    timestamps, source = cap.get_frame_timestamps(h5_path, self.timestamp_attr, self.dataset_path)
+                    pv_values = cap.interpolate_pvs(self.csv_path, pv_names, timestamps, self.max_gap_sec)
+                    summary = f"{h5_path}: {len(timestamps)} frame(s), timestamps from {source}"
+                    if "per-frame" in self.modes:
                         out_file = cap.write_per_frame_csv(h5_path, pv_names, timestamps, pv_values, self.out_dir)
-                        self.progress.emit(f"{h5_path}: {len(timestamps)} frame(s), timestamps from {source} -> {out_file}")
-                    self.finished.emit(f"Wrote {len(self.files)} per-frame CSV(s).")
-                else:
-                    rows = []
-                    for h5_path in self.files:
-                        timestamps, source = cap.get_frame_timestamps(h5_path, self.timestamp_attr, self.dataset_path)
-                        pv_values = cap.interpolate_pvs(self.csv_path, pv_names, timestamps, self.max_gap_sec)
+                        per_frame_count += 1
+                        summary += f" -> {out_file}"
+                    if "averaged" in self.modes:
                         averaged = {name: cap._average_value(name, values, values[0]) for name, values in pv_values.items()}
-                        rows.append((os.path.basename(h5_path), float(np.mean(timestamps)), len(timestamps), averaged))
-                        self.progress.emit(f"{h5_path}: {len(timestamps)} frame(s), timestamps from {source}")
-                    cap.write_averaged_csv(rows, pv_names, self.out_path)
-                    self.finished.emit(f"Wrote {len(rows)} row(s) -> {self.out_path}")
+                        averaged_rows.append((os.path.basename(h5_path), float(np.mean(timestamps)), len(timestamps), averaged))
+                    self.progress.emit(summary)
+
+                messages = []
+                if "per-frame" in self.modes:
+                    messages.append(f"Wrote {per_frame_count} per-frame CSV(s).")
+                if "averaged" in self.modes:
+                    cap.write_averaged_csv(averaged_rows, pv_names, self.out_path)
+                    messages.append(f"Wrote {len(averaged_rows)} row(s) -> {self.out_path}")
+                self.finished.emit(" ".join(messages))
         except Exception as e:
             self.error.emit(str(e))
 
@@ -201,6 +235,7 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
 
         # PV logger CSV
         self.csv_edit = QtWidgets.QLineEdit()
+        self.csv_edit.editingFinished.connect(self._maybe_autodetect_beamline)
         csv_browse = QtWidgets.QPushButton("Browse...")
         csv_browse.clicked.connect(self._browse_csv)
         csv_row = QtWidgets.QHBoxLayout()
@@ -254,17 +289,18 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
         self.extra_pvs_edit.setPlaceholderText("Additional PV names (comma/space-separated, must match CSV column headers)")
         form.addRow("Additional PVs:", self.extra_pvs_edit)
 
-        # Mode
-        self.per_frame_radio = QtWidgets.QRadioButton("Per-frame (one CSV per file, one row per frame)")
-        self.averaged_radio = QtWidgets.QRadioButton("Averaged (one combined CSV, one row per file)")
-        self.per_frame_radio.setChecked(True)
-        mode_group = QtWidgets.QButtonGroup(self)
-        mode_group.addButton(self.per_frame_radio)
-        mode_group.addButton(self.averaged_radio)
-        self.per_frame_radio.toggled.connect(self._on_mode_changed)
+        # Mode - checkboxes rather than radio buttons: both can run in one
+        # pass (each file's timestamps/interpolated PV values are computed
+        # once and reused for whichever outputs are requested), not an
+        # either/or choice.
+        self.per_frame_check = QtWidgets.QCheckBox("Per-frame (one CSV per file, one row per frame)")
+        self.averaged_check = QtWidgets.QCheckBox("Averaged (one combined CSV, one row per file)")
+        self.per_frame_check.setChecked(True)
+        self.per_frame_check.toggled.connect(self._on_mode_changed)
+        self.averaged_check.toggled.connect(self._on_mode_changed)
         mode_col = QtWidgets.QVBoxLayout()
-        mode_col.addWidget(self.per_frame_radio)
-        mode_col.addWidget(self.averaged_radio)
+        mode_col.addWidget(self.per_frame_check)
+        mode_col.addWidget(self.averaged_check)
         form.addRow("Mode:", mode_col)
 
         # Output - one row per mode, only the active one visible
@@ -381,6 +417,7 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
         path = plg._choose_open_file(self, "Select PV logger CSV", filter_str="CSV files (*.csv);;All files (*)")
         if path:
             self.csv_edit.setText(path)
+            self._maybe_autodetect_beamline()
 
     def _add_files(self):
         start_dir = os.path.dirname(self.ad_files[-1]) if self.ad_files else ""
@@ -389,6 +426,21 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
             if path not in self.ad_files:
                 self.ad_files.append(path)
                 self.files_list.addItem(path)
+        if paths:
+            self._maybe_autodetect_beamline()
+
+    def _maybe_autodetect_beamline(self):
+        """Switch the beamline selector to match the CSV/AD file path,
+        when it clearly names one - see _guess_beamline_from_path. Never
+        overrides a selection that already agrees, and never guesses
+        from nothing (an ambiguous or beamline-less path leaves the
+        current selection alone)."""
+        guess = _guess_beamline_from_path(self.csv_edit.text().strip())
+        if guess is None and self.ad_files:
+            guess = _guess_beamline_from_path(self.ad_files[0])
+        if guess and guess in self.BEAMLINES and guess != self.current_beamline:
+            self.beamline_combo.setCurrentText(guess)  # triggers _on_beamline_changed, which sets its own status message
+            self.status_bar.showMessage(f"Auto-detected beamline '{guess}' from the file path - switched PV groups accordingly.")
 
     def _remove_selected_files(self):
         for item in self.files_list.selectedItems():
@@ -409,9 +461,9 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
         if path:
             self.out_file_edit.setText(path)
 
-    def _on_mode_changed(self, per_frame_checked):
-        self.out_dir_row.setVisible(per_frame_checked)
-        self.out_file_row.setVisible(not per_frame_checked)
+    def _on_mode_changed(self, *_args):
+        self.out_dir_row.setVisible(self.per_frame_check.isChecked())
+        self.out_file_row.setVisible(self.averaged_check.isChecked())
 
     # -- inspect ------------------------------------------------------------
 
@@ -448,10 +500,19 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
             plg._message_box(QtWidgets.QMessageBox.Warning, self, "Missing input", "Add at least one area-detector file.")
             return
 
-        mode = "per-frame" if self.per_frame_radio.isChecked() else "averaged"
+        modes = []
+        if self.per_frame_check.isChecked():
+            modes.append("per-frame")
+        if self.averaged_check.isChecked():
+            modes.append("averaged")
+        if not modes:
+            plg._message_box(QtWidgets.QMessageBox.Warning, self, "Missing input",
+                              "Check at least one mode (per-frame and/or averaged).")
+            return
+
         out_dir = self.out_dir_edit.text().strip()
         out_path = self.out_file_edit.text().strip()
-        if mode == "averaged" and not out_path:
+        if "averaged" in modes and not out_path:
             plg._message_box(QtWidgets.QMessageBox.Warning, self, "Missing input", "Choose an output CSV for averaged mode.")
             return
 
@@ -470,7 +531,7 @@ class CorrelateAdPvsPanel(QtWidgets.QWidget):
 
         thread = QtCore.QThread(self)
         worker = _CorrelateWorker(
-            mode, self.config_path, pv_names, groups, list(self.ad_files), csv_path,
+            modes, self.config_path, pv_names, groups, list(self.ad_files), csv_path,
             self.timestamp_attr_edit.text().strip(), self.dataset_path_edit.text().strip(),
             out_dir, out_path, max_gap_sec,
         )

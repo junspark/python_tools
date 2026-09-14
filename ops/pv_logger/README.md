@@ -149,6 +149,10 @@ as before this existed.
 # Check what's online without logging anything - good before starting a run
 python pv_logger.py list-pvs --config pv_master_list_s20.json
 
+# Same, as machine-readable {"online": [...], "offline": [...]} JSON -
+# what pv_logger_gui.py's "Check PVs..." button parses over SSH
+python pv_logger.py list-pvs --config pv_master_list_s20.json --json
+
 # Start logging - discovers online PVs, writes a CSV, alerts on drops, Ctrl-C to stop
 python pv_logger.py start --config pv_master_list_s20.json --outfile ./logs/pokharel_jul26_run1.csv
 
@@ -222,6 +226,12 @@ python correlate_ad_pvs.py averaged --csv run1.csv --files 'scan_*.h5' \
   `--groups` selects every PV in a `pv_master_list_*.json` group (the
   same grouping the GUI's device-selection dialog filters on) — pass
   `--pv-master-list` when using `--groups`. Both can be combined.
+- A requested PV that isn't actually a column in `--csv` (e.g. a group
+  was added to the master list after this particular log was started)
+  is skipped with a `WARNING` printed to stderr (or shown in the GUI's
+  output panel), not treated as fatal — correlation still runs for
+  every other requested PV. It's only an error if *none* of the
+  requested PVs are present in the CSV.
 - Numeric PVs are linearly interpolated between the two bracketing
   logged samples (constant-extrapolated past the first/last sample);
   non-numeric PVs (including ones that are `OFFLINE` at some samples)
@@ -247,6 +257,27 @@ python correlate_ad_pvs.py averaged --csv run1.csv --files 'scan_*.h5' \
   is used and a warning is printed — mtime only reflects when the file
   was closed, not when each frame in it was actually collected.
 
+The GUI's "PV/AD Matcher" tab (`correlate_ad_pvs_gui.py`, also embedded in
+`ops_gui.py`) wraps the same logic:
+
+- Its "Beamline (for PV groups)" selector picks which
+  `pv_master_list_*.json` the checked PV groups resolve against, and is
+  otherwise independent of whichever CSV/AD files are chosen — so it's
+  easy to leave it on the wrong beamline and end up with almost every
+  requested PV silently skipped as "not logged in this CSV" (they *are*
+  logged, just under the other beamline's group names). To catch this,
+  the selector auto-switches whenever the chosen CSV path or the first
+  added area-detector file path unambiguously names a beamline mount
+  (`s1a`/`s1b`/`s1c`/`s20a`, or bare `s1`/`s20`) that disagrees with the
+  current selection — a status-bar message says when this happens. It
+  never guesses from an ambiguous path, so double-check the selector
+  when your files live outside the usual `mnt/s1*`/`mnt/s20a` layout.
+- "Mode" is two independent checkboxes, Per-frame and Averaged, not an
+  either/or choice — check both to get both outputs from one run. Each
+  file's frame timestamps and interpolated PV values are computed once
+  and reused for whichever output(s) are checked, so checking both isn't
+  twice the work of checking one.
+
 ## GUI usage
 
 ```bash
@@ -265,6 +296,12 @@ you can usefully watch. Instead:
   visible as one that drops mid-run. A STOPPED/FAILED beamline's PVs are
   shown neutrally (not a false green/red) since only a running job's
   latest sample is trustworthy enough to assert either state.
+  Clicking any row in the tree (a beamline's own row, or one of its child
+  PV rows) syncs the **Beamline** dropdown to match — the dropdown, not
+  the tree selection, is what **Stop**/**Check PVs...**/**Edit
+  recipients...** act on, so this keeps the two from silently disagreeing
+  (e.g. clicking "s20" in the tree while the dropdown still says "s1",
+  leaving **Stop** greyed out with no visible reason why).
 - A FAILED or STOPPED transition also pops up a message box once, so a
   job that fails immediately (e.g. no PVs online at discovery) isn't
   missed.
@@ -293,6 +330,20 @@ you can usefully watch. Instead:
 - **Stop** requests a clean shutdown of the beamline's remote job (see
   "Persistent remote jobs" above) — the CSV/skipped-report already written
   stay on disk.
+- **Check PVs...** probes the currently-selected beamline's *tracked* PV
+  list — the same list its row in the jobs tree already shows (from the
+  last run's status file or jobspec) — and recolors those same tree rows
+  green/red, exactly like a RUNNING job's own live display. It's the GUI
+  equivalent of `list-pvs --json` below, run on the beamline's own
+  `remote_job` host, scoped down to just the tracked PVs rather than the
+  whole (300+ PV) master list, since that's the list that actually
+  matters here. A manual check's colors stick in the tree (surviving the
+  normal poll cycle) until either a new job for that beamline goes
+  RUNNING again, or another Check PVs is run. If the beamline has never
+  been launched yet (nothing tracked to scope to), it falls back to
+  checking the whole master list instead — still useful for confirming a
+  PV's name/online-ness before a first **Start**. Doesn't start, stop, or
+  otherwise touch any logging job — a purely point-in-time probe.
 - **Edit recipients...** / **Font size** — same as `ops/disk_monitor`'s GUI.
 
 This GUI is also available as a tab in `../ops_gui.py`, alongside

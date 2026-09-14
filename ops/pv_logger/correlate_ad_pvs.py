@@ -327,6 +327,19 @@ def resolve_pv_names(pv_master_list_path, requested_names, requested_groups):
     return sorted(names)
 
 
+def filter_available_pvs(csv_path, pv_names):
+    """Split pv_names into (available, missing) against csv_path's logged
+    columns. A requested --groups PV can easily be missing from a given
+    CSV - the group may have been added to the master list after this
+    particular run was started - and that shouldn't abort correlation
+    for every other requested PV that IS present, so callers should warn
+    and continue with `available` rather than treat `missing` as fatal."""
+    available_names = set(pl.read_logged_pv_names(csv_path))
+    available = [n for n in pv_names if n in available_names]
+    missing = [n for n in pv_names if n not in available_names]
+    return available, missing
+
+
 # ---------------------------------------------------------------------------
 # Output
 # ---------------------------------------------------------------------------
@@ -395,6 +408,11 @@ def cmd_inspect(args):
 
 def cmd_per_frame(args):
     pv_names = resolve_pv_names(args.pv_master_list, args.pvs, args.groups)
+    pv_names, missing = filter_available_pvs(args.csv, pv_names)
+    if missing:
+        print(f"WARNING: {args.csv}: PV(s) not logged in this CSV, skipping: {', '.join(missing)}", file=sys.stderr)
+    if not pv_names:
+        raise ValueError(f"{args.csv}: none of the requested PVs are present in logged columns")
     files = _expand_files(args.files)
     for h5_path in files:
         timestamps, source = get_frame_timestamps(h5_path, args.timestamp_attr, args.dataset_path)
@@ -405,6 +423,11 @@ def cmd_per_frame(args):
 
 def cmd_averaged(args):
     pv_names = resolve_pv_names(args.pv_master_list, args.pvs, args.groups)
+    pv_names, missing = filter_available_pvs(args.csv, pv_names)
+    if missing:
+        print(f"WARNING: {args.csv}: PV(s) not logged in this CSV, skipping: {', '.join(missing)}", file=sys.stderr)
+    if not pv_names:
+        raise ValueError(f"{args.csv}: none of the requested PVs are present in logged columns")
     files = _expand_files(args.files)
     rows = []
     for h5_path in files:

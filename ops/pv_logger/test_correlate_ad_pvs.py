@@ -294,6 +294,17 @@ def test_resolve_pv_names_unknown_group_raises():
     print("test_resolve_pv_names_unknown_group_raises: OK")
 
 
+def test_filter_available_pvs_skips_missing_instead_of_raising():
+    csv_path = os.path.join(TMPDIR, "run9.csv")
+    base_time = 1_700_000_000.0
+    make_csv(csv_path, base_time, 5, 3, [0, 10, 20], ["A", "A", "A"])
+
+    available, missing = cap.filter_available_pvs(csv_path, ["numericPV", "modePV", "ActiveDMS"])
+    assert available == ["numericPV", "modePV"], available
+    assert missing == ["ActiveDMS"], missing
+    print("test_filter_available_pvs_skips_missing_instead_of_raising: OK")
+
+
 def main():
     setup()
     try:
@@ -311,6 +322,7 @@ def main():
         test_averaged_output()
         test_resolve_pv_names_union_of_pvs_and_groups()
         test_resolve_pv_names_unknown_group_raises()
+        test_filter_available_pvs_skips_missing_instead_of_raising()
     finally:
         teardown()
     print("\nAll tests passed.")

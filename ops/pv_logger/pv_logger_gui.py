@@ -1054,6 +1054,47 @@ class _PvLoggerLaunchWorker(QtCore.QObject):
             print("[pv_logger launch] lock released, run() returning", flush=True)
 
 
+class _PvCheckWorker(QtCore.QObject):
+    """Runs `pv_logger.py list-pvs --json` over SSH on the beamline's own
+    remote_job host, off the GUI thread - probing ~300+ PVs (bounded by
+    connect_timeout_sec per round, in batches of MAX_CAGET_WORKERS) can
+    take several seconds, long enough to freeze the window if run inline.
+    A one-off manual check, independent of whatever RUNNING/STOPPED job
+    self.jobs_tree is already displaying for this beamline - it doesn't
+    start or touch any logging job."""
+
+    finished = QtCore.pyqtSignal(dict)  # {"online": [...], "offline": [...]}
+    error = QtCore.pyqtSignal(str)
+
+    def __init__(self, beamline, host, user, remote_base, cfg):
+        super().__init__()
+        self.beamline = beamline
+        self.host = host
+        self.user = user
+        self.remote_base = remote_base
+        self.cfg = cfg
+
+    def run(self):
+        try:
+            spec_path = os.path.join(pl.pv_logger_status_dir(self.remote_base), f"{self.beamline}.checkspec")
+            pl.write_remote_file(self.host, self.user, spec_path, json.dumps(self.cfg, indent=2))
+
+            worker_script_path = os.path.join(SCRIPT_DIR, "pv_logger.py")
+            command = "/usr/bin/python3 {script} list-pvs --config {spec} --json".format(
+                script=shlex.quote(worker_script_path), spec=shlex.quote(spec_path),
+            )
+            # Longer than run_shell_command's own 15s default - discovery
+            # itself can take several multiples of connect_timeout_sec for
+            # a full master list (see MAX_CAGET_WORKERS-sized batches), and
+            # this is a foreground check the user is actively waiting on,
+            # not a fire-and-forget action like Stop.
+            result = pl.run_shell_command(self.host, self.user, command, timeout=60)
+            payload = json.loads(result.stdout)
+            self.finished.emit(payload)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class PVLoggerPanel(QtWidgets.QWidget):
     """
     All PV-logger GUI behavior, as a plain QWidget rather than a
@@ -1073,6 +1114,14 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
         self.current_beamline = "s1"
         self._launch_workers = {}  # beamline -> (QThread, _PvLoggerLaunchWorker), kept alive while launching
+        self._check_workers = {}  # beamline -> (QThread, _PvCheckWorker), kept alive while checking
+        # beamline -> (online_names, offline_names, name_to_pv) from the
+        # most recent manual Check PVs - shown in the tree in place of the
+        # usual STOPPED/FAILED neutral display until superseded by a real
+        # run going RUNNING again (see _poll_all_beamlines), since
+        # otherwise the next poll tick would immediately paint back over
+        # a check the user just asked for.
+        self._last_check_result = {}
         # beamline -> bool - unlike the old single self.running, both
         # beamlines can be running independent jobs at once (confirmed
         # directly: this tool always managed s1 and s20 as two entirely
@@ -1114,6 +1163,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.jobs_tree.setHeaderLabels(["Beamline / PV", "Status", "Details"])
         self.jobs_tree.header().setStretchLastSection(True)
         self.jobs_tree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.jobs_tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
         self._beamline_tree_items = {}
         for beamline in self.BEAMLINES:
             item = QtWidgets.QTreeWidgetItem([beamline, "STOPPED", "No experiment started yet."])
@@ -1140,6 +1190,14 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.stop_button.clicked.connect(self.stop_monitoring)
         self.stop_button.setEnabled(False)
         toolbar.addWidget(self.stop_button)
+        # One-off probe of every PV in the CURRENT beamline's master list
+        # (not just whatever a running job happens to be tracking) - lets
+        # someone confirm a PV's name/online-ness before committing to a
+        # Start (e.g. after editing the master list, or troubleshooting
+        # why a group came back empty) without starting a logging job.
+        check_pvs_btn = QtWidgets.QPushButton("Check PVs...")
+        check_pvs_btn.clicked.connect(self.check_pvs)
+        toolbar.addWidget(check_pvs_btn)
         edit_recipients_btn = QtWidgets.QPushButton("Edit recipients...")
         edit_recipients_btn.clicked.connect(self.edit_recipients)
         toolbar.addWidget(edit_recipients_btn)
@@ -1181,6 +1239,22 @@ class PVLoggerPanel(QtWidgets.QWidget):
         poll_ms = int(self.cfg.get("settings", {}).get("log_interval_sec", 5) * 1000)
         self.timer.start(max(poll_ms, 1000))
         self._poll_all_beamlines()
+
+    def _on_tree_selection_changed(self):
+        """Clicking any row (a beamline's own row, or one of its child PV
+        rows) syncs the Beamline combo to match - Start/Stop act on
+        whatever the combo says, and it was easy to click "s20" in the
+        tree while the combo silently still said "s1", leaving Stop
+        greyed out with no visible reason why (confirmed directly by a
+        user hitting exactly this)."""
+        item = self.jobs_tree.currentItem()
+        if item is None:
+            return
+        while item.parent() is not None:
+            item = item.parent()
+        beamline_name = item.text(0)
+        if beamline_name in self.BEAMLINES and beamline_name != self.current_beamline:
+            self.beamline_combo.setCurrentText(beamline_name)
 
     def _on_beamline_changed(self, beamline_name):
         """Load config for selected beamline - controls which beamline
@@ -1265,6 +1339,21 @@ class PVLoggerPanel(QtWidgets.QWidget):
             return pl.load_config(config_file)
         except Exception:
             return self.cfg
+
+    def _tracked_names_for_beamline(self, beamline, remote_base):
+        """The PV list self.jobs_tree already shows for this beamline: the
+        live status file's own "tracked" list if a job has run, else the
+        last jobspec, else empty (never launched). Shared by
+        _poll_all_beamlines and check_pvs so "check exactly the PVs the
+        tree already lists" (what's actually tracked) doesn't drift from
+        what the tree itself considers tracked."""
+        status_path = pl.pv_logger_status_path(remote_base, beamline)
+        try:
+            with open(status_path) as f:
+                status = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            status = {}
+        return status.get("tracked") or self._read_jobspec_names(remote_base, beamline) or []
 
     def _read_jobspec_names(self, remote_base, beamline):
         """The PV names actually requested for this beamline's most recent
@@ -1434,6 +1523,68 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.status_bar.showMessage(f"Stop requested for '{self.current_beamline}' - waiting for it to finish the current cycle...")
         self._poll_all_beamlines()
 
+    def check_pvs(self):
+        """Probe this beamline's tracked PV list - the same list
+        self.jobs_tree already shows for it (see
+        _tracked_names_for_beamline) - and recolor those same tree rows
+        ONLINE/OFFLINE, same as a RUNNING job's own live display. Scoped
+        to "tracked" rather than the whole master list (which can be
+        300+ PVs) since that's the list that actually matters here: what
+        the tree shows and what a run would track are the same PVs, so
+        checking the rest of the catalog on every click would be a lot
+        of unnecessary caget traffic for no visible benefit. Falls back
+        to the whole master list only when nothing has ever been tracked
+        for this beamline yet (no prior run to scope to)."""
+        host, user, remote_base = self._remote_job_info()
+        if not remote_base:
+            _message_box(
+                QtWidgets.QMessageBox.Critical, self, "Not configured",
+                f"No settings.remote_job configured for '{self.current_beamline}' - can't check PVs.")
+            return
+
+        beamline = self.current_beamline
+        if beamline in self._check_workers:
+            _message_box(QtWidgets.QMessageBox.Information, self, "Already checking",
+                          f"A PV check for '{beamline}' is already running - wait for it to finish.")
+            return
+
+        self.cfg = pl.load_config(self.config_path)
+        name_to_pv = {entry["name"]: entry["pv"] for entry in self.cfg.get("pvs", [])}
+        tracked = self._tracked_names_for_beamline(beamline, remote_base)
+        if tracked:
+            check_pvs_list = [e for e in self.cfg.get("pvs", []) if e["name"] in tracked]
+        else:
+            check_pvs_list = self.cfg.get("pvs", [])
+        check_cfg = dict(self.cfg, pvs=check_pvs_list)
+
+        self.status_bar.showMessage(f"Checking {len(check_pvs_list)} PV(s) for '{beamline}' on {host}...")
+
+        thread = QtCore.QThread(self)
+        worker = _PvCheckWorker(beamline, host, user, remote_base, check_cfg)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.finished.connect(lambda result: self._on_pv_check_finished(beamline, result, name_to_pv))
+        worker.error.connect(lambda msg: self._on_pv_check_error(beamline, msg))
+        worker.finished.connect(thread.quit)
+        worker.error.connect(thread.quit)
+        thread.finished.connect(thread.deleteLater)
+        self._check_workers[beamline] = (thread, worker)
+        thread.start()
+
+    def _on_pv_check_finished(self, beamline, result, name_to_pv):
+        self._check_workers.pop(beamline, None)
+        online = sorted(result.get("online", []))
+        offline = sorted(result.get("offline", []))
+        total = len(online) + len(offline)
+        self.status_bar.showMessage(f"PV check for '{beamline}': {len(online)} of {total} online")
+        self._last_check_result[beamline] = (online, offline, name_to_pv)
+        self._set_job_children(beamline, online, offline, name_to_pv)
+
+    def _on_pv_check_error(self, beamline, msg):
+        self._check_workers.pop(beamline, None)
+        self.status_bar.showMessage(f"PV check for '{beamline}' failed: {msg}")
+        _message_box(QtWidgets.QMessageBox.Critical, self, "Check failed", msg)
+
     def _poll_all_beamlines(self):
         """Re-read EVERY beamline's remote status file (plain local read -
         beamline service accounts' homes are on the same shared filesystem
@@ -1466,7 +1617,12 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._beamline_running[beamline] = False
                 self._paint_job_row(beamline, running=False)
                 self._beamline_tree_items[beamline].setText(2, "No experiment started yet.")
-                self._set_job_children(beamline, [], [])
+                override = self._last_check_result.get(beamline)
+                if override:
+                    online_names, offline_names, checked_name_to_pv = override
+                    self._set_job_children(beamline, online_names, offline_names, checked_name_to_pv)
+                else:
+                    self._set_job_children(beamline, [], [])
                 if beamline == self.current_beamline:
                     self.stop_button.setEnabled(False)
                 continue
@@ -1493,6 +1649,11 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
                 self._beamline_running[beamline] = True
                 self._paint_job_row(beamline, running=True)
+                # A running job's own live sample is always more current
+                # than a past manual check - drop it so a STOPPED-then-
+                # started-again cycle doesn't later reuse a check result
+                # from a prior, unrelated run.
+                self._last_check_result.pop(beamline, None)
                 total = status.get("total_count", len(tracked))
                 online_count = status.get("online_count", len(online_names))
                 self._beamline_tree_items[beamline].setText(
@@ -1521,8 +1682,16 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 # cycle saw, which may be stale by now (or may not exist
                 # at all for a job that never got past discovery), so show
                 # what was requested neutrally rather than asserting a
-                # possibly-false-green "online" for all of it.
-                self._set_job_children(beamline, [], [], name_to_pv, neutral_names=tracked)
+                # possibly-false-green "online" for all of it - unless a
+                # manual Check PVs has since given a fresher, actually-
+                # current answer for this same beamline, in which case
+                # show that instead of falling back to neutral.
+                override = self._last_check_result.get(beamline)
+                if override:
+                    online_names, offline_names, checked_name_to_pv = override
+                    self._set_job_children(beamline, online_names, offline_names, checked_name_to_pv)
+                else:
+                    self._set_job_children(beamline, [], [], name_to_pv, neutral_names=tracked)
                 if beamline == self.current_beamline:
                     self.stop_button.setEnabled(False)
 
