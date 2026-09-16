@@ -19,17 +19,17 @@
     {
       "name": "hydraZE",
       "pv": "1idc:m7.RBV",
-      "group": "GE/Pilatus DETECTOR"
+      "group": "D2 Detector (E-hutch)"
     },
     {
       "name": "geXE",
       "pv": "1ide1:m103.RBV",
-      "group": "GE/Pilatus DETECTOR"
+      "group": "D2 Detector (E-hutch)"
     },
     {
       "name": "geZE",
       "pv": "1ide1:m50.RBV",
-      "group": "GE/Pilatus DETECTOR"
+      "group": "D2 Detector (E-hutch)"
     },
     {
       "name": "ImgXE",
@@ -53,7 +53,7 @@
     },
     {
       "name": "DetX",
-      "pv": "1ide1:m6.RBV",
+      "pv": "1ide:m6.RBV",
       "group": "NF DET"
     },
     {
@@ -63,7 +63,7 @@
     },
     {
       "name": "DetZ",
-      "pv": "1ide1:m7.RBV",
+      "pv": "1ide:m7.RBV",
       "group": "NF DET"
     },
     {
@@ -407,43 +407,28 @@
       "group": "INITATE LOGGING"
     },
     {
-      "name": "ge1 fnum",
-      "pv": "GE1:cam1:FileNumber_RBV",
-      "group": "Hydra GE1"
-    },
-    {
-      "name": "ge2 fnum",
-      "pv": "GE2:cam1:FileNumber_RBV",
-      "group": "Hydra GE2"
-    },
-    {
-      "name": "ge3 fnum",
-      "pv": "GE3:cam1:FileNumber_RBV",
-      "group": "Hydra GE3"
-    },
-    {
-      "name": "ge4 fnum",
-      "pv": "GE4:cam1:FileNumber_RBV",
-      "group": "Hydra GE4"
-    },
-    {
-      "name": "ge5 fnum",
-      "pv": "GE5:cam1:FileNumber_RBV",
-      "group": "Hydra GE5"
-    },
-    {
       "name": "Q2 tomo fnum",
       "pv": "QIMAGE2:TIFF1:FileNumber_RBV",
       "group": "QIMAGE2"
     },
     {
-      "name": "PG1 tomo fnum (1idPG1)",
+      "name": "PG1 tomo fnum",
       "pv": "1idPG1:TIFF1:FileNumber_RBV",
       "group": "PG1"
     },
     {
-      "name": "PG1 tomo fnum (1idGH1)",
+      "name": "PG1 hdf fnum",
+      "pv": "1idPG1:HDF1:FileNumber_RBV",
+      "group": "PG1"
+    },
+    {
+      "name": "GH1 tomo fnum",
       "pv": "1idGH1:TIFF1:FileNumber_RBV",
+      "group": "GH1"
+    },
+    {
+      "name": "GH1 hdf fnum",
+      "pv": "1idGH1:HDF1:FileNumber_RBV",
       "group": "GH1"
     },
     {
@@ -453,7 +438,12 @@
     },
     {
       "name": "PG5 fnum",
-      "pv": "1idPG5:TIFF1:FileNumber",
+      "pv": "1idPG5:TIFF1:FileNumber_RBV",
+      "group": "PG5"
+    },
+    {
+      "name": "PG5 hdf fnum",
+      "pv": "1idPG5:HDF1:FileNumber_RBV",
       "group": "PG5"
     },
     {
@@ -477,11 +467,6 @@
       "group": "dic"
     },
     {
-      "name": "vff fnum (dp_mar165_xrd82)",
-      "pv": "dp_mar165_xrd82:cam1:FileNumber_RBV",
-      "group": "mar165"
-    },
-    {
       "name": "vff fnum (QMPX3)",
       "pv": "QMPX3:TIFF1:FileNumber_RBV",
       "group": "ASI (Medipix3)"
@@ -502,44 +487,44 @@
       "group": "Pilatus"
     },
     {
-      "name": "saxs fnum (s1_pixirad2)",
+      "name": "saxs fnum (TIFF1)",
       "pv": "s1_pixirad2:TIFF1:FileNumber_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
-      "name": "saxs fnum (s1_pixirad2)",
+      "name": "saxs fnum (HDF1)",
       "pv": "s1_pixirad2:HDF1:FileNumber_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "set pt temp",
       "pv": "s1_pixirad2:cam1:Temperature_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "actual temp",
       "pv": "s1_pixirad2:cam1:TemperatureActual",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "box temp",
       "pv": "s1_pixirad2:cam1:BoxTemperature_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "box humidity",
       "pv": "s1_pixirad2:cam1:BoxHumidity_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "dew pt",
       "pv": "s1_pixirad2:cam1:DewPoint_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "saxs peltier power",
       "pv": "s1_pixirad2:cam1:PeltierPower_RBV",
-      "group": "PIXIRAD2"
+      "group": "Pixirad"
     },
     {
       "name": "CRL 1 Th",
@@ -907,6 +892,16 @@
       "group": "E Hutch Ion Chambers"
     },
     {
+      "name": "IC-E7 (cts)",
+      "pv": "1ide2:S1:scaler1_cts3.A",
+      "group": "E Hutch Ion Chambers"
+    },
+    {
+      "name": "IC-E8 (cts)",
+      "pv": "1ide2:S1:scaler1_cts3.B",
+      "group": "E Hutch Ion Chambers"
+    },
+    {
       "name": "IC-B5e (cts)",
       "pv": "1ide2:S1:scaler1_cts4.A",
       "group": "B Hutch Ion Chambers"
@@ -1067,12 +1062,12 @@
       "group": "KEYENCE"
     },
     {
-      "name": "Disp (mm) (1idc)",
+      "name": "Disp (mm) (1idc) (Compact loadframe)",
       "pv": "1idc:m33.RBV",
       "group": "Compact loadframe"
     },
     {
-      "name": "Disp (mm) (1idc)",
+      "name": "Disp (mm) (1idc) (OWIS compression type)",
       "pv": "1idc:m79.RBV",
       "group": "OWIS compression type"
     },
@@ -1097,32 +1092,32 @@
       "group": "Compact loadframe"
     },
     {
-      "name": "Load (V) (1ide)",
+      "name": "Load (V) (1ide) (AML Psylotech muTS)",
       "pv": "1ide:D1Ch17_raw.VAL",
       "group": "AML Psylotech muTS"
     },
     {
-      "name": "Load (V) (1ide)",
+      "name": "Load (V) (1ide) (Compact loadframe UL / DESY)",
       "pv": "1ide:D1Ch22_raw.VAL",
       "group": "Compact loadframe UL / DESY"
     },
     {
-      "name": "Load (V) (1ide)",
+      "name": "Load (V) (1ide) (OWIS compression type)",
       "pv": "1ide:D1Ch7_raw.VAL",
       "group": "OWIS compression type"
     },
     {
-      "name": "Load (N) (1ide)",
+      "name": "Load (N) (1ide) (AML Psylotech muTS)",
       "pv": "1ide:D1Ch17_calc.VAL",
       "group": "AML Psylotech muTS"
     },
     {
-      "name": "Load (N) (1ide)",
+      "name": "Load (N) (1ide) (Compact loadframe UL / DESY)",
       "pv": "1ide:D1Ch22_calc.VAL",
       "group": "Compact loadframe UL / DESY"
     },
     {
-      "name": "Load (N) (1ide)",
+      "name": "Load (N) (1ide) (OWIS compression type)",
       "pv": "1ide:D1Ch7_calc.VAL",
       "group": "OWIS compression type"
     },
@@ -1332,42 +1327,42 @@
       "group": "LANL RF FURNACE"
     },
     {
-      "name": "RF get TlimC (C) (Smarts)",
+      "name": "RF get TlimC (C) (Smarts) (LANL RF FURNACE)",
       "pv": "Smarts:Lake:GetTLimC",
       "group": "LANL RF FURNACE"
     },
     {
-      "name": "RF get TlimC (C) (Smarts)",
+      "name": "RF get TlimC (C) (Smarts) (LANL RF FURNACE)",
       "pv": "Smarts:Lake:SetTLimC",
       "group": "LANL RF FURNACE"
     },
     {
-      "name": "RF get TlimC (C) (Smarts)",
+      "name": "RF get TlimC (C) (Smarts) (LANL CHILLER)",
       "pv": "Smarts:Lake:GetTLimA",
       "group": "LANL CHILLER"
     },
     {
-      "name": "RF get TlimC (C) (Smarts)",
+      "name": "RF get TlimC (C) (Smarts) (LANL CHILLER)",
       "pv": "Smarts:Lake:SetTLimA",
       "group": "LANL CHILLER"
     },
     {
-      "name": "RF get TlimD (C) (Smarts)",
+      "name": "RF get TlimD (C) (Smarts) (LANL RF FURNACE)",
       "pv": "Smarts:Lake:GetTLimD",
       "group": "LANL RF FURNACE"
     },
     {
-      "name": "RF get TlimD (C) (Smarts)",
+      "name": "RF get TlimD (C) (Smarts) (LANL CHILLER)",
       "pv": "Smarts:Lake:GetTLimB",
       "group": "LANL CHILLER"
     },
     {
-      "name": "RF set TlimD (C) (Smarts)",
+      "name": "RF set TlimD (C) (Smarts) (LANL RF FURNACE)",
       "pv": "Smarts:Lake:SetTLimD",
       "group": "LANL RF FURNACE"
     },
     {
-      "name": "RF set TlimD (C) (Smarts)",
+      "name": "RF set TlimD (C) (Smarts) (LANL CHILLER)",
       "pv": "Smarts:Lake:SetTLimB",
       "group": "LANL CHILLER"
     },
@@ -1442,12 +1437,12 @@
       "group": "LANL CHILLER"
     },
     {
-      "name": "Heating Sample Temp (K) (Brandon)",
+      "name": "Heating Sample Temp (K) (Brandon) (LANL CHILLER)",
       "pv": "Brandon:LakeshoreB:SensorA",
       "group": "LANL CHILLER"
     },
     {
-      "name": "Heating Sample Temp (K) (Brandon)",
+      "name": "Heating Sample Temp (K) (Brandon) (LANL CHILLER)",
       "pv": "Brandon:LakeshoreA:SensorA",
       "group": "LANL CHILLER"
     },
@@ -1672,12 +1667,12 @@
       "group": "THERMOCOUPLE"
     },
     {
-      "name": "TC2 (C) (1ide)",
+      "name": "TC2 (C) (1ide) (THERMOCOUPLE)",
       "pv": "1ide:DP41:s2:temp.VAL",
       "group": "THERMOCOUPLE"
     },
     {
-      "name": "TC2 (C) (1ide)",
+      "name": "TC2 (C) (1ide) (THERMOCOUPLE)",
       "pv": "1ide:DP41:s3:temp.VAL",
       "group": "THERMOCOUPLE"
     },
@@ -1732,17 +1727,17 @@
       "group": "THERMOCOUPLE"
     },
     {
-      "name": "Tsurf (C) (1idTC32)",
+      "name": "Tsurf (C) (1idTC32) (TC32)",
       "pv": "1idTC32:Ti1",
       "group": "TC32"
     },
     {
-      "name": "Tsurf (C) (1idTC32)",
+      "name": "Tsurf (C) (1idTC32) (TC32)",
       "pv": "1idTC32:Ti11",
       "group": "TC32"
     },
     {
-      "name": "Tsurf (C) (1idTC32)",
+      "name": "Tsurf (C) (1idTC32) (TC32)",
       "pv": "1idTC32:Ti7",
       "group": "TC32"
     },
@@ -1827,13 +1822,78 @@
       "group": "GH1"
     },
     {
+      "name": "FileName_RBV (GH1)",
+      "pv": "1idGH1:TIFF1:FileName_RBV",
+      "group": "GH1"
+    },
+    {
+      "name": "NumCapture_RBV (GH1)",
+      "pv": "1idGH1:TIFF1:NumCapture_RBV",
+      "group": "GH1"
+    },
+    {
+      "name": "NumCapture_RBV (GH1 HDF1)",
+      "pv": "1idGH1:HDF1:NumCapture_RBV",
+      "group": "GH1"
+    },
+    {
+      "name": "AcquireTime_RBV (GH1)",
+      "pv": "1idGH1:cam1:AcquireTime_RBV",
+      "group": "GH1"
+    },
+    {
       "name": "TomoC_PG5 (PointGrey, C-hutch)",
       "pv": "1idPG5:cam1:Acquire_RBV",
       "group": "PG5"
     },
     {
+      "name": "FileName_RBV (PG5)",
+      "pv": "1idPG5:TIFF1:FileName_RBV",
+      "group": "PG5"
+    },
+    {
+      "name": "NumCapture_RBV (PG5)",
+      "pv": "1idPG5:TIFF1:NumCapture_RBV",
+      "group": "PG5"
+    },
+    {
+      "name": "NumCapture_RBV (PG5 HDF1)",
+      "pv": "1idPG5:HDF1:NumCapture_RBV",
+      "group": "PG5"
+    },
+    {
+      "name": "AcquireTime_RBV (PG5)",
+      "pv": "1idPG5:cam1:AcquireTime_RBV",
+      "group": "PG5"
+    },
+    {
       "name": "TomoC_SP5 (Spinnaker, C-hutch)",
       "pv": "1idSP5:cam1:Acquire_RBV",
+      "group": "SP5"
+    },
+    {
+      "name": "SP5 hdf fnum",
+      "pv": "1idSP5:HDF1:FileNumber_RBV",
+      "group": "SP5"
+    },
+    {
+      "name": "FileName_RBV (SP5)",
+      "pv": "1idSP5:TIFF1:FileName_RBV",
+      "group": "SP5"
+    },
+    {
+      "name": "NumCapture_RBV (SP5)",
+      "pv": "1idSP5:TIFF1:NumCapture_RBV",
+      "group": "SP5"
+    },
+    {
+      "name": "NumCapture_RBV (SP5 HDF1)",
+      "pv": "1idSP5:HDF1:NumCapture_RBV",
+      "group": "SP5"
+    },
+    {
+      "name": "AcquireTime_RBV (SP5)",
+      "pv": "1idSP5:cam1:AcquireTime_RBV",
       "group": "SP5"
     },
     {
@@ -1872,6 +1932,21 @@
       "group": "QIMAGE2"
     },
     {
+      "name": "FileName_RBV (QIMAGE2)",
+      "pv": "QIMAGE2:TIFF1:FileName_RBV",
+      "group": "QIMAGE2"
+    },
+    {
+      "name": "NumCapture_RBV (QIMAGE2)",
+      "pv": "QIMAGE2:TIFF1:NumCapture_RBV",
+      "group": "QIMAGE2"
+    },
+    {
+      "name": "AcquireTime_RBV (QIMAGE2)",
+      "pv": "QIMAGE2:cam1:AcquireTime_RBV",
+      "group": "QIMAGE2"
+    },
+    {
       "name": "NF (Retiga, QIMAGE1)",
       "pv": "QIMAGE1:cam1:Acquire_RBV",
       "group": "QIMAGE1"
@@ -1890,11 +1965,6 @@
       "name": "Lambda",
       "pv": "dp_lambda_xrd30:cam1:Acquire_RBV",
       "group": "Lambda"
-    },
-    {
-      "name": "mar165",
-      "pv": "dp_mar165_xrd82:cam1:Acquire_RBV",
-      "group": "mar165"
     },
     {
       "name": "Hydra GE1",
@@ -2027,12 +2097,12 @@
       "group": "write_parfile_general.mac (misc, review before use)"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (Eiger)",
       "pv": "1idEig16M:HDF1:FileName_RBV",
       "group": "Eiger"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (PG1)",
       "pv": "1idPG1:TIFF1:FileName_RBV",
       "group": "PG1"
     },
@@ -2052,7 +2122,7 @@
       "group": "Pilatus"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (VarexC)",
       "pv": "1idVarex1:HDF1:FileName_RBV",
       "group": "VarexC"
     },
@@ -2082,22 +2152,22 @@
       "group": "Hydra GE5"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (QIMAGE1)",
       "pv": "QIMAGE1:TIFF1:FileName_RBV",
       "group": "QIMAGE1"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (Lambda)",
       "pv": "dp_lambda_xrd30:TIFF1:FileName_RBV",
       "group": "Lambda"
     },
     {
-      "name": "FileName_RBV",
+      "name": "FileName_RBV (Pixirad)",
       "pv": "s1_pixirad2:HDF1:FileName_RBV",
       "group": "Pixirad"
     },
     {
-      "name": "FileNumber_RBV",
+      "name": "FileNumber_RBV (Eiger)",
       "pv": "1idEig16M:HDF1:FileNumber_RBV",
       "group": "Eiger"
     },
@@ -2112,7 +2182,7 @@
       "group": "Pilatus"
     },
     {
-      "name": "FileNumber_RBV",
+      "name": "FileNumber_RBV (VarexC)",
       "pv": "1idVarex1:HDF1:FileNumber_RBV",
       "group": "VarexC"
     },
@@ -2142,13 +2212,18 @@
       "group": "Hydra GE5"
     },
     {
-      "name": "NumCapture_RBV",
+      "name": "NumCapture_RBV (Eiger)",
       "pv": "1idEig16M:HDF1:NumCapture_RBV",
       "group": "Eiger"
     },
     {
-      "name": "NumCapture_RBV",
+      "name": "NumCapture_RBV (PG1)",
       "pv": "1idPG1:TIFF1:NumCapture_RBV",
+      "group": "PG1"
+    },
+    {
+      "name": "NumCapture_RBV (PG1 HDF1)",
+      "pv": "1idPG1:HDF1:NumCapture_RBV",
       "group": "PG1"
     },
     {
@@ -2167,7 +2242,7 @@
       "group": "Pilatus"
     },
     {
-      "name": "NumCapture_RBV",
+      "name": "NumCapture_RBV (VarexC)",
       "pv": "1idVarex1:HDF1:NumCapture_RBV",
       "group": "VarexC"
     },
@@ -2197,23 +2272,148 @@
       "group": "Hydra GE5"
     },
     {
-      "name": "NumCapture_RBV",
+      "name": "NumCapture_RBV (QIMAGE1)",
       "pv": "QIMAGE1:TIFF1:NumCapture_RBV",
       "group": "QIMAGE1"
     },
     {
-      "name": "AcquireTime_RBV",
+      "name": "AcquireTime_RBV (Eiger)",
       "pv": "1idEig16M:cam1:AcquireTime_RBV",
       "group": "Eiger"
     },
     {
-      "name": "AcquireTime_RBV",
+      "name": "AcquireTime_RBV (PG1)",
       "pv": "1idPG1:cam1:AcquireTime_RBV",
       "group": "PG1"
     },
     {
-      "name": "AcquireTime_RBV",
+      "name": "AcquireTime_RBV (VarexC)",
       "pv": "1idVarex1:cam1:AcquireTime_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetADCoreVersion",
+      "pv": "1idVarex1:cam1:ADCoreVersion_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetAcqPeriod",
+      "pv": "1idVarex1:cam1:AcquirePeriod_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetArrayCounter",
+      "pv": "1idVarex1:cam1:ArrayCounter_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetArraySizeX",
+      "pv": "1idVarex1:cam1:ArraySizeX_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetArraySizeY",
+      "pv": "1idVarex1:cam1:ArraySizeY_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetBinX",
+      "pv": "1idVarex1:cam1:BinX_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetBinY",
+      "pv": "1idVarex1:cam1:BinY_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetDataType",
+      "pv": "1idVarex1:cam1:DataType_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetDriverVersion",
+      "pv": "1idVarex1:cam1:DriverVersion_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetFilePath",
+      "pv": "1idVarex1:HDF1:FilePath_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetFirmwareVersion",
+      "pv": "1idVarex1:cam1:FirmwareVersion_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetFullFileName",
+      "pv": "1idVarex1:HDF1:FullFileName_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetGain",
+      "pv": "1idVarex1:cam1:Gain_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetHDFPlugInVersion",
+      "pv": "1idVarex1:HDF1:PluginType_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetManufacturer",
+      "pv": "1idVarex1:cam1:Manufacturer_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetMaxSizeX",
+      "pv": "1idVarex1:cam1:MaxSizeX_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetMaxSizeY",
+      "pv": "1idVarex1:cam1:MaxSizeY_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetModel",
+      "pv": "1idVarex1:cam1:Model_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetPixelSizeX",
+      "pv": "1idVarex1:Attr1:1:AttrName_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetPixelSizeY",
+      "pv": "1idVarex1:Attr1:2:AttrName_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetSDKVersion",
+      "pv": "1idVarex1:cam1:SDKVersion_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetSampleName",
+      "pv": "1idVarex1:HDF1:FileName",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetSaveDest",
+      "pv": "1idVarex1:cam1:FrameType",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetSerialNumber",
+      "pv": "1idVarex1:cam1:SerialNumber_RBV",
+      "group": "VarexC"
+    },
+    {
+      "name": "DetTemperature",
+      "pv": "1idVarex1:cam1:Temperature_RBV",
       "group": "VarexC"
     },
     {
@@ -2242,12 +2442,12 @@
       "group": "Hydra GE5"
     },
     {
-      "name": "AcquireTime_RBV",
+      "name": "AcquireTime_RBV (QIMAGE1)",
       "pv": "QIMAGE1:cam1:AcquireTime_RBV",
       "group": "QIMAGE1"
     },
     {
-      "name": "AcquireTime_RBV",
+      "name": "AcquireTime_RBV (Pixirad)",
       "pv": "s1_pixirad2:cam1:AcquireTime_RBV",
       "group": "Pixirad"
     },
@@ -2562,12 +2762,12 @@
       "group": "Lambda"
     },
     {
-      "name": "NumImages_RBV",
+      "name": "NumImages_RBV (Lambda)",
       "pv": "dp_lambda_xrd30:cam1:NumImages_RBV",
       "group": "Lambda"
     },
     {
-      "name": "NumImages_RBV",
+      "name": "NumImages_RBV (Pixirad)",
       "pv": "s1_pixirad2:cam1:NumImages_RBV",
       "group": "Pixirad"
     },
@@ -3184,32 +3384,32 @@
     {
       "name": "D2 Detector X",
       "pv": "1idc:m78",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "D2 Detector Y",
       "pv": "1idcAMCI:m8",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "D2 Detector Z",
       "pv": "1idcAMCI:m7",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "D2 Detector Shield",
       "pv": "1idcAMCI:m11",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "D2 Detector BStop X",
       "pv": "1idcAMCI:m10",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "D2 Detector BStop Y",
       "pv": "1idcAMCI:m9",
-      "group": "D2 Detector"
+      "group": "D2 Detector (C-hutch)"
     },
     {
       "name": "owis x",

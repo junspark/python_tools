@@ -193,123 +193,11 @@ def _choose_open_file(parent, title, start_dir="", filter_str=""):
         return selected[0] if selected else ""
     return ""
 
-# Device-type groupings for the Start-new-experiment checklist, so related
-# groups (e.g. the 8 different furnace groups, scattered across the
-# alphabet under names like "FZHANG COLD SINTER FURNACE"/"RF Furnace"/
-# "SUTER-BASIL FURNACE") land together instead of a flat alphabetical list
-# of ~80 groups. Presentation-only - doesn't touch the master list's own
-# "group" field or PV filtering, which still key off the group name
-# exactly as before. A group name not listed here (e.g. one a rename just
-# created) falls into the "Other" catch-all category rather than being
-# dropped, so this mapping can lag behind the master lists without
-# breaking anything - just showing up uncategorized until updated.
-DEVICE_CATEGORIES = [
-    ("Detectors", [
-        # One group per physical detector/camera (2026-09-16, per direct
-        # confirmation) - each bundles that detector's armed-state,
-        # frame-number, and acquisition-setting PVs (previously spread
-        # across three separate groups: "Detectors (armed state)",
-        # "DETECTORS frame number", and a per-detector "X Acquisition
-        # Settings"), so selecting a detector for a run is one click
-        # instead of three. Hydra GE1-5 are five separate groups (distinct
-        # physical units), not one shared "GE" group.
-        "Eiger", "Pilatus", "VarexC", "PG1", "GH1", "PG5", "SP5", "Dexela",
-        "Andor", "CoolSnap", "QIMAGE2", "QIMAGE1", "Pixirad", "ASI (Medipix3)",
-        "Lambda", "mar165", "dic",
-        "Hydra GE1", "Hydra GE2", "Hydra GE3", "Hydra GE4", "Hydra GE5",
-        # Motor-position and sensor groups intentionally left as-is (not
-        # camera/plugin PVs, and some - like "GE/Pilatus DETECTOR" - are
-        # shared across more than one detector so don't map 1:1 anyway).
-        "GE/Pilatus DETECTOR", "PIXIRAD2", "NF DET", "Tomo det",
-        "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
-        "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
-        # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
-        "D2 Detector", "tomoB", "tomoC", "tomoD", "tomoE",
-    ]),
-    ("A Lens Stacks", [
-        "A Lens Stack 1", "A Lens Stack 2", "A Lens Stack 3",
-    ]),
-    ("B Lens Stacks", [
-        "L1", "L2", "RL", "CRL1", "CRL2", "lens4B", "lens5B",
-    ]),
-    ("C Lens Stacks", [
-        "C Lens Stack 1", "C Lens Stack 2", "C Lens Stack 3", "C Lens Stack 4", "C Lens Stack 7",
-    ]),
-    ("D Lens Stacks", [
-        "D Lens Stack 1", "D Lens Stack 2", "D Lens Stack 3", "D Lens Stack 4",
-        "D Lens Stack 5", "D Lens Stack 6",
-    ]),
-    ("E Lens Stacks", [
-        "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
-    ]),
-    ("TXM", [
-        "txmE", "txm_cam", "txm_lensE", "tomoEds",
-    ]),
-    ("Monochromators", ["HEM", "HRM"]),
-    ("B Slits", ["B Slits"]),
-    ("C Slits", ["C Upstream Slits", "C Downstream Slits"]),
-    ("D Slits", ["D Upstream Slits", "D Downstream Slits", "D T7 Slits"]),
-    ("E Slits", ["E Upstream Slits", "E Downstream Slits"]),
-    ("White Beam Slits", ["White Beam Slits"]),
-    ("Scalers / Ion Chambers", [
-        "C Scaler (raw channels)", "E Scaler (raw channels)", "Ion Chamber",
-        "A Hutch Ion Chambers", "B Hutch Ion Chambers", "C Hutch Ion Chambers",
-        "D Hutch Ion Chambers", "E Hutch Ion Chambers",
-    ]),
-    ("Sample Environment", [
-        "PulseRay-CMU furnace", "FZHANG COLD SINTER FURNACE",
-        "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
-        "E PulseRay Furnace", "Linkam Furnace (old)",
-        "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
-        # bluesky-sourced (2026-08-26 scan)
-        "amD", "rf_sam", "rf_tube",
-    ]),
-    ("Load Frames / Mechanical Testing", [
-        "Compact loadframe", "Compact loadframe UL / DESY", "AML Psylotech muTS",
-        "MTS", "MTS+RAMS1+OXYGON setup", "OWIS compression type",
-        "psylotech_out",  # bluesky-sourced (2026-08-26 scan)
-    ]),
-    ("Sample Stages / Motors", [
-        "Motors",
-    ]),
-    ("Sample Manipulation Systems", [
-        "C HR-SMS", "C 4-Circle Diffractometer", "D-HRSMS", "E HR-SMS", "E-HRSMS", "E-HLSMS", "E HL-SMS",
-        # bluesky-sourced sample positioning stages (2026-08-26 scan)
-        "aeroD",
-        # "hlsms" (single stray PV, 20ide2:m89) merged into E-HLSMS as
-        # E_HLSMS_RotZ (2026-09-10, per direct confirmation) - it shared
-        # the same 20ide2 IOC prefix and axis-naming convention as every
-        # other E-HLSMS entry (RotX/RotY1-3), just hadn't been grouped in.
-    ]),
-    ("Sensors / Environmental", [
-        "KEYENCE", "FLOW METER", "Hutch monitoring thermocouples", "THERMOCOUPLE", "TC32",
-    ]),
-    ("Beam / Storage Ring", [
-        "Beam Position Monitor", "Storage Ring Status", "Experiment Identifiers", "Scan Parameters",
-    ]),
-    ("Storage Ring / Undulator", ["Storage Ring", "Undulator", "Insertion Devices"]),
-    ("Lab Equipment", ["AGILENT FUNC GEN", "beeper"]),
-    ("Shutters / Shields / Foils", [
-        "Shields", "Shutters", "Foils. attens", "Attenuator",
-        # bluesky-sourced (2026-08-26 scan)
-        "attenA", "attenE", "foilA", "saxs", "saxs_pin",
-    ]),
-    ("Software / Misc", [
-        "INITATE LOGGING", "handshake signals", "VOLTAGE SIGNAL POKHAREL_MAR18",
-        "write_parfile_general.mac (misc, review before use)", "Calculation/Software", "Miscellaneous",
-        "wheelE",  # per direct confirmation (2026-08-26)
-    ]),
-]
-
-_CATEGORY_FOR_GROUP = {
-    group: category for category, groups in DEVICE_CATEGORIES for group in groups
-}
-
-_OTHER_CATEGORY = "Other"
-
-
-def _category_for_device(device):
-    return _CATEGORY_FOR_GROUP.get(device, _OTHER_CATEGORY)
+# Device-type groupings for the Start-new-experiment checklist - moved to
+# pv_device_categories.py (2026-09-16) so pv_logger.py's headless CLI can
+# reuse the same category data (for CSV column ordering) without gaining a
+# PyQt5 dependency. See that module's docstring for the full rationale.
+from pv_device_categories import DEVICE_CATEGORIES, _OTHER_CATEGORY, _category_for_device
 
 
 _T_NUMBER_RE = re.compile(r"[Tt](\d+)")
@@ -449,7 +337,7 @@ class StartExperimentDialog(QtWidgets.QDialog):
         state (e.g. deliberately restoring an all-unchecked past run).
         """
         super().__init__(parent)
-        self.setWindowTitle("Start new experiment")
+        self.setWindowTitle("Pick PVs")
         self._pv_defs = pv_defs
         self._config_path = config_path
         self._devices = devices or []
@@ -459,17 +347,13 @@ class StartExperimentDialog(QtWidgets.QDialog):
         # drive doesn't itself trigger the first side's handler again.
         self._syncing_checks = False
 
-        self.outfile_edit = QtWidgets.QLineEdit()
-        browse_btn = QtWidgets.QPushButton("Browse...")
-        browse_btn.clicked.connect(self._browse)
+        # Only used by "Load selection from CSV..." below (picking which
+        # past run's CSV to read a selection back from) - the output CSV
+        # path itself is no longer asked here; Start logging prompts for
+        # that at launch time instead (2026-09-16, per direct request),
+        # so a pick isn't tied to a specific output path before Check PVs
+        # has even run.
         self._default_dir = default_dir
-
-        row = QtWidgets.QHBoxLayout()
-        row.addWidget(self.outfile_edit)
-        row.addWidget(browse_btn)
-
-        form = QtWidgets.QFormLayout()
-        form.addRow("Output CSV:", row)
 
         # Device checklist
         self.device_checks = {}
@@ -518,7 +402,6 @@ class StartExperimentDialog(QtWidgets.QDialog):
         buttons.rejected.connect(self.reject)
 
         layout = QtWidgets.QVBoxLayout(self)
-        layout.addLayout(form)
         if self.device_group is not None:
             layout.addWidget(self.device_group, 1)
         layout.addWidget(buttons)
@@ -792,11 +675,6 @@ class StartExperimentDialog(QtWidgets.QDialog):
         }
         self._rebuild_device_checklist(list(checked_state.keys()), checked_state, pv_checked_state)
 
-    def _browse(self):
-        path = _choose_save_file(self, "Output CSV", self._default_dir, "CSV files (*.csv)")
-        if path:
-            self.outfile_edit.setText(path)
-
     def _load_selection_from_csv(self):
         """Reconstruct a past run's exact PV selection from its logged
         CSV's header row (see pl.read_logged_pv_names) - lets anyone
@@ -929,9 +807,6 @@ class StartExperimentDialog(QtWidgets.QDialog):
             self.device_checks[device].setCheckState(new_state)
         finally:
             self._syncing_checks = False
-
-    def outfile(self):
-        return self.outfile_edit.text().strip()
 
     def selected_devices(self):
         """Return list of device names with at least one selected PV
@@ -1103,6 +978,48 @@ class _PvCheckWorker(QtCore.QObject):
             self.error.emit(str(e))
 
 
+class _AddPvDialog(QtWidgets.QDialog):
+    """Filterable multi-select list of master-list PV entries not already
+    in the current pick, for the tree's right-click "Add PV..." action -
+    a lighter-weight alternative to reopening the full Pick PVs device
+    checklist just to add one or two more PVs."""
+
+    def __init__(self, parent, candidates):
+        super().__init__(parent)
+        self.setWindowTitle("Add PV")
+        self.resize(500, 500)
+
+        filter_edit = QtWidgets.QLineEdit()
+        filter_edit.setPlaceholderText("Filter by name, group, or PV...")
+        self.list_widget = QtWidgets.QListWidget()
+        self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        for entry in candidates:
+            label = f"{entry['name']}  [{entry.get('group', '')}]  {entry['pv']}"
+            list_item = QtWidgets.QListWidgetItem(label)
+            list_item.setData(QtCore.Qt.UserRole, entry)
+            self.list_widget.addItem(list_item)
+        filter_edit.textChanged.connect(self._apply_filter)
+
+        buttons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+
+        layout = QtWidgets.QVBoxLayout(self)
+        layout.addWidget(filter_edit)
+        layout.addWidget(self.list_widget, 1)
+        layout.addWidget(buttons)
+
+    def _apply_filter(self, text):
+        text = text.lower()
+        for i in range(self.list_widget.count()):
+            item = self.list_widget.item(i)
+            item.setHidden(text not in item.text().lower())
+
+    def selected_entries(self):
+        return [item.data(QtCore.Qt.UserRole) for item in self.list_widget.selectedItems()]
+
+
 class PVLoggerPanel(QtWidgets.QWidget):
     """
     All PV-logger GUI behavior, as a plain QWidget rather than a
@@ -1137,6 +1054,20 @@ class PVLoggerPanel(QtWidgets.QWidget):
         # whichever one was currently selected in the dropdown, with no
         # way to see both at a glance without switching back and forth).
         self._beamline_running = {beamline: False for beamline in self.BEAMLINES}
+        # beamline -> {"pvs": [pv_entry, ...], "devices": [str, ...]} from
+        # the most recent "Pick PVs..." accepted for that beamline -
+        # session-only (like _launch_workers/_check_workers below), not
+        # persisted to disk. No "outfile" here: the output CSV path is
+        # asked for by Start logging itself, at launch time, not by Pick
+        # PVs - a pick isn't tied to a specific output path before Check
+        # PVs has even run. Distinct from _load_selection_prefs()/
+        # _save_selection_prefs() (module-level, disk-persisted): those
+        # only seed StartExperimentDialog's initial checkboxes next time
+        # it opens, whereas this is "what Start logging will actually
+        # launch right now" - split into its own step (2026-09-16, per
+        # direct request) so a pick can be verified with Check PVs before
+        # committing to a run, instead of a single click doing both.
+        self._picked_selection = {}
         # beamline -> (state, finished_at) last surfaced as a FAILED/
         # STOPPED popup - lets that transition be reported exactly once
         # per beamline even when it happens before this GUI ever observed
@@ -1172,6 +1103,11 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.jobs_tree.header().setStretchLastSection(True)
         self.jobs_tree.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.jobs_tree.itemSelectionChanged.connect(self._on_tree_selection_changed)
+        # Right-click Add/Remove directly on the tree (per direct request) -
+        # an alternative to reopening the full "Pick PVs..." device
+        # checklist just to tweak one or two PVs. See _on_tree_context_menu.
+        self.jobs_tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.jobs_tree.customContextMenuRequested.connect(self._on_tree_context_menu)
         self._beamline_tree_items = {}
         for beamline in self.BEAMLINES:
             item = QtWidgets.QTreeWidgetItem([beamline, "STOPPED", "No experiment started yet."])
@@ -1191,21 +1127,33 @@ class PVLoggerPanel(QtWidgets.QWidget):
         # QPushButton always renders with a visible raised/bordered look
         # regardless of style, matching how dm_integrity_gui.py's own
         # "Add EXPID..." button already does it.
-        start_btn = QtWidgets.QPushButton("Start new experiment...")
-        start_btn.clicked.connect(self.start_experiment)
-        toolbar.addWidget(start_btn)
-        self.stop_button = QtWidgets.QPushButton("Stop")
-        self.stop_button.clicked.connect(self.stop_monitoring)
-        self.stop_button.setEnabled(False)
-        toolbar.addWidget(self.stop_button)
-        # One-off probe of every PV in the CURRENT beamline's master list
-        # (not just whatever a running job happens to be tracking) - lets
-        # someone confirm a PV's name/online-ness before committing to a
-        # Start (e.g. after editing the master list, or troubleshooting
-        # why a group came back empty) without starting a logging job.
+        # Sequence, left to right (2026-09-16, per direct request): pick
+        # which PVs to log, check that exactly those PVs are online, only
+        # then actually start the detached logging job, and stop it. Used
+        # to be a single "Start new experiment..." button that opened the
+        # picker and launched the job the moment you clicked OK - split so
+        # Check PVs can verify a pick (e.g. PVs just added to the master
+        # list by inference/convention, not yet confirmed live) before
+        # anything starts writing to a CSV.
+        pick_pvs_btn = QtWidgets.QPushButton("Pick PVs...")
+        pick_pvs_btn.clicked.connect(self.pick_pvs)
+        toolbar.addWidget(pick_pvs_btn)
+        # One-off probe - prefers whatever was just picked above; falls
+        # back to a previous run's tracked list, then this beamline's
+        # entire master list, if nothing's been picked this session (see
+        # check_pvs). Lets someone confirm a PV's name/online-ness before
+        # committing to Start logging, without starting a job.
         check_pvs_btn = QtWidgets.QPushButton("Check PVs...")
         check_pvs_btn.clicked.connect(self.check_pvs)
         toolbar.addWidget(check_pvs_btn)
+        self.start_logging_btn = QtWidgets.QPushButton("Start logging")
+        self.start_logging_btn.clicked.connect(self.start_logging)
+        self.start_logging_btn.setEnabled(False)
+        toolbar.addWidget(self.start_logging_btn)
+        self.stop_button = QtWidgets.QPushButton("Stop logging")
+        self.stop_button.clicked.connect(self.stop_monitoring)
+        self.stop_button.setEnabled(False)
+        toolbar.addWidget(self.stop_button)
         edit_recipients_btn = QtWidgets.QPushButton("Edit recipients...")
         edit_recipients_btn.clicked.connect(self.edit_recipients)
         toolbar.addWidget(edit_recipients_btn)
@@ -1297,7 +1245,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
             self.cfg = pl.load_config(self.config_path)
             self.status_bar.showMessage(f"Using default PV list for {beamline_name}")
 
-        self.stop_button.setEnabled(self._beamline_running.get(beamline_name, False))
+        self._update_action_buttons(beamline_name)
 
         # Reflect this beamline's own rate without re-triggering a save -
         # blockSignals so _on_interval_changed doesn't fire (and write the
@@ -1379,6 +1327,27 @@ class PVLoggerPanel(QtWidgets.QWidget):
             return None
         return [entry.get("name") for entry in spec.get("pvs", [])]
 
+    def _refresh_job_children(self, beamline, fallback_name_to_pv=None, fallback_tracked=()):
+        """Pick the right source for a NOT-RUNNING beamline row's tree
+        children, in priority order: a manual Check PVs result (freshest
+        ground truth) > a pending Pick PVs selection that hasn't been
+        checked yet (so toggling PVs in Pick PVs is reflected here right
+        away, per direct request, instead of only after the next Check
+        PVs click) > the fallback tracked list from this beamline's last
+        actual run (or nothing, if it has never run and nothing is
+        picked either)."""
+        override = self._last_check_result.get(beamline)
+        if override:
+            online_names, offline_names, checked_name_to_pv = override
+            self._set_job_children(beamline, online_names, offline_names, checked_name_to_pv)
+            return
+        picked = self._picked_selection.get(beamline)
+        if picked:
+            name_to_pv = {entry["name"]: entry["pv"] for entry in picked["pvs"]}
+            self._set_job_children(beamline, [], [], name_to_pv, neutral_names=list(name_to_pv))
+            return
+        self._set_job_children(beamline, [], [], fallback_name_to_pv, neutral_names=fallback_tracked)
+
     def _set_job_children(self, beamline, online_names, offline_names, name_to_pv=None, neutral_names=()):
         """Rebuild a beamline row's expandable children, one per tracked
         PV. Offline PVs are listed first since they're the ones worth
@@ -1413,15 +1382,107 @@ class PVLoggerPanel(QtWidgets.QWidget):
             item.addChild(child)
         item.setExpanded(was_expanded)
 
-    def start_experiment(self):
-        host, user, remote_base = self._remote_job_info()
-        if not remote_base:
-            _message_box(
-                QtWidgets.QMessageBox.Critical, self, "Not configured",
-                f"No settings.remote_job configured for '{self.current_beamline}' - "
-                "can't launch a PV-logging job.")
+    def _current_tree_pv_names(self, beamline):
+        """Names currently shown under beamline's row in self.jobs_tree -
+        exactly what a viewer sees right now, regardless of whether it
+        came from a pending pick, a Check PVs result, or the last run's
+        tracked list (see _refresh_job_children's priority order). The
+        tree's right-click Add/Remove actions edit against this rather
+        than re-deriving "what's selected" from _picked_selection
+        directly, so they behave sensibly even before anything has been
+        explicitly picked or checked this session."""
+        item = self._beamline_tree_items[beamline]
+        return [item.child(i).text(0) for i in range(item.childCount())]
+
+    def _apply_pv_name_set(self, beamline, names):
+        """Store `names` as beamline's new picked selection, resolved
+        back to full master-list entries - the shared write path for the
+        tree's right-click Add/Remove actions, so both go through exactly
+        the same storage/refresh/prefs machinery pick_pvs() itself uses.
+        Loads beamline's own master list rather than assuming self.cfg
+        matches it (mirrors _on_beamline_changed) since self.jobs_tree
+        shows every beamline at once, not just self.current_beamline."""
+        config_file = os.path.join(self.base_config_dir, f"pv_master_list_{beamline}.json")
+        cfg = pl.load_config(config_file) if os.path.exists(config_file) else pl.load_config(self.config_path)
+        name_to_entry = {}
+        for entry in cfg.get("pvs", []):
+            name_to_entry.setdefault(entry["name"], entry)
+        pvs = [name_to_entry[n] for n in dict.fromkeys(names) if n in name_to_entry]
+        devices = sorted({entry.get("group") for entry in pvs if entry.get("group")})
+        self._picked_selection[beamline] = {"pvs": pvs, "devices": devices}
+        # Same reasoning as pick_pvs: a prior Check PVs result no longer
+        # describes this (now-edited) pick.
+        self._last_check_result.pop(beamline, None)
+
+        # So "Pick PVs..." reopens next showing this edit too, not just
+        # whatever the dialog itself last produced.
+        selection_prefs = _load_selection_prefs()
+        selection_prefs[beamline] = [entry["name"] for entry in pvs]
+        _save_selection_prefs(selection_prefs)
+
+        self._refresh_job_children(beamline)
+        self._update_action_buttons(beamline)
+
+    def _on_tree_context_menu(self, pos):
+        """Right-click on self.jobs_tree: Add PV... on any row, plus
+        Remove '<name>' from pick on a leaf (child) PV row. Per direct
+        request ("add / remove PVs from the main viewer") as a lighter-
+        weight alternative to the full Pick PVs device checklist."""
+        item = self.jobs_tree.itemAt(pos)
+        if item is None:
+            return
+        is_child = item.parent() is not None
+        beamline = item.parent().text(0) if is_child else item.text(0)
+        if beamline not in self.BEAMLINES:
             return
 
+        menu = QtWidgets.QMenu(self)
+        add_action = menu.addAction("Add PV...")
+        remove_action = menu.addAction(f"Remove '{item.text(0)}' from pick") if is_child else None
+        chosen = menu.exec_(self.jobs_tree.viewport().mapToGlobal(pos))
+        if chosen is None:
+            return
+
+        if self._beamline_running.get(beamline):
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Already running",
+                f"PV logging is already running for '{beamline}'. Stop it first.")
+            return
+
+        if chosen is add_action:
+            self._add_pv_dialog(beamline)
+        elif chosen is remove_action:
+            pv_name = item.text(0)
+            names = [n for n in self._current_tree_pv_names(beamline) if n != pv_name]
+            self._apply_pv_name_set(beamline, names)
+            self.status_bar.showMessage(f"Removed '{pv_name}' from '{beamline}''s pick.")
+
+    def _add_pv_dialog(self, beamline):
+        config_file = os.path.join(self.base_config_dir, f"pv_master_list_{beamline}.json")
+        cfg = pl.load_config(config_file) if os.path.exists(config_file) else pl.load_config(self.config_path)
+        current_names = set(self._current_tree_pv_names(beamline))
+        candidates = sorted(
+            (e for e in cfg.get("pvs", []) if e["name"] not in current_names),
+            key=_pv_sort_key)
+
+        dialog = _AddPvDialog(self, candidates)
+        _center_on_parent(dialog, self)
+        if dialog.exec_() != QtWidgets.QDialog.Accepted:
+            return
+        chosen_entries = dialog.selected_entries()
+        if not chosen_entries:
+            return
+        names = self._current_tree_pv_names(beamline) + [e["name"] for e in chosen_entries]
+        self._apply_pv_name_set(beamline, names)
+        self.status_bar.showMessage(f"Added {len(chosen_entries)} PV(s) to '{beamline}''s pick.")
+
+    def pick_pvs(self):
+        """Open the device/PV checklist and remember the result as this
+        beamline's pending pick (self._picked_selection) - does NOT launch
+        anything. Start logging reads back whatever was picked here. Split
+        out from the old single "Start new experiment..." button
+        (2026-09-16, per direct request) so the pick can be run through
+        Check PVs before anything starts writing to a CSV."""
         if self._beamline_running.get(self.current_beamline):
             _message_box(
                 QtWidgets.QMessageBox.Warning, self, "Already running",
@@ -1447,11 +1508,6 @@ class PVLoggerPanel(QtWidgets.QWidget):
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
-        outfile = dialog.outfile()
-        if not outfile:
-            _message_box(QtWidgets.QMessageBox.Warning, self, "Missing output file", "Choose an output CSV path.")
-            return
-
         selected_pvs = dialog.selected_pvs()
         if not selected_pvs:
             _message_box(QtWidgets.QMessageBox.Warning, self, "No devices selected", "Select at least one device/PV to monitor.")
@@ -1470,11 +1526,76 @@ class PVLoggerPanel(QtWidgets.QWidget):
         selection_prefs[self.current_beamline] = [entry.get("name") for entry in selected_pvs]
         _save_selection_prefs(selection_prefs)
 
+        beamline = self.current_beamline
+        self._picked_selection[beamline] = {
+            "pvs": selected_pvs,
+            "devices": selected_devices,
+        }
+        # A prior Check PVs' online/offline result no longer describes
+        # THIS pick - without dropping it, _refresh_job_children keeps
+        # preferring it over the fresh pick (see its priority order) and
+        # the tree looks unchanged no matter what was just picked/unpicked
+        # here, until Check PVs happens to be run again.
+        self._last_check_result.pop(beamline, None)
+        self._refresh_job_children(beamline)
+        self._update_action_buttons(beamline)
+        self.status_bar.showMessage(
+            f"Picked {len(selected_pvs)} PV(s) for '{beamline}' - Check PVs, then Start logging.")
+
+    def _update_action_buttons(self, beamline):
+        """Reflect beamline's picked/running state on the Start logging/
+        Stop logging buttons - a no-op if beamline isn't the one currently
+        selected in the toolbar (those buttons only ever act on
+        self.current_beamline). Called after a pick, after a launch, on
+        beamline switch, and from _poll_all_beamlines whenever a
+        beamline's running state is (re)determined."""
+        if beamline != self.current_beamline:
+            return
+        running = self._beamline_running.get(beamline, False)
+        self.start_logging_btn.setEnabled(bool(self._picked_selection.get(beamline)) and not running)
+        self.stop_button.setEnabled(running)
+
+    def start_logging(self):
+        """Launch the detached logging job using whatever was most
+        recently picked via Pick PVs for this beamline - the actual
+        "commit" step, separated from picking (see pick_pvs) so Check PVs
+        can verify the pick first."""
+        host, user, remote_base = self._remote_job_info()
+        if not remote_base:
+            _message_box(
+                QtWidgets.QMessageBox.Critical, self, "Not configured",
+                f"No settings.remote_job configured for '{self.current_beamline}' - "
+                "can't launch a PV-logging job.")
+            return
+
+        if self._beamline_running.get(self.current_beamline):
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Already running",
+                f"PV logging is already running for '{self.current_beamline}'. Stop it first.")
+            return
+
+        picked = self._picked_selection.get(self.current_beamline)
+        if not picked:
+            _message_box(
+                QtWidgets.QMessageBox.Warning, self, "Nothing picked",
+                f"Pick PVs for '{self.current_beamline}' first.")
+            return
+
+        # Asked for here, not in Pick PVs - a pick isn't tied to a specific
+        # output path until you're actually ready to commit to a run
+        # (2026-09-16, per direct request). A cancel/empty choice leaves
+        # the pick intact so Start logging can just be clicked again.
+        outfile = _choose_save_file(self, "Output CSV", "", "CSV files (*.csv)")
+        if not outfile:
+            return
+
         # Canonicalize so a path chosen here (as whoever launched the GUI)
         # still resolves correctly once the job runs remotely as
         # user@host - the exact same reasoning data_integrity's Verify MD5
         # jobs use for local_root (see remote_job.canonical_path).
         outfile = pl.canonical_path(outfile)
+        selected_pvs = picked["pvs"]
+        selected_devices = picked["devices"]
 
         # The job's actual PV list, exactly as selected in the dialog -
         # packaged with a snapshot of settings as this job's config,
@@ -1509,9 +1630,14 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
     def _on_pv_logger_launched(self, beamline, status):
         self._launch_workers.pop(beamline, None)
+        # Spent - a launched pick matches the old flow, where the dialog
+        # was simply gone after one launch; re-picking is one click away
+        # to launch the same set again later.
+        self._picked_selection.pop(beamline, None)
         self.status_bar.showMessage(
             f"PV logging for '{beamline}' launched on remote host (running in background, survives closing this GUI)")
         self._poll_all_beamlines()
+        self._update_action_buttons(beamline)
 
     def _on_pv_logger_launch_error(self, beamline, msg):
         self._launch_workers.pop(beamline, None)
@@ -1532,17 +1658,14 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self._poll_all_beamlines()
 
     def check_pvs(self):
-        """Probe this beamline's tracked PV list - the same list
-        self.jobs_tree already shows for it (see
-        _tracked_names_for_beamline) - and recolor those same tree rows
-        ONLINE/OFFLINE, same as a RUNNING job's own live display. Scoped
-        to "tracked" rather than the whole master list (which can be
-        300+ PVs) since that's the list that actually matters here: what
-        the tree shows and what a run would track are the same PVs, so
-        checking the rest of the catalog on every click would be a lot
-        of unnecessary caget traffic for no visible benefit. Falls back
-        to the whole master list only when nothing has ever been tracked
-        for this beamline yet (no prior run to scope to)."""
+        """Probe whichever PV list matters most right now, in order:
+        a pending "Pick PVs..." selection for this beamline (so a pick can
+        be verified before Start logging ever runs), else this beamline's
+        tracked list - the same list self.jobs_tree already shows for it
+        (see _tracked_names_for_beamline) - else the whole master list
+        (which can be 300+ PVs) when nothing has ever been picked or
+        tracked here. Recolors those same tree rows ONLINE/OFFLINE, same
+        as a RUNNING job's own live display."""
         host, user, remote_base = self._remote_job_info()
         if not remote_base:
             _message_box(
@@ -1558,8 +1681,11 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
         self.cfg = pl.load_config(self.config_path)
         name_to_pv = {entry["name"]: entry["pv"] for entry in self.cfg.get("pvs", [])}
+        picked = self._picked_selection.get(beamline)
         tracked = self._tracked_names_for_beamline(beamline, remote_base)
-        if tracked:
+        if picked:
+            check_pvs_list = picked["pvs"]
+        elif tracked:
             check_pvs_list = [e for e in self.cfg.get("pvs", []) if e["name"] in tracked]
         else:
             check_pvs_list = self.cfg.get("pvs", [])
@@ -1613,8 +1739,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._paint_job_row(beamline, running=False)
                 self._beamline_tree_items[beamline].setText(2, "Not configured.")
                 self._set_job_children(beamline, [], [])
-                if beamline == self.current_beamline:
-                    self.stop_button.setEnabled(False)
+                self._update_action_buttons(beamline)
                 continue
 
             status_path = pl.pv_logger_status_path(remote_base, beamline)
@@ -1625,14 +1750,8 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._beamline_running[beamline] = False
                 self._paint_job_row(beamline, running=False)
                 self._beamline_tree_items[beamline].setText(2, "No experiment started yet.")
-                override = self._last_check_result.get(beamline)
-                if override:
-                    online_names, offline_names, checked_name_to_pv = override
-                    self._set_job_children(beamline, online_names, offline_names, checked_name_to_pv)
-                else:
-                    self._set_job_children(beamline, [], [])
-                if beamline == self.current_beamline:
-                    self.stop_button.setEnabled(False)
+                self._refresh_job_children(beamline, name_to_pv)
+                self._update_action_buttons(beamline)
                 continue
 
             state = status.get("state")
@@ -1668,8 +1787,8 @@ class PVLoggerPanel(QtWidgets.QWidget):
                     2, "{} of {} PVs online  |  Output: {}".format(
                         online_count, total, status.get("outfile", "?")))
                 self._set_job_children(beamline, online_names, offline_names, name_to_pv)
+                self._update_action_buttons(beamline)
                 if beamline == self.current_beamline:
-                    self.stop_button.setEnabled(True)
                     updated_at = status.get("updated_at")
                     if updated_at:
                         self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
@@ -1694,14 +1813,8 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 # manual Check PVs has since given a fresher, actually-
                 # current answer for this same beamline, in which case
                 # show that instead of falling back to neutral.
-                override = self._last_check_result.get(beamline)
-                if override:
-                    online_names, offline_names, checked_name_to_pv = override
-                    self._set_job_children(beamline, online_names, offline_names, checked_name_to_pv)
-                else:
-                    self._set_job_children(beamline, [], [], name_to_pv, neutral_names=tracked)
-                if beamline == self.current_beamline:
-                    self.stop_button.setEnabled(False)
+                self._refresh_job_children(beamline, name_to_pv, tracked)
+                self._update_action_buttons(beamline)
 
                 # Report a FAILED/STOPPED transition exactly once per
                 # beamline, keyed by (state, finished_at) rather than

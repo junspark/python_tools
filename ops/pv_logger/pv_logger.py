@@ -31,6 +31,7 @@ Usage examples
 """
 
 import argparse
+import csv
 import json
 import os
 import signal
@@ -45,6 +46,7 @@ from email.mime.text import MIMEText
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
 import remote_job as rj
+import pv_device_categories as pvcat
 
 DEFAULT_CONFIG_PATH = os.path.join(SCRIPT_DIR, "pv_master_list_s1.json")
 DEFAULT_STATE_PATH = os.path.join(SCRIPT_DIR, "pv_alert_state.json")
@@ -55,6 +57,55 @@ DEFAULT_CAGET_PATH = "/APSshare/epics/base-7.0.10/bin/rhel9-x86_64/caget"
 MAX_CAGET_WORKERS = 64
 
 OFFLINE_MARKER = "OFFLINE"
+
+# Six scientific-order buckets for CSV column layout (per direct request),
+# each built from one or more of pv_device_categories.DEVICE_CATEGORIES'
+# finer-grained categories. Anything not covered here (e.g. "Lab Equipment",
+# "Shutters / Shields / Foils", "Software / Misc", or a category not yet
+# added to DEVICE_CATEGORIES at all) falls into the trailing "Other" bucket
+# rather than being dropped - same lag-behind-safely philosophy as
+# DEVICE_CATEGORIES' own "Other" catch-all.
+CSV_CATEGORY_ORDER = [
+    ("Storage Ring", ["Beam / Storage Ring", "Storage Ring / Undulator"]),
+    ("Monochromators", ["Monochromators"]),
+    ("Slits & Ion Chambers", [
+        "B Slits", "C Slits", "D Slits", "E Slits", "White Beam Slits",
+        "Scalers / Ion Chambers",
+    ]),
+    ("Sample Stack", [
+        "A Lens Stacks", "B Lens Stacks", "C Lens Stacks", "D Lens Stacks", "E Lens Stacks",
+        "Sample Stages / Motors", "Sample Manipulation Systems",
+    ]),
+    ("Detectors", ["Detectors", "TXM"]),
+    ("Sample Environments", [
+        "Sample Environment", "Load Frames / Mechanical Testing", "Sensors / Environmental",
+    ]),
+]
+_OTHER_CSV_CATEGORY = "Other"
+
+_CSV_SUPERCATEGORY_FOR_CATEGORY = {
+    category: super_category
+    for super_category, categories in CSV_CATEGORY_ORDER
+    for category in categories
+}
+_CSV_SUPERCATEGORY_INDEX = {
+    super_category: i for i, (super_category, _) in enumerate(CSV_CATEGORY_ORDER)
+}
+_OTHER_CSV_INDEX = len(CSV_CATEGORY_ORDER)
+
+
+def _csv_supercategory_index(group):
+    """Sort key component grouping `group` (a pv_master_list "group"
+    value) into one of CSV_CATEGORY_ORDER's buckets, via
+    pv_device_categories' finer-grained DEVICE_CATEGORIES - the same
+    category data the GUI's Pick PVs dialog groups its checklist by.
+    Anything not covered lands last (the "Other" bucket), matching
+    DEVICE_CATEGORIES' own lag-behind-safely fallback."""
+    category = pvcat._category_for_device(group)
+    super_category = _CSV_SUPERCATEGORY_FOR_CATEGORY.get(category)
+    if super_category is None:
+        return _OTHER_CSV_INDEX
+    return _CSV_SUPERCATEGORY_INDEX[super_category]
 
 _DEFAULT_SETTINGS = {
     "log_interval_sec": 5,
@@ -168,7 +219,15 @@ def _caget_one(caget_path, pv_name, timeout_sec):
     """
     try:
         result = subprocess.run(
-            [caget_path, "-t", "-w", str(timeout_sec), pv_name],
+            # -S: decode a DBF_CHAR waveform ("long string" PVs like
+            # ...FileName_RBV/FullFileName_RBV) into text. Without it caget
+            # prints the raw byte array instead - "256 118 99 95 116 ..."
+            # (count, then each character's decimal code, zero-padded out
+            # to the waveform's full length) - confirmed directly against
+            # a live FileName_RBV PV, decoding to "test". Harmless for
+            # every other DBR type (enums/scalars/numeric arrays print
+            # exactly as before).
+            [caget_path, "-t", "-S", "-w", str(timeout_sec), pv_name],
             capture_output=True, text=True, timeout=timeout_sec + 2,
         )
     except (OSError, subprocess.TimeoutExpired):
@@ -265,28 +324,45 @@ def sample(online_pv_defs, timeout_sec, caget_path=DEFAULT_CAGET_PATH):
 # CSV output
 # ---------------------------------------------------------------------------
 
-def write_header(csv_path, names, device_selection=None):
-    """Legacy-matching format (see APSpy_s1id/macros.py write_logging_header):
-    trailing ', ' after every column including the last. Skipped if the file
-    already exists, so `start` can be resumed against the same outfile.
-    If device_selection is provided, write it as a comment for audit trail."""
+def write_header(csv_path, names, device_selection=None, group_for_name=None):
+    """Proper CSV (quoted via the `csv` module) rather than hand-joined
+    text - confirmed directly that several master-list names/groups
+    contain literal commas (e.g. 'GH1 (Spinnaker, E-hutch)',
+    'write_parfile_general.mac (misc, review before use)'), which the old
+    hand-rolled ", ".join(...) format silently split into extra fields,
+    shifting every column after it out of alignment (confirmed against a
+    live, multi-restart experiment CSV). `csv.writer`'s default quoting
+    only wraps a field in quotes when it actually needs it, so a name
+    without a comma still serializes exactly as before; this drops the
+    old format's trailing ", " before the newline (can't coexist with
+    correct quoting - see read_logged_pv_names for the backward-
+    compatible read side).
+
+    Skipped if the file already exists, so `start` can be resumed against
+    the same outfile. If device_selection is provided, write it as a `#`
+    comment for audit trail. If group_for_name is provided (name -> group
+    string), also writes a `# Group` comment row aligned 1:1 with the
+    real header row, so opening the file makes each column's device
+    visible without merged cells (a CSV can't encode a true merged
+    header - that's an Excel-only formatting feature).
+    """
     if os.path.exists(csv_path):
         return
     os.makedirs(os.path.dirname(csv_path) or ".", exist_ok=True)
-    with open(csv_path, "w") as f:
+    with open(csv_path, "w", newline="") as f:
         if device_selection:
             f.write("# Devices: {}\n".format(", ".join(device_selection)))
             f.write("# Timestamp: {}\n".format(time.ctime()))
-        f.write("Date, ")
-        for name in names:
-            f.write(name + ", ")
-        f.write("\n")
+        writer = csv.writer(f, lineterminator="\n")
+        if group_for_name:
+            writer.writerow(["# Group"] + [group_for_name(name) for name in names])
+        writer.writerow(["Date"] + names)
 
 
 def write_row(csv_path, names, values, timestamp):
-    row = [time.ctime(timestamp)] + [str(values.get(name, OFFLINE_MARKER)) for name in names]
-    with open(csv_path, "a") as f:
-        f.write(", ".join(row) + "\n")
+    with open(csv_path, "a", newline="") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow([time.ctime(timestamp)] + [str(values.get(name, OFFLINE_MARKER)) for name in names])
 
 
 def read_logged_pv_names(csv_path):
@@ -296,23 +372,31 @@ def read_logged_pv_names(csv_path):
     selection" from any past CSV rather than only ever remembering the
     single most recent dialog session.
 
-    Skips '#'-prefixed audit-trail comment lines (see write_header) and
-    blank lines to find the real header - the first "Date, name1, name2,
-    ..." line. Tolerant of write_header's trailing ", " after the last
-    column (splitting on "," and dropping empty/whitespace-only pieces
-    handles it without a special case). Returns [] for a file that's
-    missing, empty, or doesn't start with the expected "Date" column -
-    better to come back with nothing to select than guess at a format
-    this wasn't actually built for.
+    Parses each line through `csv.reader` (rather than a blind
+    line.split(",")) so a name containing a literal comma - correctly
+    quoted by write_header - round-trips as one field instead of
+    splitting in two. Still tolerant of the *old* legacy trailing ", "
+    format (historical files written before this fix): stripping and
+    dropping empty/whitespace-only cells handles that without a special
+    case, same as before.
+
+    Skips '#'-prefixed audit-trail comment lines (see write_header,
+    including the newer '# Group' row) and blank lines to find the real
+    header - the first "Date, name1, name2, ..." line. Returns [] for a
+    file that's missing, empty, or doesn't start with the expected "Date"
+    column - better to come back with nothing to select than guess at a
+    format this wasn't actually built for.
     """
     try:
-        with open(csv_path) as f:
-            for line in f:
-                if line.startswith("#") or not line.strip():
+        with open(csv_path, newline="") as f:
+            for row in csv.reader(f):
+                if not row or row[0].startswith("#"):
                     continue
-                parts = [p.strip() for p in line.rstrip("\n").split(",")]
+                parts = [p.strip() for p in row]
                 parts = [p for p in parts if p]
-                if parts and parts[0] == "Date":
+                if not parts:
+                    continue
+                if parts[0] == "Date":
                     return parts[1:]
                 return []
     except OSError:
@@ -471,8 +555,47 @@ def cmd_start(args):
             })
         return 1
 
-    names = sorted(online)
-    write_header(args.outfile, names)
+    # Preserve pv_master_list's own order (online's iteration order, from
+    # discover_pvs's dict comprehension over cfg["pvs"]) rather than
+    # alphabetizing - the master list already keeps every device's PVs
+    # contiguous group-by-group, so this groups the CSV's columns by
+    # device too, instead of scattering a device's non-alphabetically-
+    # named attributes (FileName_RBV, NumCapture_RBV, ...) across
+    # whatever else happens to sort between them.
+    names = list(online)
+
+    # Full name -> group lookup (from the config, not just this run's
+    # online set) - needed below for any frozen-header column whose PV
+    # happens to be offline at this particular restart.
+    group_by_name = {entry["name"]: entry["group"] for entry in cfg["pvs"]}
+
+    # Re-lay-out a fresh file's columns into the scientific ordering asked
+    # for directly - storage ring info, monochromators, slits & ion
+    # chambers, sample stack, detectors, then sample environments (see
+    # CSV_CATEGORY_ORDER) - rather than pv_master_list's own group order.
+    # sorted() is stable, so PVs within the same device/group keep their
+    # existing relative order; only whole category blocks move.
+    names = sorted(names, key=lambda n: _csv_supercategory_index(group_by_name.get(n)))
+
+    # Freeze this outfile's CSV columns to whatever header it already has,
+    # if it's being resumed rather than created fresh - a restart's online
+    # set at discovery can differ from the very first launch's (a PV
+    # drops, comes back, or the master list's PV order/composition
+    # changes between launches), but write_header only ever writes the
+    # header once (skipped if the file already exists - see its own
+    # docstring). Without this, write_row went on writing however many
+    # columns THIS run's online set has, silently drifting out of
+    # alignment with a header frozen at first launch (confirmed directly
+    # against a live, multi-restart CSV whose header no longer lined up
+    # with its own later rows). A PV missing from this run's online set
+    # just logs OFFLINE_MARKER in its own frozen column (write_row
+    # already does this via values.get(name, OFFLINE_MARKER)); a PV
+    # newly online that isn't in the frozen header is still tracked (see
+    # `tracked` below, shown via the status file/GUI tree) but doesn't
+    # get a new CSV column of its own - that needs a new outfile, which
+    # Start logging now always asks for (see pv_logger_gui.py).
+    csv_names = read_logged_pv_names(args.outfile) or names
+    write_header(args.outfile, csv_names, group_for_name=lambda n: group_by_name.get(n, ""))
     offline_at_discovery = sorted(entry["name"] for entry in offline)
     if offline:
         skipped_path = write_skipped_report(args.outfile, offline)
@@ -534,7 +657,7 @@ def cmd_start(args):
         while not _stop_requested:
             now = time.time()
             values, currently_offline = sample(online, connect_timeout_sec, caget_path)
-            write_row(args.outfile, names, values, now)
+            write_row(args.outfile, csv_names, values, now)
             dropped = process_drop_alerts(cfg, currently_offline, args.outfile, dry_run=args.dry_run)
             if dropped:
                 print("Alert sent for offline PV(s): {}".format(", ".join(dropped)))
