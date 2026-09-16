@@ -409,82 +409,82 @@
     {
       "name": "ge1 fnum",
       "pv": "GE1:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Hydra GE1"
     },
     {
       "name": "ge2 fnum",
       "pv": "GE2:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Hydra GE2"
     },
     {
       "name": "ge3 fnum",
       "pv": "GE3:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Hydra GE3"
     },
     {
       "name": "ge4 fnum",
       "pv": "GE4:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Hydra GE4"
     },
     {
       "name": "ge5 fnum",
       "pv": "GE5:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Hydra GE5"
     },
     {
       "name": "Q2 tomo fnum",
       "pv": "QIMAGE2:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "QIMAGE2"
     },
     {
       "name": "PG1 tomo fnum (1idPG1)",
       "pv": "1idPG1:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "PG1"
     },
     {
       "name": "PG1 tomo fnum (1idGH1)",
       "pv": "1idGH1:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "GH1"
     },
     {
       "name": "dexela fnum",
       "pv": "1idDEX:TIFF1:FileNumber",
-      "group": "DETECTORS frame number"
+      "group": "Dexela"
     },
     {
       "name": "PG5 fnum",
       "pv": "1idPG5:TIFF1:FileNumber",
-      "group": "DETECTORS frame number"
+      "group": "PG5"
     },
     {
       "name": "NF fnum",
       "pv": "QIMAGE1:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "QIMAGE1"
     },
     {
       "name": "Lambda fnum",
       "pv": "dp_lambda_xrd30:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "Lambda"
     },
     {
       "name": "dic fname",
       "pv": "s1_gx2750:TIFF1:FileName_RBV",
-      "group": "DETECTORS frame number"
+      "group": "dic"
     },
     {
       "name": "dic fnum",
       "pv": "s1_gx2750:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "dic"
     },
     {
       "name": "vff fnum (dp_mar165_xrd82)",
       "pv": "dp_mar165_xrd82:cam1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "mar165"
     },
     {
       "name": "vff fnum (QMPX3)",
       "pv": "QMPX3:TIFF1:FileNumber_RBV",
-      "group": "DETECTORS frame number"
+      "group": "ASI (Medipix3)"
     },
     {
       "name": "PilNextFileNr",
@@ -1819,107 +1819,107 @@
     {
       "name": "PG1 (Spinnaker, E-hutch)",
       "pv": "1idPG1:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "PG1"
     },
     {
       "name": "GH1 (Spinnaker, E-hutch)",
       "pv": "1idGH1:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "GH1"
     },
     {
       "name": "TomoC_PG5 (PointGrey, C-hutch)",
       "pv": "1idPG5:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "PG5"
     },
     {
       "name": "TomoC_SP5 (Spinnaker, C-hutch)",
       "pv": "1idSP5:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "SP5"
     },
     {
       "name": "Dexela",
       "pv": "1idDEX:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Dexela"
     },
     {
       "name": "Andor",
       "pv": "dp_andor3_xrd67:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Andor"
     },
     {
       "name": "Pilatus",
       "pv": "1idPil:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Pilatus"
     },
     {
       "name": "Eiger",
       "pv": "1idEig16M:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Eiger"
     },
     {
       "name": "Varex",
       "pv": "1idVarex1:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "VarexC"
     },
     {
       "name": "CoolSnap (B-hutch)",
       "pv": "s1PVCAM:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "CoolSnap"
     },
     {
       "name": "Tomo (Retiga, QIMAGE2)",
       "pv": "QIMAGE2:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "QIMAGE2"
     },
     {
       "name": "NF (Retiga, QIMAGE1)",
       "pv": "QIMAGE1:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "QIMAGE1"
     },
     {
       "name": "Pixirad",
       "pv": "s1_pixirad2:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Pixirad"
     },
     {
       "name": "ASI (Medipix3)",
       "pv": "QMPX3:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "ASI (Medipix3)"
     },
     {
       "name": "Lambda",
       "pv": "dp_lambda_xrd30:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Lambda"
     },
     {
       "name": "mar165",
       "pv": "dp_mar165_xrd82:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "mar165"
     },
     {
       "name": "Hydra GE1",
       "pv": "GE1:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Hydra GE1"
     },
     {
       "name": "Hydra GE2",
       "pv": "GE2:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Hydra GE2"
     },
     {
       "name": "Hydra GE3",
       "pv": "GE3:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Hydra GE3"
     },
     {
       "name": "Hydra GE4",
       "pv": "GE4:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Hydra GE4"
     },
     {
       "name": "Hydra GE5",
       "pv": "GE5:cam1:Acquire_RBV",
-      "group": "Detectors (armed state)"
+      "group": "Hydra GE5"
     },
     {
       "name": "C-station shutter (Sopen/Sclose)",
@@ -2029,227 +2029,227 @@
     {
       "name": "FileName_RBV",
       "pv": "1idEig16M:HDF1:FileName_RBV",
-      "group": "Eiger Acquisition Settings"
+      "group": "Eiger"
     },
     {
       "name": "FileName_RBV",
       "pv": "1idPG1:TIFF1:FileName_RBV",
-      "group": "PG1 Acquisition Settings"
+      "group": "PG1"
     },
     {
       "name": "FileName_RBV (HDF1)",
       "pv": "1idPil:HDF1:FileName_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "FileName_RBV (Raw1)",
       "pv": "1idPil:Raw1:FileName_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "FileName_RBV (TIFF1)",
       "pv": "1idPil:TIFF1:FileName_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "FileName_RBV",
       "pv": "1idVarex1:HDF1:FileName_RBV",
-      "group": "VarexC Acquisition Settings"
+      "group": "VarexC"
     },
     {
       "name": "FileName_RBV (GE1)",
       "pv": "GE1:HDF1:FileName_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE1"
     },
     {
       "name": "FileName_RBV (GE2)",
       "pv": "GE2:HDF1:FileName_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE2"
     },
     {
       "name": "FileName_RBV (GE3)",
       "pv": "GE3:HDF1:FileName_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE3"
     },
     {
       "name": "FileName_RBV (GE4)",
       "pv": "GE4:HDF1:FileName_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE4"
     },
     {
       "name": "FileName_RBV (GE5)",
       "pv": "GE5:HDF1:FileName_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE5"
     },
     {
       "name": "FileName_RBV",
       "pv": "QIMAGE1:TIFF1:FileName_RBV",
-      "group": "QIMAGE1 Acquisition Settings"
+      "group": "QIMAGE1"
     },
     {
       "name": "FileName_RBV",
       "pv": "dp_lambda_xrd30:TIFF1:FileName_RBV",
-      "group": "Lambda Acquisition Settings"
+      "group": "Lambda"
     },
     {
       "name": "FileName_RBV",
       "pv": "s1_pixirad2:HDF1:FileName_RBV",
-      "group": "Pixirad2 Acquisition Settings"
+      "group": "Pixirad"
     },
     {
       "name": "FileNumber_RBV",
       "pv": "1idEig16M:HDF1:FileNumber_RBV",
-      "group": "Eiger Acquisition Settings"
+      "group": "Eiger"
     },
     {
       "name": "FileNumber_RBV (HDF1)",
       "pv": "1idPil:HDF1:FileNumber_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "FileNumber_RBV (Raw1)",
       "pv": "1idPil:Raw1:FileNumber_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "FileNumber_RBV",
       "pv": "1idVarex1:HDF1:FileNumber_RBV",
-      "group": "VarexC Acquisition Settings"
+      "group": "VarexC"
     },
     {
       "name": "FileNumber_RBV (GE1)",
       "pv": "GE1:HDF1:FileNumber_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE1"
     },
     {
       "name": "FileNumber_RBV (GE2)",
       "pv": "GE2:HDF1:FileNumber_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE2"
     },
     {
       "name": "FileNumber_RBV (GE3)",
       "pv": "GE3:HDF1:FileNumber_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE3"
     },
     {
       "name": "FileNumber_RBV (GE4)",
       "pv": "GE4:HDF1:FileNumber_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE4"
     },
     {
       "name": "FileNumber_RBV (GE5)",
       "pv": "GE5:HDF1:FileNumber_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE5"
     },
     {
       "name": "NumCapture_RBV",
       "pv": "1idEig16M:HDF1:NumCapture_RBV",
-      "group": "Eiger Acquisition Settings"
+      "group": "Eiger"
     },
     {
       "name": "NumCapture_RBV",
       "pv": "1idPG1:TIFF1:NumCapture_RBV",
-      "group": "PG1 Acquisition Settings"
+      "group": "PG1"
     },
     {
       "name": "NumCapture_RBV (HDF1)",
       "pv": "1idPil:HDF1:NumCapture_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "NumCapture_RBV (Raw1)",
       "pv": "1idPil:Raw1:NumCapture_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "NumCapture_RBV (TIFF1)",
       "pv": "1idPil:TIFF1:NumCapture_RBV",
-      "group": "Pilatus Acquisition Settings"
+      "group": "Pilatus"
     },
     {
       "name": "NumCapture_RBV",
       "pv": "1idVarex1:HDF1:NumCapture_RBV",
-      "group": "VarexC Acquisition Settings"
+      "group": "VarexC"
     },
     {
       "name": "NumCapture_RBV (GE1)",
       "pv": "GE1:HDF1:NumCapture_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE1"
     },
     {
       "name": "NumCapture_RBV (GE2)",
       "pv": "GE2:HDF1:NumCapture_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE2"
     },
     {
       "name": "NumCapture_RBV (GE3)",
       "pv": "GE3:HDF1:NumCapture_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE3"
     },
     {
       "name": "NumCapture_RBV (GE4)",
       "pv": "GE4:HDF1:NumCapture_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE4"
     },
     {
       "name": "NumCapture_RBV (GE5)",
       "pv": "GE5:HDF1:NumCapture_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE5"
     },
     {
       "name": "NumCapture_RBV",
       "pv": "QIMAGE1:TIFF1:NumCapture_RBV",
-      "group": "QIMAGE1 Acquisition Settings"
+      "group": "QIMAGE1"
     },
     {
       "name": "AcquireTime_RBV",
       "pv": "1idEig16M:cam1:AcquireTime_RBV",
-      "group": "Eiger Acquisition Settings"
+      "group": "Eiger"
     },
     {
       "name": "AcquireTime_RBV",
       "pv": "1idPG1:cam1:AcquireTime_RBV",
-      "group": "PG1 Acquisition Settings"
+      "group": "PG1"
     },
     {
       "name": "AcquireTime_RBV",
       "pv": "1idVarex1:cam1:AcquireTime_RBV",
-      "group": "VarexC Acquisition Settings"
+      "group": "VarexC"
     },
     {
       "name": "AcquireTime_RBV (GE1)",
       "pv": "GE1:cam1:AcquireTime_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE1"
     },
     {
       "name": "AcquireTime_RBV (GE2)",
       "pv": "GE2:cam1:AcquireTime_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE2"
     },
     {
       "name": "AcquireTime_RBV (GE3)",
       "pv": "GE3:cam1:AcquireTime_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE3"
     },
     {
       "name": "AcquireTime_RBV (GE4)",
       "pv": "GE4:cam1:AcquireTime_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE4"
     },
     {
       "name": "AcquireTime_RBV (GE5)",
       "pv": "GE5:cam1:AcquireTime_RBV",
-      "group": "GE Acquisition Settings"
+      "group": "Hydra GE5"
     },
     {
       "name": "AcquireTime_RBV",
       "pv": "QIMAGE1:cam1:AcquireTime_RBV",
-      "group": "QIMAGE1 Acquisition Settings"
+      "group": "QIMAGE1"
     },
     {
       "name": "AcquireTime_RBV",
       "pv": "s1_pixirad2:cam1:AcquireTime_RBV",
-      "group": "Pixirad2 Acquisition Settings"
+      "group": "Pixirad"
     },
     {
       "name": "Ti1",
@@ -2559,17 +2559,17 @@
     {
       "name": "AcquirePeriod_RBV",
       "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
-      "group": "Lambda Acquisition Settings"
+      "group": "Lambda"
     },
     {
       "name": "NumImages_RBV",
       "pv": "dp_lambda_xrd30:cam1:NumImages_RBV",
-      "group": "Lambda Acquisition Settings"
+      "group": "Lambda"
     },
     {
       "name": "NumImages_RBV",
       "pv": "s1_pixirad2:cam1:NumImages_RBV",
-      "group": "Pixirad2 Acquisition Settings"
+      "group": "Pixirad"
     },
     {
       "name": "A White Beam H size (mm)",

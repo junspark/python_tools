@@ -205,11 +205,22 @@ def _choose_open_file(parent, title, start_dir="", filter_str=""):
 # breaking anything - just showing up uncategorized until updated.
 DEVICE_CATEGORIES = [
     ("Detectors", [
-        "GE/Pilatus DETECTOR", "Pilatus", "PIXIRAD2", "NF DET", "Tomo det",
-        "Detectors (armed state)", "DETECTORS frame number",
-        "Eiger Acquisition Settings", "Pilatus Acquisition Settings", "VarexC Acquisition Settings",
-        "PG1 Acquisition Settings", "GE Acquisition Settings", "QIMAGE1 Acquisition Settings",
-        "Lambda Acquisition Settings", "Pixirad2 Acquisition Settings",
+        # One group per physical detector/camera (2026-09-16, per direct
+        # confirmation) - each bundles that detector's armed-state,
+        # frame-number, and acquisition-setting PVs (previously spread
+        # across three separate groups: "Detectors (armed state)",
+        # "DETECTORS frame number", and a per-detector "X Acquisition
+        # Settings"), so selecting a detector for a run is one click
+        # instead of three. Hydra GE1-5 are five separate groups (distinct
+        # physical units), not one shared "GE" group.
+        "Eiger", "Pilatus", "VarexC", "PG1", "GH1", "PG5", "SP5", "Dexela",
+        "Andor", "CoolSnap", "QIMAGE2", "QIMAGE1", "Pixirad", "ASI (Medipix3)",
+        "Lambda", "mar165", "dic",
+        "Hydra GE1", "Hydra GE2", "Hydra GE3", "Hydra GE4", "Hydra GE5",
+        # Motor-position and sensor groups intentionally left as-is (not
+        # camera/plugin PVs, and some - like "GE/Pilatus DETECTOR" - are
+        # shared across more than one detector so don't map 1:1 anyway).
+        "GE/Pilatus DETECTOR", "PIXIRAD2", "NF DET", "Tomo det",
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
@@ -324,15 +335,12 @@ _DEVICE_LABEL_RE = re.compile(r"\(([^()]+)\)\s*$")
 # furnace/chiller/ion-chamber groups that don't have this pattern at all,
 # so this is deliberately an explicit allowlist, not a general rule.
 _DEVICE_LABEL_GROUPS = {
-    "DETECTORS frame number",
-    # "Detector Acquisition Settings" was split into one group per physical
-    # detector (2026-09-10, per direct confirmation) - only the two that
-    # still bundle multiple devices/plugins under the same attribute names
-    # need label-based sorting: GE Acquisition Settings (5 physical GE
-    # units) and Pilatus Acquisition Settings (same field exposed via
-    # HDF1/Raw1/TIFF1 plugins). The other 6 split-out groups are single-
-    # device, so their entries have nothing to sort by label.
-    "GE Acquisition Settings", "Pilatus Acquisition Settings",
+    # After the 2026-09-16 per-detector regroup (see DEVICE_CATEGORIES),
+    # every detector group is single-device except "Pilatus", which still
+    # bundles the same attribute name across three plugins (HDF1/Raw1/
+    # TIFF1) and needs label-based sorting to group by plugin rather than
+    # alphabetically by attribute.
+    "Pilatus",
 }
 
 
