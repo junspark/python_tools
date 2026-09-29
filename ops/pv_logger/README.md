@@ -22,6 +22,7 @@ has a working `pyepics` install.
 |---|---|
 | `pv_logger.py` | stdlib-only core module + CLI (`list-pvs`, `start`) |
 | `pv_logger_gui.py` | PyQt5 GUI; imports `pv_logger.py`, no separate logic |
+| `pv_device_categories.py` | Shared, stdlib-only device-category data (`DEVICE_CATEGORIES`) — used by both the GUI's Pick PVs checklist and `pv_logger.py`'s CSV column ordering |
 | `pv_master_list_s1.json` / `pv_master_list_s20.json` | Per-beamline master PV list (name/PV/group) + settings |
 | `pv_alert_state.json` | Auto-generated: last-alert time per PV (cooldown) |
 | `pv_logger_selection_prefs.json` | Auto-generated: last PV selection per beamline (dialog convenience, gitignored) |
@@ -91,7 +92,7 @@ bare kill.
   },
   "pvs": [
     { "name": "Iring", "pv": "S:SRcurrentAI", "group": "Storage Ring" },
-    { "name": "hydraZE", "pv": "1idc:m7.RBV", "group": "GE/Pilatus DETECTOR" }
+    { "name": "hydraZE", "pv": "1idc:m7.RBV", "group": "D3E-Hydra motion" }
   ]
 }
 ```
@@ -113,17 +114,41 @@ silently skipped at discovery, no need to comment it out.
 ### Device categories
 
 The Start-new-experiment checklist groups devices under category headers
-(`DEVICE_CATEGORIES` in `pv_logger_gui.py`) — e.g. separate "B/C/D/E Lens
-Stacks", "B/C/E Slits"/"White Beam Slits", and "B/C/E Hutch Ion Chambers"
-groups, mirroring the hutch/position a device actually belongs to rather
-than one generic "Slits" or "Ion Chamber" bucket. A device not mapped to
-any category falls into "Other" at the end. To add a new device group,
-give its PVs a `"group"` value in the master list and (optionally) add
-that name to the relevant category in `DEVICE_CATEGORIES` — an unmapped
-group still shows up fine under "Other", categorization is a display
-convenience, not a requirement. `DEVICE_CATEGORIES` is shared across both
-beamlines' master lists — before removing or renaming an entry, check
-both master lists for real members, not just one.
+(`DEVICE_CATEGORIES`, in the shared `pv_device_categories.py` module) —
+e.g. separate "B/C/D/E Lens Stacks", "B/C/E Slits"/"White Beam Slits", and
+"B/C/E Hutch Ion Chambers" groups, mirroring the hutch/position a device
+actually belongs to rather than one generic "Slits" or "Ion Chamber"
+bucket. A device not mapped to any category falls into "Other" at the end.
+To add a new device group, give its PVs a `"group"` value in the master
+list and (optionally) add that name to the relevant category in
+`DEVICE_CATEGORIES` — an unmapped group still shows up fine under "Other",
+categorization is a display convenience, not a requirement.
+`DEVICE_CATEGORIES` is shared across both beamlines' master lists — before
+removing or renaming an entry, check both master lists for real members,
+not just one.
+
+`pv_device_categories.py` has no imports beyond the standard library (it
+originally lived inside `pv_logger_gui.py`, PyQt5 and all, and was
+extracted so the headless CLI/systemd logger could reuse the same category
+data too — see below — without gaining a GUI dependency).
+
+### CSV column ordering
+
+`start` lays a freshly-created outfile's columns out in a fixed scientific
+order rather than `pv_master_list`'s own group order: **Storage Ring →
+Monochromators → Slits & Ion Chambers → Sample Stack → Detectors → Sample
+Environments**, with anything not covered by one of those buckets (e.g.
+lab equipment, shutters, misc software signals) trailing at the end. This
+is `CSV_CATEGORY_ORDER` in `pv_logger.py`, a further grouping of
+`pv_device_categories.py`'s finer-grained categories into those six
+buckets. The sort is stable, so PVs within the same device/group keep
+their existing relative order — only whole category *blocks* move.
+
+This only applies the first time an outfile is created — `start` freezes a
+resumed outfile's columns to whatever header it already has (see below),
+so re-ordering `CSV_CATEGORY_ORDER` or a PV's `"group"` never shifts an
+already-running experiment's columns underneath it. To pick up a reorder,
+Stop logging and Start again with a new outfile.
 
 Where a physical device is naturally numbered (e.g. a lens stack with its
 own motor per axis), give each unit its own `"group"` like `"C Lens Stack
@@ -167,11 +192,21 @@ python pv_logger.py start --config pv_master_list_s20.json --outfile /tmp/t.csv 
 ```
 
 `start` writes two things next to `--outfile`:
-- The CSV itself, with a `Date, name1, name2, ...` header (skipped if the
-  file already exists, so re-running `start` against the same `--outfile`
-  resumes it) and one row per sample. A PV that's offline for a given
-  sample — whether it never came online at discovery, or dropped mid-run —
-  is written as the literal string `OFFLINE`.
+- The CSV itself, written with Python's `csv` module (proper quoting, not
+  hand-joined text) — a `# Group` comment row naming each column's device
+  group, then a `Date,name1,name2,...` header (skipped if the file already
+  exists, so re-running `start` against the same `--outfile` resumes it),
+  then one row per sample. A PV that's offline for a given sample —
+  whether it never came online at discovery, or dropped mid-run — is
+  written as the literal string `OFFLINE`. Proper quoting matters because
+  several real PV/group names contain literal commas (e.g. `"GH1
+  (Spinnaker, E-hutch)"`) — a hand-joined `", ".join(...)` format silently
+  splits those into extra fields, shifting every later column out of
+  alignment; `csv.writer` only quotes a field when it actually needs to,
+  so a comma-free name still serializes exactly as before. Both the
+  `# Group` row and the header are read back through `csv.reader`
+  (`read_logged_pv_names`), still tolerant of the old pre-quoting format
+  for historical files.
 - `<outfile>.skipped.txt` — every master-list PV that wasn't online at
   discovery time, so it's on record per-experiment what wasn't hooked up.
 
@@ -190,10 +225,17 @@ directly in Excel, or in Python:
 
 ```python
 import pandas as pd
-df = pd.read_csv("run1.csv", skipinitialspace=True)
+df = pd.read_csv("run1.csv", comment="#", skipinitialspace=True)
 df["Date"] = pd.to_datetime(df["Date"])
 df.plot(x="Date", y=["hydraZE", "Furnace T1 (C)"])
 ```
+
+`comment="#"` skips the leading `# Group` row (and any `# Devices`/`#
+Timestamp` audit lines) so pandas reads the `Date,name1,name2,...` line as
+the header rather than the comment row above it; `skipinitialspace=True`
+is only needed for a historical file written before the `csv`-module
+rewrite above (its trailing `", "` format left a stray space after each
+comma).
 
 with time on the X axis and any PVs on Y — useful for correlating a failed
 scan against motor drift, beam drift, or a temperature excursion.
@@ -277,6 +319,46 @@ The GUI's "PV/AD Matcher" tab (`correlate_ad_pvs_gui.py`, also embedded in
   file's frame timestamps and interpolated PV values are computed once
   and reused for whichever output(s) are checked, so checking both isn't
   twice the work of checking one.
+
+## Alerting
+
+Two kinds of emails, both via `settings.recipients`/`sender`/`smtp_host`/
+`smtp_port` (same `apsmail.aps.anl.gov` relay pattern as `ops/disk_monitor`)
+— empty `recipients` prints the would-be email to the console instead of
+sending, same as `--dry-run`:
+
+- **PV-drop alerts** — a PV that was online at discovery drops offline
+  mid-run. Per-PV cooldown (`alert_cooldown_min`, default 60) so a flapping
+  PV doesn't send an email every sample cycle.
+- **Start-failure alerts** — the job fails before ever getting to the
+  sampling loop: no PVs online at discovery, or a setup-time crash (e.g. an
+  outfile the job's account can't write to — confirmed directly, a fresh
+  experiment directory without the right group/ACL permissions for the
+  service account raises exactly this). Unlike a mid-run PV drop, nothing
+  is watching a status-file tree view for a job that never started
+  logging, so this is a one-shot email rather than a polled/cooldown
+  condition — sent once, whether or not `recipients` even gets a chance to
+  see a RUNNING status first.
+
+Every alert email ends with a footer identifying exactly which host,
+account, and systemd unit sent it, and the exact command to stop it:
+
+```
+--
+This alert was sent by a PV logger job running as s1iduser@egressy.xray.aps.anl.gov.
+Beamline: s1 (systemd --user unit: pv-logger@s1.service)
+To stop it: ssh s1iduser@egressy.xray.aps.anl.gov, then run: systemctl --user stop pv-logger@s1.service
+```
+
+This is derived entirely from `--status-file`'s own path (always
+`<remote_base>/status/<beamline>.json` — see `pv_logger_status_path`) plus
+`socket.gethostname()`/`getpass.getuser()` at send time, so it's always
+accurate to wherever *that specific job* is actually running, not just a
+generic "contact the PV logger maintainer" line. Confirmed directly this
+is worth having: a stray, forgotten monitor script with no such note (not
+even part of this tool — a one-off `nohup`'d `/tmp/monitor_*.sh` on a third
+host) took real cross-host, cross-account digging to trace back to
+anything actionable.
 
 ## GUI usage
 

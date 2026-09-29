@@ -32,6 +32,7 @@ Usage examples
 
 import argparse
 import csv
+import getpass
 import json
 import os
 import signal
@@ -431,7 +432,35 @@ def _save_state(state_file, state):
         json.dump(state, f, indent=2)
 
 
-def send_drop_alert(cfg, dropped_names, csv_path, dry_run=False):
+def _monitor_footer(status_file):
+    """A few lines identifying exactly where this alert's own monitor
+    process is running and how to stop it, appended to every outgoing
+    email. Confirmed directly this is worth having: an hourly-retrying
+    monitor's error emails with no such note took real hands-on digging
+    across two hosts to trace back to its actual account/process, even
+    for someone who administers these very tools - a stray, forgotten
+    monitor is otherwise indistinguishable from "some tool I don't
+    recognize," and a plain "PV OFFLINE" email gives no hint that a
+    `systemctl --user stop` on some specific remote host is the fix.
+    """
+    host = socket.gethostname()
+    user = getpass.getuser()
+    lines = ["", "--", "This alert was sent by a PV logger job running as {}@{}.".format(user, host)]
+    if status_file:
+        # status_file is always .../status/<beamline>.json - see
+        # pv_logger_status_path - so the beamline name (and from it, the
+        # exact systemd --user unit) is recoverable from the path alone,
+        # with no extra argument needed on top of what cmd_start already has.
+        beamline = os.path.splitext(os.path.basename(status_file))[0]
+        unit_name = pv_logger_unit_name(beamline)
+        lines.append("Beamline: {} (systemd --user unit: {})".format(beamline, unit_name))
+        lines.append("To stop it: ssh {}@{}, then run: systemctl --user stop {}".format(user, host, unit_name))
+    else:
+        lines.append("(no --status-file was configured for this job, so its unit name can't be shown here)")
+    return "\n".join(lines)
+
+
+def send_drop_alert(cfg, dropped_names, csv_path, status_file=None, dry_run=False):
     settings = cfg["settings"]
     subject = "PV OFFLINE: {} on {}".format(", ".join(dropped_names), socket.gethostname())
     body = "\n".join(
@@ -442,6 +471,7 @@ def send_drop_alert(cfg, dropped_names, csv_path, dry_run=False):
         ]
         + ["  " + name for name in dropped_names]
         + ["", "Log file: {}".format(csv_path)]
+        + [_monitor_footer(status_file)]
     )
 
     if dry_run or not settings["recipients"]:
@@ -469,7 +499,52 @@ def send_drop_alert(cfg, dropped_names, csv_path, dry_run=False):
     return True
 
 
-def process_drop_alerts(cfg, currently_offline, csv_path, dry_run=False):
+def send_start_failure_alert(cfg, error_message, outfile, status_file=None, dry_run=False):
+    """Alert when the job fails before ever getting to the sampling loop
+    (no PVs online at discovery, or a setup-time crash like the outfile
+    permission error this was written for - see cmd_start) - the two
+    FAILED paths that, unlike a mid-run PV drop, have no status-file
+    polling GUI reliably catching them soon (a job that never started
+    logging isn't something anyone's actively watching a tree view for)."""
+    settings = cfg["settings"]
+    subject = "PV logging FAILED TO START: {} on {}".format(outfile, socket.gethostname())
+    body = "\n".join(
+        [
+            "PV logging failed to start and will not be running:",
+            "",
+            "  " + error_message,
+            "",
+            "Intended log file: {}".format(outfile),
+            _monitor_footer(status_file),
+        ]
+    )
+
+    if dry_run or not settings["recipients"]:
+        print("--- {} email ---".format("DRY-RUN" if dry_run else "NO RECIPIENTS CONFIGURED"))
+        print("Subject:", subject)
+        print(body)
+        print("-----------------------")
+        return True
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = settings["sender"]
+    msg["To"] = ", ".join(settings["recipients"])
+
+    try:
+        server = smtplib.SMTP(settings["smtp_host"], settings["smtp_port"], timeout=10)
+        try:
+            server.sendmail(settings["sender"], settings["recipients"], msg.as_string())
+        finally:
+            server.quit()
+    except OSError as exc:
+        print("Failed to send start-failure alert email: {}".format(exc), file=sys.stderr)
+        return False
+
+    return True
+
+
+def process_drop_alerts(cfg, currently_offline, csv_path, status_file=None, dry_run=False):
     """Alert on offline PVs, respecting a per-PV cooldown so a flapping PV
     doesn't send an email every cycle."""
     if not currently_offline:
@@ -484,7 +559,7 @@ def process_drop_alerts(cfg, currently_offline, csv_path, dry_run=False):
     if not to_alert:
         return []
 
-    if send_drop_alert(cfg, to_alert, csv_path, dry_run=dry_run):
+    if send_drop_alert(cfg, to_alert, csv_path, status_file=status_file, dry_run=dry_run):
         if not dry_run:
             for name in to_alert:
                 state[name] = now
@@ -546,13 +621,15 @@ def cmd_start(args):
     print(format_discovery_report(online, offline))
 
     if not online:
-        print("No PVs online - nothing to log.", file=sys.stderr)
+        error_message = "No PVs online at discovery time"
+        print(error_message, file=sys.stderr)
         if status_file:
             rj.atomic_write_json(status_file, {
                 "state": "FAILED",
-                "error_message": "No PVs online at discovery time",
+                "error_message": error_message,
                 "finished_at": time.time(),
             })
+        send_start_failure_alert(cfg, error_message, args.outfile, status_file=status_file, dry_run=args.dry_run)
         return 1
 
     # Preserve pv_master_list's own order (online's iteration order, from
@@ -595,11 +672,35 @@ def cmd_start(args):
     # get a new CSV column of its own - that needs a new outfile, which
     # Start logging now always asks for (see pv_logger_gui.py).
     csv_names = read_logged_pv_names(args.outfile) or names
-    write_header(args.outfile, csv_names, group_for_name=lambda n: group_by_name.get(n, ""))
-    offline_at_discovery = sorted(entry["name"] for entry in offline)
-    if offline:
-        skipped_path = write_skipped_report(args.outfile, offline)
-        print("Offline-at-start PVs recorded in: {}".format(skipped_path))
+    try:
+        write_header(args.outfile, csv_names, group_for_name=lambda n: group_by_name.get(n, ""))
+        offline_at_discovery = sorted(entry["name"] for entry in offline)
+        if offline:
+            skipped_path = write_skipped_report(args.outfile, offline)
+            print("Offline-at-start PVs recorded in: {}".format(skipped_path))
+    except Exception as e:
+        # This is the job's first disk I/O, and - unlike the sampling
+        # loop below - not covered by any try/except of its own, so an
+        # outfile the job's account can't actually write to (confirmed
+        # directly: a fresh experiment directory without the right
+        # group/ACL perms for the service account raised a plain
+        # PermissionError here) crashed the whole process before it ever
+        # wrote a status file. From the GUI's side that's indistinguishable
+        # from a hang - whatever stale state/outfile was already in the
+        # status file just sits there forever instead of showing FAILED
+        # with a reason. `tracked`/_write_status aren't set up yet at this
+        # point, so write the same raw payload shape as the "no PVs
+        # online" case above rather than the fuller one below.
+        error_message = str(e)[:2000]
+        print("Failed to set up logging output: {}".format(error_message), file=sys.stderr)
+        if status_file:
+            rj.atomic_write_json(status_file, {
+                "state": "FAILED",
+                "error_message": error_message,
+                "finished_at": time.time(),
+            })
+        send_start_failure_alert(cfg, error_message, args.outfile, status_file=status_file, dry_run=args.dry_run)
+        return 1
 
     # Every PV this job was asked to track, whether or not it ever
     # actually connected - lets a status-file reader (pv_logger_gui.py's
@@ -615,7 +716,7 @@ def cmd_start(args):
     tracked = sorted(names + offline_at_discovery)
 
     if args.test_email:
-        ok = send_drop_alert(cfg, [names[0]], args.outfile, dry_run=args.dry_run)
+        ok = send_drop_alert(cfg, [names[0]], args.outfile, status_file=status_file, dry_run=args.dry_run)
         return 0 if ok else 1
 
     started_at = time.time()
@@ -658,7 +759,7 @@ def cmd_start(args):
             now = time.time()
             values, currently_offline = sample(online, connect_timeout_sec, caget_path)
             write_row(args.outfile, csv_names, values, now)
-            dropped = process_drop_alerts(cfg, currently_offline, args.outfile, dry_run=args.dry_run)
+            dropped = process_drop_alerts(cfg, currently_offline, args.outfile, status_file=status_file, dry_run=args.dry_run)
             if dropped:
                 print("Alert sent for offline PV(s): {}".format(", ".join(dropped)))
             _write_status("RUNNING", currently_offline)

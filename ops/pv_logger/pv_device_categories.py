@@ -31,7 +31,7 @@ DEVICE_CATEGORIES = [
         # physical units), not one shared "GE" group.
         "Eiger", "Pilatus", "VarexC", "PG1", "GH1", "PG5", "SP5", "Dexela",
         "Andor", "CoolSnap", "QIMAGE2", "QIMAGE1", "Pixirad", "ASI (Medipix3)",
-        "Lambda", "dic",
+        "Lambda", "DIC",
         "Hydra GE1", "Hydra GE2", "Hydra GE3", "Hydra GE4", "Hydra GE5",
         # Motor-position and sensor groups intentionally left as-is (not
         # camera/plugin PVs). "D2 Detector" split into C-hutch/E-hutch
@@ -39,12 +39,32 @@ DEVICE_CATEGORIES = [
         # physically distinct stages, previously conflated (the E-hutch one
         # was misleadingly named "GE/Pilatus DETECTOR"). Bare "D2 Detector"
         # (s20's ungrouped variant of the same split, 2026-09-16) added here
-        # too rather than left to fall into "Other".
-        "D2 Detector (C-hutch)", "D2 Detector (E-hutch)", "D2 Detector", "NF DET", "Tomo det",
+        # too rather than left to fall into "Other". C-hutch's D2 further
+        # split into detector motion vs. beam-stop motion (2026-09-23, per
+        # direct confirmation), renamed "D2D motion"/"D2D BStop" to reflect
+        # the detector's actual hutch (D) rather than its C-hutch-IOC
+        # prefix; E-hutch's renamed "D2E motion" to match. "Tomo det"
+        # (E-hutch tomography imaging motion) renamed "TomoE motion",
+        # "tomoEds" (E-hutch TXM downstream stage) renamed "TXME motion",
+        # and s1's bare "tomoB"/"tomoC" (detector-arm stages, same family
+        # as s20's tomoD/tomoE below) renamed "TomoB motion"/"TomoC motion"
+        # for the same "<name> motion" consistency.
+        "D2D motion", "D2D BStop", "D2E motion", "D2 Detector", "NF DET", "TomoE motion",
         "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
-        "GH2 Detector", "PG6 Detector", "PITEC1 Detector", "Varex Detector",
+        "GH2 Detector", "PG6 Detector", "PITEC1 Detector",
+        # s20's E-hutch Varex, previously bare "Varex Detector" (renamed
+        # 2026-09-25, per direct confirmation, to match s1's C-hutch
+        # "VarexC" naming); "VarexD" is its new D-hutch sibling (IOC
+        # 20IDFF, added same day, mirroring VarexE's PV set with a "D "
+        # name prefix to stay globally unique).
+        "VarexE", "VarexD",
+        "TomoB motion", "TomoC motion",
+        # "hydraZE" split back out of "D2E motion" (2026-09-23, per direct
+        # confirmation) - a distinct Hydra detector arm's Z motion, not
+        # part of the D2 detector's own X/Y/Z (geXE/geYE/geZE).
+        "D3E-Hydra motion",
         # bluesky-sourced detector-arm/near-far-field positioning stages (2026-08-26 scan)
-        "tomoB", "tomoC", "tomoD", "tomoE",
+        "tomoD", "tomoE",
     ]),
     ("A Lens Stacks", [
         "A Lens Stack 1", "A Lens Stack 2", "A Lens Stack 3",
@@ -63,7 +83,7 @@ DEVICE_CATEGORIES = [
         "E Lens Stack 1", "E Lens Stack 2", "E Lens Stack 3", "E Lens Stack 4",
     ]),
     ("TXM", [
-        "txmE", "txm_cam", "txm_lensE", "tomoEds",
+        "txmE", "txm_cam", "txm_lensE", "TXME motion",
     ]),
     ("Monochromators", ["HEM", "HRM"]),
     ("B Slits", ["B Slits"]),
@@ -83,6 +103,10 @@ DEVICE_CATEGORIES = [
         "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
         # bluesky-sourced (2026-08-26 scan)
         "amD", "rf_sam", "rf_tube",
+        # NW DED sample stage, split out of the generic misc catch-all
+        # (2026-09-23, per direct confirmation) - a directed-energy-
+        # deposition device, same family as "AM chamber setup" above.
+        "NW DED motion",
     ]),
     ("Load Frames / Mechanical Testing", [
         "Compact loadframe", "Compact loadframe UL / DESY", "AML Psylotech muTS",

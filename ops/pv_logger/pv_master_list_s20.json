@@ -1636,7 +1636,7 @@
     },
     {
       "name": "E_HRSMS_samY",
-      "pv": "20ideHRSMS:m7.RBV",
+      "pv": "20ide2:m91.RBV",
       "group": "E-HRSMS"
     },
     {
@@ -2167,132 +2167,262 @@
     {
       "name": "DetADCoreVersion",
       "pv": "20idVarex2:cam1:ADCoreVersion_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetAcqPeriod",
       "pv": "20idVarex2:cam1:AcquirePeriod_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetAcqTime",
       "pv": "20idVarex2:cam1:AcquireTime_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetArrayCounter",
       "pv": "20idVarex2:cam1:ArrayCounter_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetArraySizeX",
       "pv": "20idVarex2:cam1:ArraySizeX_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetArraySizeY",
       "pv": "20idVarex2:cam1:ArraySizeY_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetBinX",
       "pv": "20idVarex2:cam1:BinX_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetBinY",
       "pv": "20idVarex2:cam1:BinY_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetDataType",
       "pv": "20idVarex2:cam1:DataType_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetDriverVersion",
       "pv": "20idVarex2:cam1:DriverVersion_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetFilePath",
       "pv": "20idVarex2:HDF1:FilePath_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetFirmwareVersion",
       "pv": "20idVarex2:cam1:FirmwareVersion_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetFullFileName",
       "pv": "20idVarex2:HDF1:FullFileName_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetGain",
       "pv": "20idVarex2:cam1:Gain_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetHDFPlugInVersion",
       "pv": "20idVarex2:HDF1:PluginType_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetManufacturer",
       "pv": "20idVarex2:cam1:Manufacturer_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetMaxSizeX",
       "pv": "20idVarex2:cam1:MaxSizeX_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetMaxSizeY",
       "pv": "20idVarex2:cam1:MaxSizeY_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetModel",
       "pv": "20idVarex2:cam1:Model_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetPixelSizeX",
       "pv": "20idVarex2:Attr1:1:AttrName_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetPixelSizeY",
       "pv": "20idVarex2:Attr1:2:AttrName_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetSDKVersion",
       "pv": "20idVarex2:cam1:SDKVersion_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetSampleName",
       "pv": "20idVarex2:HDF1:FileName",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetSaveDest",
       "pv": "20idVarex2:cam1:FrameType",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetSerialNumber",
       "pv": "20idVarex2:cam1:SerialNumber_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
     },
     {
       "name": "DetTemperature",
       "pv": "20idVarex2:cam1:Temperature_RBV",
-      "group": "Varex Detector"
+      "group": "VarexE"
+    },
+    {
+      "name": "D DetADCoreVersion",
+      "pv": "20IDFF:cam1:ADCoreVersion_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetAcqPeriod",
+      "pv": "20IDFF:cam1:AcquirePeriod_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetAcqTime",
+      "pv": "20IDFF:cam1:AcquireTime_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetArrayCounter",
+      "pv": "20IDFF:cam1:ArrayCounter_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetArraySizeX",
+      "pv": "20IDFF:cam1:ArraySizeX_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetArraySizeY",
+      "pv": "20IDFF:cam1:ArraySizeY_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetBinX",
+      "pv": "20IDFF:cam1:BinX_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetBinY",
+      "pv": "20IDFF:cam1:BinY_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetDataType",
+      "pv": "20IDFF:cam1:DataType_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetDriverVersion",
+      "pv": "20IDFF:cam1:DriverVersion_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetFilePath",
+      "pv": "20IDFF:HDF1:FilePath_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetFirmwareVersion",
+      "pv": "20IDFF:cam1:FirmwareVersion_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetFullFileName",
+      "pv": "20IDFF:HDF1:FullFileName_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetGain",
+      "pv": "20IDFF:cam1:Gain_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetHDFPlugInVersion",
+      "pv": "20IDFF:HDF1:PluginType_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetManufacturer",
+      "pv": "20IDFF:cam1:Manufacturer_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetMaxSizeX",
+      "pv": "20IDFF:cam1:MaxSizeX_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetMaxSizeY",
+      "pv": "20IDFF:cam1:MaxSizeY_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetModel",
+      "pv": "20IDFF:cam1:Model_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetPixelSizeX",
+      "pv": "20IDFF:Attr1:1:AttrName_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetPixelSizeY",
+      "pv": "20IDFF:Attr1:2:AttrName_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetSDKVersion",
+      "pv": "20IDFF:cam1:SDKVersion_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetSampleName",
+      "pv": "20IDFF:HDF1:FileName",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetSaveDest",
+      "pv": "20IDFF:cam1:FrameType",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetSerialNumber",
+      "pv": "20IDFF:cam1:SerialNumber_RBV",
+      "group": "VarexD"
+    },
+    {
+      "name": "D DetTemperature",
+      "pv": "20IDFF:cam1:Temperature_RBV",
+      "group": "VarexD"
     },
     {
       "name": "Fly start pos",

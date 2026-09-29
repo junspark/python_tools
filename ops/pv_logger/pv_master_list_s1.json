@@ -19,37 +19,37 @@
     {
       "name": "hydraZE",
       "pv": "1idc:m7.RBV",
-      "group": "D2 Detector (E-hutch)"
+      "group": "D3E-Hydra motion"
     },
     {
       "name": "geXE",
       "pv": "1ide1:m103.RBV",
-      "group": "D2 Detector (E-hutch)"
+      "group": "D2E motion"
     },
     {
       "name": "geZE",
       "pv": "1ide1:m50.RBV",
-      "group": "D2 Detector (E-hutch)"
+      "group": "D2E motion"
     },
     {
       "name": "ImgXE",
       "pv": "1ide1:m63.RBV",
-      "group": "Tomo det"
+      "group": "TomoE motion"
     },
     {
       "name": "ImgYE",
       "pv": "1ide1:m40.RBV",
-      "group": "Tomo det"
+      "group": "TomoE motion"
     },
     {
       "name": "ImgZE",
       "pv": "1ide1:m62.RBV",
-      "group": "Tomo det"
+      "group": "TomoE motion"
     },
     {
       "name": "ImgChiE",
       "pv": "1ide1:m38.RBV",
-      "group": "Tomo det"
+      "group": "TomoE motion"
     },
     {
       "name": "DetX",
@@ -457,14 +457,14 @@
       "group": "Lambda"
     },
     {
-      "name": "dic fname",
+      "name": "DIC fname",
       "pv": "s1_gx2750:TIFF1:FileName_RBV",
-      "group": "dic"
+      "group": "DIC"
     },
     {
-      "name": "dic fnum",
+      "name": "DIC fnum",
       "pv": "s1_gx2750:TIFF1:FileNumber_RBV",
-      "group": "dic"
+      "group": "DIC"
     },
     {
       "name": "vff fnum (QMPX3)",
@@ -2657,14 +2657,14 @@
       "group": "write_parfile_general.mac (misc, review before use)"
     },
     {
-      "name": "m8",
+      "name": "NW DED X",
       "pv": "1ide1:m8.RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "NW DED motion"
     },
     {
-      "name": "m97",
+      "name": "geYE",
       "pv": "1ide1:m97.RBV",
-      "group": "write_parfile_general.mac (misc, review before use)"
+      "group": "D2E motion"
     },
     {
       "name": "sm3",
@@ -3299,12 +3299,12 @@
     {
       "name": "tomoB x",
       "pv": "1idb:m52",
-      "group": "tomoB"
+      "group": "TomoB motion"
     },
     {
       "name": "tomoB y",
       "pv": "1idb:m40",
-      "group": "tomoB"
+      "group": "TomoB motion"
     },
     {
       "name": "C Lens3 X",
@@ -3374,42 +3374,42 @@
     {
       "name": "tomoC y",
       "pv": "1idc:m84",
-      "group": "tomoC"
+      "group": "TomoC motion"
     },
     {
       "name": "tomoC z",
       "pv": "1idc:m77",
-      "group": "tomoC"
+      "group": "TomoC motion"
     },
     {
       "name": "D2 Detector X",
       "pv": "1idc:m78",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D motion"
     },
     {
       "name": "D2 Detector Y",
       "pv": "1idcAMCI:m8",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D motion"
     },
     {
       "name": "D2 Detector Z",
       "pv": "1idcAMCI:m7",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D motion"
     },
     {
       "name": "D2 Detector Shield",
       "pv": "1idcAMCI:m11",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D BStop"
     },
     {
       "name": "D2 Detector BStop X",
       "pv": "1idcAMCI:m10",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D BStop"
     },
     {
       "name": "D2 Detector BStop Y",
       "pv": "1idcAMCI:m9",
-      "group": "D2 Detector (C-hutch)"
+      "group": "D2D BStop"
     },
     {
       "name": "owis x",
@@ -3444,7 +3444,7 @@
     {
       "name": "tomoEds y",
       "pv": "1ide1:m112",
-      "group": "tomoEds"
+      "group": "TXME motion"
     }
   ]
 }
