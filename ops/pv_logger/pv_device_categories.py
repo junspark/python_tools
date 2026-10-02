@@ -50,7 +50,21 @@ DEVICE_CATEGORIES = [
         # as s20's tomoD/tomoE below) renamed "TomoB motion"/"TomoC motion"
         # for the same "<name> motion" consistency.
         "D2D motion", "D2D BStop", "D2E motion", "D2 Detector", "NF DET", "TomoE motion",
-        "BSE1 Detector", "BSE2 Detector", "D3 Detector", "D4-1 Detector", "D4-2 Detector",
+        # "D3 Detector" split into its 3 actually-distinct physical cameras
+        # (QMPX3/SP1/Lambda) plus a separate "D3 Detector motion" group for
+        # the shared D3 hutch stage (2026-10-01, per direct confirmation) -
+        # it previously bundled all three cameras' identically-named
+        # generic PVs (DetGain, DetModel, ...) under one group, which
+        # silently collapsed to just one camera's worth of PVs whenever
+        # name-keyed dicts (discover_pvs, sample, the CSV header) deduped
+        # by "name" - confirmed directly against a live Check PVs run that
+        # dropped ~167 of 421 requested PVs with no warning. Every other
+        # detector group below (BSE1/BSE2/D4-1/D4-2/GH2/PG6/PITEC1/VarexE)
+        # had this same generic-name collision across groups too, fixed by
+        # prefixing each one's PVs with its own group tag (e.g. "BSE1
+        # DetGain") rather than the bare "DetGain" every group used to share.
+        "BSE1 Detector", "BSE2 Detector", "QMPX3 Detector", "SP1 Detector", "Lambda Detector",
+        "D3 Detector motion", "D4-1 Detector", "D4-2 Detector",
         "GH2 Detector", "PG6 Detector", "PITEC1 Detector",
         # s20's E-hutch Varex, previously bare "Varex Detector" (renamed
         # 2026-09-25, per direct confirmation, to match s1's C-hutch

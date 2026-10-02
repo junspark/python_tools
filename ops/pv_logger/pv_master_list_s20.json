@@ -20,302 +20,302 @@
   },
   "pvs": [
     {
-      "name": "DetADCoreVersion",
+      "name": "BSE1 DetADCoreVersion",
       "pv": "bse1:cam1:ADCoreVersion_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "BSE1 DetAcqPeriod",
       "pv": "bse1:cam1:AcquirePeriod_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "BSE1 DetAcqTime",
       "pv": "bse1:cam1:AcquireTime_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "BSE1 DetArrayCounter",
       "pv": "bse1:cam1:ArrayCounter_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "BSE1 DetArraySizeX",
       "pv": "bse1:cam1:ArraySizeX_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "BSE1 DetArraySizeY",
       "pv": "bse1:cam1:ArraySizeY_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "BSE1 DetBinX",
       "pv": "bse1:cam1:BinX_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "BSE1 DetBinY",
       "pv": "bse1:cam1:BinY_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "BSE1 DetDataType",
       "pv": "bse1:cam1:DataType_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "BSE1 DetDriverVersion",
       "pv": "bse1:cam1:DriverVersion_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "BSE1 DetFilePath",
       "pv": "bse1:HDF1:FilePath_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "BSE1 DetFirmwareVersion",
       "pv": "bse1:cam1:FirmwareVersion_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "BSE1 DetFullFileName",
       "pv": "bse1:HDF1:FullFileName_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "BSE1 DetGain",
       "pv": "bse1:cam1:Gain_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "BSE1 DetHDFPlugInVersion",
       "pv": "bse1:HDF1:PluginType_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "BSE1 DetManufacturer",
       "pv": "bse1:cam1:Manufacturer_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "BSE1 DetMaxSizeX",
       "pv": "bse1:cam1:MaxSizeX_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "BSE1 DetMaxSizeY",
       "pv": "bse1:cam1:MaxSizeY_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "BSE1 DetModel",
       "pv": "bse1:cam1:Model_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "BSE1 DetPixelSizeX",
       "pv": "bse1:Attr1:1:AttrName_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "BSE1 DetPixelSizeY",
       "pv": "bse1:Attr1:2:AttrName_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "BSE1 DetSDKVersion",
       "pv": "bse1:cam1:SDKVersion_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "BSE1 DetSampleName",
       "pv": "bse1:HDF1:FileName",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "BSE1 DetSaveDest",
       "pv": "bse1:cam1:FrameType",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "BSE1 DetSerialNumber",
       "pv": "bse1:cam1:SerialNumber_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetShieldX",
+      "name": "BSE1 DetShieldX",
       "pv": "20ide2:m73.RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "BSE1 DetTemperature",
       "pv": "bse1:cam1:Temperature_RBV",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetX",
+      "name": "BSE1 DetX",
       "pv": "20idaSoft:userTran10.A",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetY",
+      "name": "BSE1 DetY",
       "pv": "20idaSoft:userTran10.B",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetZ",
+      "name": "BSE1 DetZ",
       "pv": "20idaSoft:userTran10.N",
       "group": "BSE1 Detector"
     },
     {
-      "name": "VFF_ETA",
+      "name": "BSE1 VFF_ETA",
       "pv": "20idaSoft:userTran10.D",
       "group": "BSE1 Detector"
     },
     {
-      "name": "VFF_R",
+      "name": "BSE1 VFF_R",
       "pv": "20idaSoft:userTran10.C",
       "group": "BSE1 Detector"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "BSE2 DetADCoreVersion",
       "pv": "bse2:cam1:ADCoreVersion_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "BSE2 DetAcqPeriod",
       "pv": "bse2:cam1:AcquirePeriod_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "BSE2 DetAcqTime",
       "pv": "bse2:cam1:AcquireTime_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "BSE2 DetArrayCounter",
       "pv": "bse2:cam1:ArrayCounter_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "BSE2 DetArraySizeX",
       "pv": "bse2:cam1:ArraySizeX_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "BSE2 DetArraySizeY",
       "pv": "bse2:cam1:ArraySizeY_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "BSE2 DetBinX",
       "pv": "bse2:cam1:BinX_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "BSE2 DetBinY",
       "pv": "bse2:cam1:BinY_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "BSE2 DetDataType",
       "pv": "bse2:cam1:DataType_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "BSE2 DetDriverVersion",
       "pv": "bse2:cam1:DriverVersion_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "BSE2 DetFilePath",
       "pv": "bse2:HDF1:FilePath_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "BSE2 DetFirmwareVersion",
       "pv": "bse2:cam1:FirmwareVersion_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "BSE2 DetFullFileName",
       "pv": "bse2:HDF1:FullFileName_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "BSE2 DetGain",
       "pv": "bse2:cam1:Gain_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "BSE2 DetHDFPlugInVersion",
       "pv": "bse2:HDF1:PluginType_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "BSE2 DetManufacturer",
       "pv": "bse2:cam1:Manufacturer_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "BSE2 DetMaxSizeX",
       "pv": "bse2:cam1:MaxSizeX_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "BSE2 DetMaxSizeY",
       "pv": "bse2:cam1:MaxSizeY_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "BSE2 DetModel",
       "pv": "bse2:cam1:Model_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "BSE2 DetPixelSizeX",
       "pv": "bse2:Attr1:1:AttrName_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "BSE2 DetPixelSizeY",
       "pv": "bse2:Attr1:2:AttrName_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "BSE2 DetSDKVersion",
       "pv": "bse2:cam1:SDKVersion_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "BSE2 DetSampleName",
       "pv": "bse2:HDF1:FileName",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "BSE2 DetSaveDest",
       "pv": "bse2:cam1:FrameType",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "BSE2 DetSerialNumber",
       "pv": "bse2:cam1:SerialNumber_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "BSE2 DetTemperature",
       "pv": "bse2:cam1:Temperature_RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetX",
+      "name": "BSE2 DetX",
       "pv": "20ide2:m58.RBV",
       "group": "BSE2 Detector"
     },
     {
-      "name": "DetY",
+      "name": "BSE2 DetY",
       "pv": "20idHPOD2:sym01:MOVE_PTP:Tz",
       "group": "BSE2 Detector"
     },
@@ -345,517 +345,517 @@
       "group": "Calculation/Software"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "QMPX3 DetADCoreVersion",
       "pv": "QMPX3:cam1:ADCoreVersion_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "SP1 DetADCoreVersion",
       "pv": "20idsp1:cam1:ADCoreVersion_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "Lambda DetADCoreVersion",
       "pv": "dp_lambda_xrd30:cam1:ADCoreVersion_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "QMPX3 DetAcqPeriod",
       "pv": "QMPX3:cam1:AcquirePeriod_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "SP1 DetAcqPeriod",
       "pv": "20idsp1:cam1:AcquirePeriod_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "Lambda DetAcqPeriod",
       "pv": "dp_lambda_xrd30:cam1:AcquirePeriod_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "QMPX3 DetAcqTime",
       "pv": "QMPX3:cam1:AcquireTime_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "SP1 DetAcqTime",
       "pv": "20idsp1:cam1:AcquireTime_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "Lambda DetAcqTime",
       "pv": "dp_lambda_xrd30:cam1:AcquireTime_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "QMPX3 DetArrayCounter",
       "pv": "QMPX3:cam1:ArrayCounter_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "SP1 DetArrayCounter",
       "pv": "20idsp1:cam1:ArrayCounter_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "Lambda DetArrayCounter",
       "pv": "dp_lambda_xrd30:cam1:ArrayCounter_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "QMPX3 DetArraySizeX",
       "pv": "QMPX3:cam1:ArraySizeX_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "SP1 DetArraySizeX",
       "pv": "20idsp1:cam1:ArraySizeX_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "Lambda DetArraySizeX",
       "pv": "dp_lambda_xrd30:cam1:ArraySizeX_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "QMPX3 DetArraySizeY",
       "pv": "QMPX3:cam1:ArraySizeY_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "SP1 DetArraySizeY",
       "pv": "20idsp1:cam1:ArraySizeY_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "Lambda DetArraySizeY",
       "pv": "dp_lambda_xrd30:cam1:ArraySizeY_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "QMPX3 DetBinX",
       "pv": "QMPX3:cam1:BinX_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "SP1 DetBinX",
       "pv": "20idsp1:cam1:BinX_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "Lambda DetBinX",
       "pv": "dp_lambda_xrd30:cam1:BinX_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "QMPX3 DetBinY",
       "pv": "QMPX3:cam1:BinY_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "SP1 DetBinY",
       "pv": "20idsp1:cam1:BinY_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "Lambda DetBinY",
       "pv": "dp_lambda_xrd30:cam1:BinY_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "QMPX3 DetDataType",
       "pv": "QMPX3:cam1:DataType_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "SP1 DetDataType",
       "pv": "20idsp1:cam1:DataType_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "Lambda DetDataType",
       "pv": "dp_lambda_xrd30:cam1:DataType_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "QMPX3 DetFilePath",
       "pv": "QMPX3:HDF1:FilePath_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "SP1 DetFilePath",
       "pv": "20idsp1:HDF1:FilePath_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "Lambda DetFilePath",
       "pv": "dp_lambda_xrd30:HDF1:FilePath_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "QMPX3 DetFullFileName",
       "pv": "QMPX3:HDF1:FullFileName_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "SP1 DetFullFileName",
       "pv": "20idsp1:HDF1:FullFileName_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "Lambda DetFullFileName",
       "pv": "dp_lambda_xrd30:HDF1:FullFileName_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetGain",
+      "name": "QMPX3 DetGain",
       "pv": "QMPX3:cam1:Gain_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "SP1 DetGain",
       "pv": "20idsp1:cam1:Gain_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "Lambda DetGain",
       "pv": "dp_lambda_xrd30:cam1:Gain_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "QMPX3 DetHDFPlugInVersion",
       "pv": "QMPX3:HDF1:PluginType_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "SP1 DetHDFPlugInVersion",
       "pv": "20idsp1:HDF1:PluginType_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "Lambda DetHDFPlugInVersion",
       "pv": "dp_lambda_xrd30:HDF1:PluginType_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "QMPX3 DetManufacturer",
       "pv": "QMPX3:cam1:Manufacturer_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "SP1 DetManufacturer",
       "pv": "20idsp1:cam1:Manufacturer_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "Lambda DetManufacturer",
       "pv": "dp_lambda_xrd30:cam1:Manufacturer_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "QMPX3 DetMaxSizeX",
       "pv": "QMPX3:cam1:MaxSizeX_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "SP1 DetMaxSizeX",
       "pv": "20idsp1:cam1:MaxSizeX_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "Lambda DetMaxSizeX",
       "pv": "dp_lambda_xrd30:cam1:MaxSizeX_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "QMPX3 DetMaxSizeY",
       "pv": "QMPX3:cam1:MaxSizeY_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "SP1 DetMaxSizeY",
       "pv": "20idsp1:cam1:MaxSizeY_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "Lambda DetMaxSizeY",
       "pv": "dp_lambda_xrd30:cam1:MaxSizeY_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetModel",
+      "name": "QMPX3 DetModel",
       "pv": "QMPX3:cam1:Model_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "SP1 DetModel",
       "pv": "20idsp1:cam1:Model_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "Lambda DetModel",
       "pv": "dp_lambda_xrd30:cam1:Model_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "QMPX3 DetPixelSizeX",
       "pv": "QMPX3:Attr1:1:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "SP1 DetPixelSizeX",
       "pv": "20idsp1:Attr1:1:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "Lambda DetPixelSizeX",
       "pv": "dp_lambda_xrd30:Attr1:1:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "QMPX3 DetPixelSizeY",
       "pv": "QMPX3:Attr1:2:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "SP1 DetPixelSizeY",
       "pv": "20idsp1:Attr1:2:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "Lambda DetPixelSizeY",
       "pv": "dp_lambda_xrd30:Attr1:2:AttrName_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "QMPX3 DetSampleName",
       "pv": "QMPX3:HDF1:FileName",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "SP1 DetSampleName",
       "pv": "20idsp1:HDF1:FileName",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "Lambda DetSampleName",
       "pv": "dp_lambda_xrd30:HDF1:FileName",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "QMPX3 DetSaveDest",
       "pv": "QMPX3:cam1:FrameType",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "SP1 DetSaveDest",
       "pv": "20idsp1:cam1:FrameType",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "Lambda DetSaveDest",
       "pv": "dp_lambda_xrd30:cam1:FrameType",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "QMPX3 DetTemperature",
       "pv": "QMPX3:cam1:Temperature_RBV",
-      "group": "D3 Detector"
+      "group": "QMPX3 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "SP1 DetTemperature",
       "pv": "20idsp1:cam1:Temperature_RBV",
-      "group": "D3 Detector"
+      "group": "SP1 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "Lambda DetTemperature",
       "pv": "dp_lambda_xrd30:cam1:Temperature_RBV",
-      "group": "D3 Detector"
+      "group": "Lambda Detector"
     },
     {
-      "name": "DetX",
+      "name": "D4-1 DetX",
       "pv": "20ideD3D4:m5.RBV",
       "group": "D4-1 Detector"
     },
     {
-      "name": "DetY",
+      "name": "D4-1 DetY",
       "pv": "20ideD3D4:m6.RBV",
       "group": "D4-1 Detector"
     },
     {
-      "name": "DetZ",
+      "name": "D4-1 DetZ",
       "pv": "20idaSoft:userTran10.O",
       "group": "D4-1 Detector"
     },
     {
-      "name": "VFF_ETA",
+      "name": "D4-1 VFF_ETA",
       "pv": "20idaSoft:userTran10.H",
       "group": "D4-1 Detector"
     },
     {
-      "name": "VFF_R",
+      "name": "D4-1 VFF_R",
       "pv": "20idaSoft:userTran10.G",
       "group": "D4-1 Detector"
     },
     {
-      "name": "DetZ",
+      "name": "D4-2 DetZ",
       "pv": "20idaSoft:userTran10.P",
       "group": "D4-2 Detector"
     },
     {
-      "name": "VFF_ETA",
+      "name": "D4-2 VFF_ETA",
       "pv": "20idaSoft:userTran10.L",
       "group": "D4-2 Detector"
     },
     {
-      "name": "VFF_R",
+      "name": "D4-2 VFF_R",
       "pv": "20idaSoft:userTran10.K",
       "group": "D4-2 Detector"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "GH2 DetADCoreVersion",
       "pv": "20idGH2S:cam1:ADCoreVersion_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "GH2 DetAcqPeriod",
       "pv": "20idGH2S:cam1:AcquirePeriod_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "GH2 DetAcqTime",
       "pv": "20idGH2S:cam1:AcquireTime_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "GH2 DetArrayCounter",
       "pv": "20idGH2S:cam1:ArrayCounter_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "GH2 DetBinX",
       "pv": "20idGH2S:cam1:BinX",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "GH2 DetBinY",
       "pv": "20idGH2S:cam1:BinY",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "GH2 DetDataType",
       "pv": "20idGH2S:cam1:DataType_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "GH2 DetDriverVersion",
       "pv": "20idGH2S:cam1:DriverVersion_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "GH2 DetFilePath",
       "pv": "20idGH2S:HDF1:FilePath_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "GH2 DetFirmwareVersion",
       "pv": "20idGH2S:cam1:FirmwareVersion_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "GH2 DetFullFileName",
       "pv": "20idGH2S:HDF1:FullFileName_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "GH2 DetGain",
       "pv": "20idGH2S:cam1:Gain_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "GH2 DetHDFPlugInVersion",
       "pv": "20idGH2S:HDF1:PluginType_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "GH2 DetManufacturer",
       "pv": "20idGH2S:cam1:Manufacturer_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "GH2 DetMaxSizeX",
       "pv": "20idGH2S:cam1:MaxSizeX_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "GH2 DetMaxSizeY",
       "pv": "20idGH2S:cam1:MaxSizeY_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetMinX",
+      "name": "GH2 DetMinX",
       "pv": "20idGH2S:cam1:MinX",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetMinY",
+      "name": "GH2 DetMinY",
       "pv": "20idGH2S:cam1:MinY",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "GH2 DetModel",
       "pv": "20idGH2S:cam1:Model_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "GH2 DetSDKVersion",
       "pv": "20idGH2S:cam1:SDKVersion_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "GH2 DetSampleName",
       "pv": "20idGH2S:HDF1:FileName",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "GH2 DetSaveDest",
       "pv": "20idGH2S:cam1:FrameType",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "GH2 DetSerialNumber",
       "pv": "20idGH2S:cam1:SerialNumber_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSizeX",
+      "name": "GH2 DetSizeX",
       "pv": "20idGH2S:cam1:SizeX",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetSizeY",
+      "name": "GH2 DetSizeY",
       "pv": "20idGH2S:cam1:SizeY",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "GH2 DetTemperature",
       "pv": "20idGH2S:cam1:Temperature_RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetX",
+      "name": "GH2 DetX",
       "pv": "20ide2:m50.RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetY",
+      "name": "GH2 DetY",
       "pv": "20ide2:m51.RBV",
       "group": "GH2 Detector"
     },
     {
-      "name": "DetZ",
+      "name": "GH2 DetZ",
       "pv": "20ide2:m49.RBV",
       "group": "GH2 Detector"
     },
@@ -1780,287 +1780,287 @@
       "group": "Storage Ring"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "PG6 DetADCoreVersion",
       "pv": "20idPG6s:cam1:ADCoreVersion_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "PG6 DetAcqPeriod",
       "pv": "20idPG6s:cam1:AcquirePeriod_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "PG6 DetAcqTime",
       "pv": "20idPG6s:cam1:AcquireTime_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "PG6 DetArrayCounter",
       "pv": "20idPG6s:cam1:ArrayCounter_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "PG6 DetBinX",
       "pv": "20idPG6s:cam1:BinX",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "PG6 DetBinY",
       "pv": "20idPG6s:cam1:BinY",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "PG6 DetDataType",
       "pv": "20idPG6s:cam1:DataType_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "PG6 DetDriverVersion",
       "pv": "20idPG6s:cam1:DriverVersion_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "PG6 DetFilePath",
       "pv": "20idPG6s:HDF1:FilePath_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "PG6 DetFirmwareVersion",
       "pv": "20idPG6s:cam1:FirmwareVersion_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "PG6 DetFullFileName",
       "pv": "20idPG6s:HDF1:FullFileName_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "PG6 DetGain",
       "pv": "20idPG6s:cam1:Gain_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "PG6 DetHDFPlugInVersion",
       "pv": "20idPG6s:HDF1:PluginType_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "PG6 DetManufacturer",
       "pv": "20idPG6s:cam1:Manufacturer_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "PG6 DetMaxSizeX",
       "pv": "20idPG6s:cam1:MaxSizeX_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "PG6 DetMaxSizeY",
       "pv": "20idPG6s:cam1:MaxSizeY_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetMinX",
+      "name": "PG6 DetMinX",
       "pv": "20idPG6s:cam1:MinX",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetMinY",
+      "name": "PG6 DetMinY",
       "pv": "20idPG6s:cam1:MinY",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "PG6 DetModel",
       "pv": "20idPG6s:cam1:Model_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "PG6 DetSDKVersion",
       "pv": "20idPG6s:cam1:SDKVersion_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "PG6 DetSampleName",
       "pv": "20idPG6s:HDF1:FileName",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "PG6 DetSaveDest",
       "pv": "20idPG6s:cam1:FrameType",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "PG6 DetSerialNumber",
       "pv": "20idPG6s:cam1:SerialNumber_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSizeX",
+      "name": "PG6 DetSizeX",
       "pv": "20idPG6s:cam1:SizeX",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetSizeY",
+      "name": "PG6 DetSizeY",
       "pv": "20idPG6s:cam1:SizeY",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "PG6 DetTemperature",
       "pv": "20idPG6s:cam1:Temperature_RBV",
       "group": "PG6 Detector"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "PITEC1 DetADCoreVersion",
       "pv": "PITEC:D:RAD1_5Mh:cam1:ADCoreVersion_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "PITEC1 DetAcqPeriod",
       "pv": "PITEC:D:RAD1_5Mh:cam1:AcquirePeriod_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetAcqTime",
+      "name": "PITEC1 DetAcqTime",
       "pv": "PITEC:D:RAD1_5Mh:cam1:AcquireTime_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "PITEC1 DetArrayCounter",
       "pv": "PITEC:D:RAD1_5Mh:cam1:ArrayCounter_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "PITEC1 DetArraySizeX",
       "pv": "PITEC:D:RAD1_5Mh:cam1:ArraySizeX_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "PITEC1 DetArraySizeY",
       "pv": "PITEC:D:RAD1_5Mh:cam1:ArraySizeY_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetBSX",
+      "name": "PITEC1 DetBSX",
       "pv": "20idmxa1:m4.RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetBSY",
+      "name": "PITEC1 DetBSY",
       "pv": "20idmxa1:m5.RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetBinX",
+      "name": "PITEC1 DetBinX",
       "pv": "PITEC:D:RAD1_5Mh:cam1:BinX_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetBinY",
+      "name": "PITEC1 DetBinY",
       "pv": "PITEC:D:RAD1_5Mh:cam1:BinY_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetDataType",
+      "name": "PITEC1 DetDataType",
       "pv": "PITEC:D:RAD1_5Mh:cam1:DataType_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "PITEC1 DetDriverVersion",
       "pv": "PITEC:D:RAD1_5Mh:cam1:DriverVersion_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetFilePath",
+      "name": "PITEC1 DetFilePath",
       "pv": "PITEC:D:RAD1_5Mh:HDF1:FilePath_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "PITEC1 DetFirmwareVersion",
       "pv": "PITEC:D:RAD1_5Mh:cam1:FirmwareVersion_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetFullFileName",
+      "name": "PITEC1 DetFullFileName",
       "pv": "PITEC:D:RAD1_5Mh:HDF1:FullFileName_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetGain",
+      "name": "PITEC1 DetGain",
       "pv": "PITEC:D:RAD1_5Mh:cam1:Gain_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "PITEC1 DetHDFPlugInVersion",
       "pv": "PITEC:D:RAD1_5Mh:HDF1:PluginType_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetManufacturer",
+      "name": "PITEC1 DetManufacturer",
       "pv": "PITEC:D:RAD1_5Mh:cam1:Manufacturer_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "PITEC1 DetMaxSizeX",
       "pv": "PITEC:D:RAD1_5Mh:cam1:MaxSizeX_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "PITEC1 DetMaxSizeY",
       "pv": "PITEC:D:RAD1_5Mh:cam1:MaxSizeY_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetModel",
+      "name": "PITEC1 DetModel",
       "pv": "PITEC:D:RAD1_5Mh:cam1:Model_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "PITEC1 DetPixelSizeX",
       "pv": "PITEC:D:RAD1_5Mh:Attr1:1:AttrName_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "PITEC1 DetPixelSizeY",
       "pv": "PITEC:D:RAD1_5Mh:Attr1:2:AttrName_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "PITEC1 DetSDKVersion",
       "pv": "PITEC:D:RAD1_5Mh:cam1:SDKVersion_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetSampleName",
+      "name": "PITEC1 DetSampleName",
       "pv": "PITEC:D:RAD1_5Mh:HDF1:FileName",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetSaveDest",
+      "name": "PITEC1 DetSaveDest",
       "pv": "PITEC:D:RAD1_5Mh:cam1:FrameType",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "PITEC1 DetSerialNumber",
       "pv": "PITEC:D:RAD1_5Mh:cam1:SerialNumber_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetShieldX",
+      "name": "PITEC1 DetShieldX",
       "pv": "20idmxa1:m6.RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetTemperature",
+      "name": "PITEC1 DetTemperature",
       "pv": "PITEC:D:RAD1_5Mh:cam1:Temperature_RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetX",
+      "name": "PITEC1 DetX",
       "pv": "20idmxa1:m8.RBV",
       "group": "PITEC1 Detector"
     },
     {
-      "name": "DetY",
+      "name": "PITEC1 DetY",
       "pv": "20idmxa1:m7.RBV",
       "group": "PITEC1 Detector"
     },
@@ -2165,132 +2165,132 @@
       "group": "D T7 Slits"
     },
     {
-      "name": "DetADCoreVersion",
+      "name": "VarexE DetADCoreVersion",
       "pv": "20idVarex2:cam1:ADCoreVersion_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetAcqPeriod",
+      "name": "VarexE DetAcqPeriod",
       "pv": "20idVarex2:cam1:AcquirePeriod_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetAcqTime",
+      "name": "VarexE DetAcqTime",
       "pv": "20idVarex2:cam1:AcquireTime_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetArrayCounter",
+      "name": "VarexE DetArrayCounter",
       "pv": "20idVarex2:cam1:ArrayCounter_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetArraySizeX",
+      "name": "VarexE DetArraySizeX",
       "pv": "20idVarex2:cam1:ArraySizeX_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetArraySizeY",
+      "name": "VarexE DetArraySizeY",
       "pv": "20idVarex2:cam1:ArraySizeY_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetBinX",
+      "name": "VarexE DetBinX",
       "pv": "20idVarex2:cam1:BinX_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetBinY",
+      "name": "VarexE DetBinY",
       "pv": "20idVarex2:cam1:BinY_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetDataType",
+      "name": "VarexE DetDataType",
       "pv": "20idVarex2:cam1:DataType_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetDriverVersion",
+      "name": "VarexE DetDriverVersion",
       "pv": "20idVarex2:cam1:DriverVersion_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetFilePath",
+      "name": "VarexE DetFilePath",
       "pv": "20idVarex2:HDF1:FilePath_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetFirmwareVersion",
+      "name": "VarexE DetFirmwareVersion",
       "pv": "20idVarex2:cam1:FirmwareVersion_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetFullFileName",
+      "name": "VarexE DetFullFileName",
       "pv": "20idVarex2:HDF1:FullFileName_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetGain",
+      "name": "VarexE DetGain",
       "pv": "20idVarex2:cam1:Gain_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetHDFPlugInVersion",
+      "name": "VarexE DetHDFPlugInVersion",
       "pv": "20idVarex2:HDF1:PluginType_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetManufacturer",
+      "name": "VarexE DetManufacturer",
       "pv": "20idVarex2:cam1:Manufacturer_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetMaxSizeX",
+      "name": "VarexE DetMaxSizeX",
       "pv": "20idVarex2:cam1:MaxSizeX_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetMaxSizeY",
+      "name": "VarexE DetMaxSizeY",
       "pv": "20idVarex2:cam1:MaxSizeY_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetModel",
+      "name": "VarexE DetModel",
       "pv": "20idVarex2:cam1:Model_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetPixelSizeX",
+      "name": "VarexE DetPixelSizeX",
       "pv": "20idVarex2:Attr1:1:AttrName_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetPixelSizeY",
+      "name": "VarexE DetPixelSizeY",
       "pv": "20idVarex2:Attr1:2:AttrName_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetSDKVersion",
+      "name": "VarexE DetSDKVersion",
       "pv": "20idVarex2:cam1:SDKVersion_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetSampleName",
+      "name": "VarexE DetSampleName",
       "pv": "20idVarex2:HDF1:FileName",
       "group": "VarexE"
     },
     {
-      "name": "DetSaveDest",
+      "name": "VarexE DetSaveDest",
       "pv": "20idVarex2:cam1:FrameType",
       "group": "VarexE"
     },
     {
-      "name": "DetSerialNumber",
+      "name": "VarexE DetSerialNumber",
       "pv": "20idVarex2:cam1:SerialNumber_RBV",
       "group": "VarexE"
     },
     {
-      "name": "DetTemperature",
+      "name": "VarexE DetTemperature",
       "pv": "20idVarex2:cam1:Temperature_RBV",
       "group": "VarexE"
     },
@@ -2557,17 +2557,17 @@
     {
       "name": "D3 Detector X",
       "pv": "20ideD3D4:m1",
-      "group": "D3 Detector"
+      "group": "D3 Detector motion"
     },
     {
       "name": "D3 Detector Y",
       "pv": "20ideD3D4:m2",
-      "group": "D3 Detector"
+      "group": "D3 Detector motion"
     },
     {
       "name": "D3 Detector Z",
       "pv": "20ideD3D4:m3",
-      "group": "D3 Detector"
+      "group": "D3 Detector motion"
     },
     {
       "name": "D4-2 Detector X",

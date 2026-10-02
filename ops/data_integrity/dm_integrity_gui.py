@@ -487,6 +487,13 @@ class HistoryDetailDialog(QtWidgets.QDialog):
         self.table.setHorizontalHeaderLabels(["File", "Issue"])
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        # Word-wrap long paths onto multiple lines within the row rather
+        # than eliding them - a tooltip alone (added earlier) still hid the
+        # full path unless you happened to hover over it; this makes it
+        # visible outright. Needs resizeRowsToContents() after populating
+        # (see _apply_filter) since Qt doesn't grow row height for wrapped
+        # text on its own.
+        self.table.setWordWrap(True)
         layout.addWidget(self.table, 1)  # stretch factor: the table gets any extra space, not the fixed-height widgets around it
 
         buttons = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.Close)
@@ -622,7 +629,15 @@ class HistoryDetailDialog(QtWidgets.QDialog):
         else:
             self.table.setRowCount(len(rows))
             for row, (path, _category, issue) in enumerate(rows):
-                self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(path))
+                # Tooltip carries the full path regardless of the File
+                # column's 500px cap below - confirmed directly that a
+                # deep experiment path (e.g. "varexD/ai_tune/rot_series/
+                # APEXA-calibration/...") otherwise just shows "..." with
+                # no way to see the rest short of manually dragging the
+                # column wider (which also steals width from Issue).
+                path_item = QtWidgets.QTableWidgetItem(path)
+                path_item.setToolTip(path)
+                self.table.setItem(row, 0, path_item)
                 self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(issue))
         self.table.resizeColumnsToContents()
         # Cap the File column rather than leaving resizeColumnsToContents's
@@ -635,6 +650,14 @@ class HistoryDetailDialog(QtWidgets.QDialog):
         # narrow column instead of always reserving 500px.
         if self.table.columnWidth(0) > 500:
             self.table.setColumnWidth(0, 500)
+        # After the cap above (not before - row heights need to be computed
+        # against the File column's FINAL width, or a long path capped down
+        # from resizeColumnsToContents's raw wider guess would wrap wrong).
+        # Without this, setWordWrap(True) alone has no visible effect -
+        # Qt doesn't grow a row's height for wrapped text on its own, so a
+        # long path would wrap "inside" a single-line-tall row and still
+        # only show its first line.
+        self.table.resizeRowsToContents()
 
 
 class _ChecksumStopWorker(QtCore.QObject):

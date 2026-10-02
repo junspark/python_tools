@@ -196,7 +196,11 @@ Each row has these actions:
   of whole subdirectories that never landed on either side, and a
   filterable, file-by-file list of every problem in that snapshot. A
   compact "N recs" label next to the buttons shows at a glance whether
-  history exists for a row without opening the dialog.
+  history exists for a row without opening the dialog. The File column
+  wraps a long path onto multiple lines (and still carries the full path
+  as a hover tooltip) rather than silently eliding it past a fixed
+  500px cap - that cap stays in place so one pathological deep path can't
+  claim the whole dialog's width at the Issue column's expense.
 - **Upload to DM**: triggers `dm-upload --experiment=<name>
   --data-directory=<path> --reprocess` on the beamline's designated
   upload host (`settings.upload_hosts` - see Configuration; **not** the

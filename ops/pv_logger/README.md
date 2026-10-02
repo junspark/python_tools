@@ -111,6 +111,27 @@ To add a PV: append `{"name": ..., "pv": ..., "group": ...}` to `pvs`. To
 retire one: delete its entry, or just leave it — an unreachable PV is
 silently skipped at discovery, no need to comment it out.
 
+**`"name"` must be unique across the entire file, not just within a
+group.** `discover_pvs`, `sample`, and the CSV header all key PVs by
+`"name"` in a plain dict — two entries sharing a name (even across
+unrelated groups) silently collapse into one, with no error and no
+warning, dropping every duplicate but the last one seen. This bit s20
+for real: eight different detector groups (BSE1, BSE2, the old "D3
+Detector", D4-1, D4-2, GH2, PG6, PITEC1) all reused identical generic
+areaDetector attribute names like `DetGain`/`DetModel`/`DetBinX` for
+their own cameras — fine as long as only one such group was ever
+selected at a time, but selecting several together (confirmed directly:
+a 421-PV pick) silently logged/checked only 254 of them, no visible
+sign anything was missing. Fixed (2026-10-01) by prefixing every one of
+those generic names with its own group tag (`DetGain` → `BSE1 DetGain`,
+etc.) and splitting "D3 Detector" into its three actually-distinct
+physical cameras (`QMPX3 Detector`/`SP1 Detector`/`Lambda Detector`) plus
+a separate `D3 Detector motion` group for their shared hutch stage. When
+adding a new device, especially a new camera/detector sharing a common
+driver's standard PV suffixes with an existing one, double check its
+`"name"` values don't collide with anything already in the file — not
+just within its own group.
+
 ### Device categories
 
 The Start-new-experiment checklist groups devices under category headers
