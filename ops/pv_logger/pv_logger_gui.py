@@ -41,6 +41,7 @@ STATUS_COLORS = {
     "running": "#c8f7c5",
     "stopped": "#e0e0e0",
     "failed": "#f7c5c5",
+    "stale": "#f7e9a0",
 }
 
 # Remembers the last PV selection used per beamline, keyed by PV "name"
@@ -1054,6 +1055,17 @@ class PVLoggerPanel(QtWidgets.QWidget):
         # whichever one was currently selected in the dropdown, with no
         # way to see both at a glance without switching back and forth).
         self._beamline_running = {beamline: False for beamline in self.BEAMLINES}
+        # beamline -> bool - a RUNNING status whose updated_at hasn't moved
+        # in several sample intervals' worth of time (see _poll_all_
+        # beamlines) - the status file has no way to distinguish "still
+        # genuinely logging" from "crashed/killed without ever writing a
+        # final STOPPED/FAILED" (confirmed directly: a disk-full error
+        # cascaded past this job's own crash-recovery write too, leaving
+        # the status file frozen at a stale RUNNING indefinitely - nothing
+        # ever overwrote it again, and the GUI kept showing a fully green
+        # "RUNNING" row for a full day). Painted as its own amber state
+        # rather than silently trusted as RUNNING.
+        self._beamline_stale = {beamline: False for beamline in self.BEAMLINES}
         # beamline -> {"pvs": [pv_entry, ...], "devices": [str, ...]} from
         # the most recent "Pick PVs..." accepted for that beamline -
         # session-only (like _launch_workers/_check_workers below), not
@@ -1254,10 +1266,15 @@ class PVLoggerPanel(QtWidgets.QWidget):
         self.interval_spin.setValue(self.cfg["settings"].get("log_interval_sec", 5))
         self.interval_spin.blockSignals(False)
 
-    def _paint_job_row(self, beamline, running, failed=False):
+    def _paint_job_row(self, beamline, running, failed=False, stale=False):
         item = self._beamline_tree_items[beamline]
         if failed:
             text, color = "FAILED", STATUS_COLORS.get("failed", QtGui.QColor(255, 200, 200))
+        elif stale:
+            # Only meaningful alongside running=True (see _poll_all_
+            # beamlines) - a status file stuck saying RUNNING with no
+            # recent update, not actually known-dead like FAILED/STOPPED.
+            text, color = "STALE?", STATUS_COLORS["stale"]
         else:
             text = "RUNNING" if running else "STOPPED"
             color = STATUS_COLORS["running"] if running else STATUS_COLORS["stopped"]
@@ -1736,6 +1753,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
             if not remote_base:
                 self._beamline_running[beamline] = False
+                self._beamline_stale[beamline] = False
                 self._paint_job_row(beamline, running=False)
                 self._beamline_tree_items[beamline].setText(2, "Not configured.")
                 self._set_job_children(beamline, [], [])
@@ -1748,6 +1766,7 @@ class PVLoggerPanel(QtWidgets.QWidget):
                     status = json.load(f)
             except (OSError, json.JSONDecodeError):
                 self._beamline_running[beamline] = False
+                self._beamline_stale[beamline] = False
                 self._paint_job_row(beamline, running=False)
                 self._beamline_tree_items[beamline].setText(2, "No experiment started yet.")
                 self._refresh_job_children(beamline, name_to_pv)
@@ -1775,7 +1794,26 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 online_names = [n for n in tracked if n not in currently_offline]
 
                 self._beamline_running[beamline] = True
-                self._paint_job_row(beamline, running=True)
+
+                # A RUNNING status is only as trustworthy as its last
+                # update is recent - a process that crashed or got killed
+                # without reaching its own exception handler (confirmed
+                # directly: a disk-full error that also broke the
+                # crash-recovery status write itself) leaves this file
+                # frozen forever, otherwise indistinguishable from a
+                # genuinely healthy job. log_interval_sec is how often a
+                # live job rewrites this file, so several multiples of it
+                # with no update is a real warning sign rather than normal
+                # jitter (one slow cycle, a brief NFS hiccup) - floored at
+                # 30s so a very short configured interval doesn't false-
+                # positive on ordinary single-cycle slowness.
+                updated_at = status.get("updated_at")
+                log_interval = cfg.get("settings", {}).get("log_interval_sec", 5)
+                stale_after = max(30, log_interval * 4)
+                is_stale = updated_at is not None and (time.time() - updated_at) > stale_after
+                self._beamline_stale[beamline] = is_stale
+
+                self._paint_job_row(beamline, running=True, stale=is_stale)
                 # A running job's own live sample is always more current
                 # than a past manual check - drop it so a STOPPED-then-
                 # started-again cycle doesn't later reuse a check result
@@ -1783,17 +1821,20 @@ class PVLoggerPanel(QtWidgets.QWidget):
                 self._last_check_result.pop(beamline, None)
                 total = status.get("total_count", len(tracked))
                 online_count = status.get("online_count", len(online_names))
-                self._beamline_tree_items[beamline].setText(
-                    2, "{} of {} PVs online  |  Output: {}".format(
-                        online_count, total, status.get("outfile", "?")))
+                detail = "{} of {} PVs online  |  Output: {}".format(
+                    online_count, total, status.get("outfile", "?"))
+                if is_stale:
+                    detail = "STALE - no update since {} (job may have crashed)  |  {}".format(
+                        time.ctime(updated_at), detail)
+                self._beamline_tree_items[beamline].setText(2, detail)
                 self._set_job_children(beamline, online_names, offline_names, name_to_pv)
                 self._update_action_buttons(beamline)
                 if beamline == self.current_beamline:
-                    updated_at = status.get("updated_at")
                     if updated_at:
                         self.status_bar.showMessage("Last write: {}".format(time.ctime(updated_at)))
             else:
                 self._beamline_running[beamline] = False
+                self._beamline_stale[beamline] = False
                 failed = state == "FAILED"
                 self._paint_job_row(beamline, running=False, failed=failed)
                 if state == "FAILED":

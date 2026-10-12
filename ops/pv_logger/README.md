@@ -239,6 +239,21 @@ this job was launched with), `outfile`, `started_at`/`updated_at`, and
 `error_message` if `FAILED`. This is how `pv_logger_gui.py` shows live
 status for a job without touching EPICS or the CSV file itself.
 
+If the status-file's own filesystem fills up (confirmed directly: the
+shared `/home/beams` mount backing `remote_job.remote_base`, separate
+from wherever `--outfile` itself lives), writing a routine `RUNNING`
+update raises `OSError: No space left on device` - caught by `cmd_start`'s
+broad exception handler same as any other crash, which then tries to
+record that as a `FAILED` status... which fails with the exact same
+`ENOSPC` error, since it's the same disk. That second failure is now
+caught too (logged to stderr as "Also failed to write FAILED status"
+rather than propagating), so a disk-full crash produces one clear
+traceback instead of a confusing cascade of two - but the underlying
+status file is still left exactly where it was before the crash (a
+RUNNING status that's now permanently stale), since there's no space to
+write anything else to it. See "A stuck job that isn't really running"
+below for how the GUI surfaces this.
+
 ### Viewing the log
 
 The CSV is a plain wide table (time on rows, one column per PV) — open
@@ -399,6 +414,28 @@ you can usefully watch. Instead:
   visible as one that drops mid-run. A STOPPED/FAILED beamline's PVs are
   shown neutrally (not a false green/red) since only a running job's
   latest sample is trustworthy enough to assert either state.
+
+  **A stuck job that isn't really running**: a `RUNNING` status is only as
+  trustworthy as its last update is recent. A process that gets killed or
+  crashes badly enough to bypass its own exception handler (confirmed
+  directly: a disk-full error that broke the crash-recovery write too,
+  see "status-file" above) never writes anything else - the status file
+  just sits there saying `RUNNING` forever, looking identical to a
+  genuinely healthy job, with nothing left for "Stop logging" to even act
+  on (systemd's `--collect` already garbage-collected the dead unit, so
+  stopping it fails with "Unit ... not loaded"). To catch this, a `RUNNING`
+  row whose `updated_at` hasn't moved in more than 4x that beamline's
+  `log_interval_sec` (floored at 30s, so a short configured interval
+  doesn't false-positive on one merely-slow cycle) paints amber as
+  **STALE?** instead of green, with "no update since ... (job may have
+  crashed)" in its Details column. If you hit this: the job is already
+  dead, nothing to Stop - either start a fresh run (which overwrites the
+  stale status file with a live one as a side effect), or manually delete
+  `<remote_base>/status/<beamline>.json` (and any leftover
+  `<beamline>.json.tmp.<pid>` next to it - `atomic_write_json` cleans
+  these up on a *future* failure now, but an already-orphaned one from
+  before that fix needs a manual `rm`) to clear the display without
+  starting new logging.
   Clicking any row in the tree (a beamline's own row, or one of its child
   PV rows) syncs the **Beamline** dropdown to match — the dropdown, not
   the tree selection, is what **Stop**/**Check PVs...**/**Edit

@@ -128,9 +128,24 @@ def atomic_write_json(path, data):
     governor) never sees a partially-written file."""
     Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
     tmp_path = f"{path}.tmp.{os.getpid()}"
-    with open(tmp_path, "w") as f:
-        json.dump(data, f, indent=2)
-    os.replace(tmp_path, path)
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, path)
+    except Exception:
+        # Confirmed directly: a disk-full error partway through json.dump
+        # left a 0-byte tmp file sitting next to the real one forever,
+        # since the only thing that ever cleans it up is the os.replace
+        # above, which this path never reaches - harmless on its own, but
+        # needless clutter next to a status directory, and confusing to
+        # find later wondering what wrote it. Best-effort: if even this
+        # fails (disk still full), there's nothing more to do here -
+        # the caller's own exception is what matters, not this cleanup.
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
 
 
 def write_remote_file(host, user, path, content, timeout=30):

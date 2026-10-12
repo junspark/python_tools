@@ -1,6 +1,6 @@
 {
   "settings": {
-    "log_interval_sec": 5,
+    "log_interval_sec": 1.0,
     "connect_timeout_sec": 2.0,
     "caget_path": "/APSshare/epics/base-7.0.10/bin/rhel9-x86_64/caget",
     "recipients": [],
@@ -1157,8 +1157,38 @@
       "group": "MTS"
     },
     {
-      "name": "MTS load (mm)",
+      "name": "MTS load (N)",
       "pv": "1ide:D1Ch12_calc.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch13 (V)",
+      "pv": "1ide:D1Ch13_raw.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch13 [-]",
+      "pv": "1ide:D1Ch13_calc.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch14 (V)",
+      "pv": "1ide:D1Ch14_raw.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch14 [-]",
+      "pv": "1ide:D1Ch14_calc.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch15 (V)",
+      "pv": "1ide:D1Ch15_raw.VAL",
+      "group": "MTS"
+    },
+    {
+      "name": "MTS Ch15 [-]",
+      "pv": "1ide:D1Ch15_calc.VAL",
       "group": "MTS"
     },
     {

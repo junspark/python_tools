@@ -782,7 +782,18 @@ def cmd_start(args):
         # job from a slow one) - the same stuck-status class of bug this
         # project already hit and fixed once for checksum jobs.
         print("PV logging crashed: {}".format(e), file=sys.stderr)
-        _write_status("FAILED", error_message=str(e)[:2000])
+        try:
+            _write_status("FAILED", error_message=str(e)[:2000])
+        except Exception as write_err:
+            # Confirmed directly: a crash caused by the status file's own
+            # filesystem being full (ENOSPC) makes THIS write fail the
+            # same way, since atomic_write_json's tmp file lands in that
+            # same directory - an unguarded second exception here used to
+            # propagate uncaught, crashing with a confusing cascade of two
+            # raw tracebacks instead of one clear one. The original error
+            # (e, already printed above) is what actually matters; this is
+            # just a secondary "couldn't even record that" note.
+            print("Also failed to write FAILED status: {}".format(write_err), file=sys.stderr)
         return 1
 
     _write_status("STOPPED")
