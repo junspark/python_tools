@@ -1036,7 +1036,12 @@ class PVLoggerPanel(QtWidgets.QWidget):
         super().__init__(parent)
         self.config_path = config_path
         self.base_config_dir = os.path.dirname(config_path)
-        self.cfg = pl.load_config(config_path)
+        self._config_error = None
+        try:
+            self.cfg = pl.load_config(config_path)
+        except Exception as exc:
+            self.cfg = {"settings": dict(pl._DEFAULT_SETTINGS), "pvs": []}
+            self._config_error = str(exc)
 
         self.current_beamline = "s1"
         self._launch_workers = {}  # beamline -> (QThread, _PvLoggerLaunchWorker), kept alive while launching
@@ -1130,6 +1135,8 @@ class PVLoggerPanel(QtWidgets.QWidget):
 
         self.status_bar = QtWidgets.QStatusBar()
         layout.addWidget(self.status_bar)
+        if self._config_error:
+            self.status_bar.showMessage(f"Config error: {self._config_error}")
 
         # Real QPushButtons, not toolbar.addAction() - a QAction shown in a
         # QToolBar renders as flat, borderless text on this Qt style/

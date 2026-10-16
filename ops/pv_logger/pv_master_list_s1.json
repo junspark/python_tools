@@ -3475,6 +3475,86 @@
       "name": "tomoEds y",
       "pv": "1ide1:m112",
       "group": "TXME motion"
+    },
+    {
+      "name": "11ID_PTC_TC2A",
+      "pv": "1idcPTC:tc1:2A:temperature",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC2B",
+      "pv": "1idcPTC:tc1:2B:temperature",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC2C",
+      "pv": "1idcPTC:tc1:2C:temperature",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC2D",
+      "pv": "1idcPTC:tc1:2D:temperature",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5A_RBV",
+      "pv": "1idcPTC:tc1:5A:rampTemp_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5B_RBV",
+      "pv": "1idcPTC:tc1:5B:rampTemp_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5C_RBV",
+      "pv": "1idcPTC:tc1:5C:rampTemp_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5D_RBV",
+      "pv": "1idcPTC:tc1:5D:rampTemp_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5A_SP",
+      "pv": "1idcPTC:tc1:5A:setPoint_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5B_SP",
+      "pv": "1idcPTC:tc1:5B:setPoint_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5C_SP",
+      "pv": "1idcPTC:tc1:5C:setPoint_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5D_SP",
+      "pv": "1idcPTC:tc1:5D:setPoint_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5A_RR",
+      "pv": "1idcPTC:tc1:5A:rampRate_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5B_RR",
+      "pv": "1idcPTC:tc1:5B:rampRate_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5C_RR",
+      "pv": "1idcPTC:tc1:5C:rampRate_RBV",
+      "group": "11ID_PTC"
+    },
+    {
+      "name": "11ID_PTC_TC5D_RR",
+      "pv": "1idcPTC:tc1:5D:rampRate_RBV",
+      "group": "11ID_PTC"
     }
   ]
 }

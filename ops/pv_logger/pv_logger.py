@@ -125,10 +125,80 @@ _DEFAULT_SETTINGS = {
 # Config
 # ---------------------------------------------------------------------------
 
-def load_config(path=DEFAULT_CONFIG_PATH):
-    with open(path) as f:
-        cfg = json.load(f)
+def _remove_trailing_commas(text):
+    """Repair minor JSON edits that accidentally leave commas before ] or }.
 
+    This is intentionally narrow: it only removes a comma when the next
+    non-whitespace character is a closing bracket/brace, which matches the
+    common trailing-comma mistake from manual JSON editing. It leaves all
+    other commas and strings untouched.
+    """
+    result = []
+    in_string = False
+    escaped = False
+    i = 0
+    while i < len(text):
+        ch = text[i]
+        if in_string:
+            result.append(ch)
+            if escaped:
+                escaped = False
+            elif ch == "\\":
+                escaped = True
+            elif ch == '"':
+                in_string = False
+            i += 1
+            continue
+
+        if ch == '"':
+            in_string = True
+            result.append(ch)
+            i += 1
+            continue
+
+        if ch == ",":
+            j = i + 1
+            while j < len(text) and text[j].isspace():
+                j += 1
+            if j < len(text) and text[j] in "]}":
+                i += 1
+                continue
+
+        result.append(ch)
+        i += 1
+
+    return "".join(result)
+
+
+def load_config(path=DEFAULT_CONFIG_PATH):
+    text = None
+    try:
+        with open(path) as f:
+            text = f.read()
+        cfg = json.loads(text)
+    except OSError:
+        raise
+    except json.JSONDecodeError as exc:
+        if text is None:
+            raise ValueError(f"Could not read config file: {path}") from exc
+        repaired = _remove_trailing_commas(text)
+        if repaired != text:
+            try:
+                cfg = json.loads(repaired)
+            except json.JSONDecodeError:
+                pass
+            else:
+                return _finalize_config(cfg)
+
+        raise ValueError(
+            f"Invalid JSON in {path}: {exc.msg} at line {exc.lineno}, column {exc.colno}. "
+            "This usually means a trailing comma or a missing quote/bracket was introduced while editing."
+        ) from exc
+
+    return _finalize_config(cfg)
+
+
+def _finalize_config(cfg):
     settings = dict(_DEFAULT_SETTINGS)
     settings.update(cfg.get("settings", {}))
     cfg["settings"] = settings
