@@ -3555,6 +3555,106 @@
       "name": "11ID_PTC_TC5D_RR",
       "pv": "1idcPTC:tc1:5D:rampRate_RBV",
       "group": "11ID_PTC"
+    },
+    {
+      "name": "Linkam2 T (C)",
+      "pv": "1idLnkm1::TEMP",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 setpoint (C)",
+      "pv": "1idLnkm1::SETPOINT",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 ramp rate (C/min)",
+      "pv": "1idLnkm1::RAMPRATE",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 ramp time (min)",
+      "pv": "1idLnkm1::RAMPTIME",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 hold time (sec)",
+      "pv": "1idLnkm1::HOLDTIME",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 power (%)",
+      "pv": "1idLnkm1::POWER",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 status",
+      "pv": "1idLnkm1::STATUS",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 DSC",
+      "pv": "1idLnkm1::DSC",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vacuum",
+      "pv": "1idLnkm1::VACUUM",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vacuum unit",
+      "pv": "1idLnkm1::VACUUM:UNIT",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 pressure (mBar)",
+      "pv": "1idLnkm1::PRESSURE",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vac chamber (mbar)",
+      "pv": "1idLnkm1::VAC_CHAMBER",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vac data1 (mbar)",
+      "pv": "1idLnkm1::VAC_DATA1",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 LN2 speed (%)",
+      "pv": "1idLnkm1::LNP_SPEED",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 LN2 mode",
+      "pv": "1idLnkm1::LNP_MODE",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 heating",
+      "pv": "1idLnkm1::STAT:HTR1:HEATING",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 at setpoint",
+      "pv": "1idLnkm1::STAT:HTR1:AT_SETPT",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 LNP pumping",
+      "pv": "1idLnkm1::STAT:LNP:PUMPING",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vac control",
+      "pv": "1idLnkm1::STAT:VAC:CNTRL",
+      "group": "LINKAM FURNACE (1idLnkm1)"
+    },
+    {
+      "name": "Linkam2 vac at setpoint",
+      "pv": "1idLnkm1::STAT:VAC:AT_SETPT",
+      "group": "LINKAM FURNACE (1idLnkm1)"
     }
   ]
 }

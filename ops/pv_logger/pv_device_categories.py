@@ -114,6 +114,10 @@ DEVICE_CATEGORIES = [
         "PulseRay-CMU furnace", "FZHANG COLD SINTER FURNACE",
         "HASTINGS FURNACE", "IR FURNACE", "LANL RF FURNACE", "LINKAM FURNACE", "RF Furnace",
         "E PulseRay Furnace", "Linkam Furnace (old)",
+        # second, newer Linkam unit on IOC prefix 1idLnkm1: (synApps-based,
+        # with vacuum-stage support) - a separate stage from the older
+        # ci94-based "LINKAM FURNACE" above, not a replacement (2026-10-27)
+        "LINKAM FURNACE (1idLnkm1)",
         "NIST BOULDER CONNOLLY H2 CHAMBER", "LANL CHILLER", "LANL WELDER", "AM chamber setup",
         # bluesky-sourced (2026-08-26 scan)
         "amD", "rf_sam", "rf_tube",
